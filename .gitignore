@@ -1,0 +1,7 @@
+/classify.roxygen
+/classify.roxygen.Rcheck
+classify_*.tar.gz
+*.Rapp.history
+*~
+*.swp
+*.bak
