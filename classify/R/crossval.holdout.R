@@ -295,93 +295,70 @@ image.holdout <- function(x, ...){
 }
 
 
-##' Assemble predictions from crossvalidation folds into a single object
-##' 
-##' @param cv.pred List of predictions, as returned by \code{\link{batch.design}}
+##' Assemble cross validation folds of batch predictions into complete replicates
+##'
+##' All fields present in any replicate will be passed on to the assembly.
+##' Fields that match \code{test.subset} in length (e.g. \code{pred}) or
+##' number of rows will be assebled into combined vectors, matrices or data frames.
+##' Fields that do not match \code{test.subset} (e.g. \code{fit} or
+##' \code{error}) will be assembled into lists.
+##'
+##' @param batch List of predictions, as returned by \code{\link{batch.design}}
 ##'   or \code{\link{predict}}.
 ##' @param y True class labels. If supplied ROC curve will be calculated (only
 ##'   for binary problems).  
-##' @param subset Subset of data to design on.
 ##' @param test.subset CV folds, as returned by \code{\link{crossval.groups}}.
-##' @param verbose Logical.
+##' @param subset Subset of data to design on.
 ##' @return A combined prediction object on the same form as returned by
 ##'   \code{\link{design}} and \code{\link{predict}}.
 ##' @examples
 ##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso roc.measures, predict
+##' @seealso assemble, subtree
 ##' @export
-assemble.cv <- function(cv.pred, y=NULL, subset=TRUE, test.subset, verbose=interactive()){
-    if(!verbose) cat <- function(...) invisible()
+assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
     if(missing(test.subset)) stop("test.subset missing.")
-
-    # Load cv.pred eagerly to allow calls like
-    # assemble.cv.pred(batch.assemble(...)) to
-    # to have nice output. It would be loaded
-    # momentarily anyway.
-    cv.pred <- cv.pred
-
-    n <- nrow(test.subset)
-    nrep <- attr(test.subset, "nrep")
-    nfold <- attr(test.subset, "nfold")
-    mode <- switch(class(y), numeric="regression", integer="regression",
-                   factor="classification", outcome="survival", Surv="survival")
-    levs <- levels(cv.pred[[1]][[1]]$pred) # Not taken from y since y might be missing
-    type <- names(cv.pred[[1]])
-    save.fits <- sapply(cv.pred[[1]], function(x) !is.blank(x$save.fits))
-    do.pred   <- sapply(cv.pred[[1]], function(x) !is.blank(x$pred))
-    do.roc    <- sapply(cv.pred[[1]], function(x) !is.blank(x$auc))
-    do.vimp   <- sapply(cv.pred[[1]], function(x) !is.blank(x$vimp))
-
-    if(is.logical(subset) && length(subset) < n){
-        subset <- rep(subset, ceiling(n/length(subset)))[1:n]
-        if(n %% length(subset) != 0)
-            warning("Length of `subset` is not a multiple of number of observations.")
+    if(!identical(subset, TRUE)){
+        y <- y[subset]
+        test.subset <- test.subset[subset,,drop=FALSE]
     }
 
-    if(missing(y) && is.factor(cv.pred[[1]][[1]]$pred))
-        warning("The batch appears to be on a classification problem but no `y` was supplied.")
-
-    if(do.roc && missing(y))
-        warning("y is missing, ROC measures cannot be calculated.")
-    if(length(cv.pred) != nrep * nfold)
-        stop("test.subset does not match cv.pred.")
-
-    cat("Assembling crossvalidation folds\n")
-    #if(!missing(y) && !is.blank(y)) subset[is.na(y)] <- FALSE  <--------- Messes up survival analysis. A patient may have NA if it was censored before the time of classification
-    if(verbose) pb <- txtProgressBar(max=attr(test.subset, "nrep"), style=3)
-    res <- lapply(1:nrep, function(r){
-        preds <- lapply(type, function(my.type){
-            my.reps <- 1:nfold + (r-1)*nfold
-            if(!is.null(unlist(subtree(cv.pred, my.reps, type, "error")))){
-                # TODO: Make nicer!
-                return(subtree(cv.pred, my.reps, my.type, "error", flatten=2))
+    # Find out what fields there are and which are to be assembled
+    types <- names(batch[[1]])
+    names(types) <- types   # To preserve names of lapply and mapply
+    fields <- lapply(types, function(type){
+        my.fields <- unique(unlist(lapply(subtree(batch, T, type, flatten=1), names)))
+        sapply(my.fields, function(field){
+            f <- subtree(batch, T, type, field, flatten=2)
+            if(all(sapply(f, is.vector)) || all(sapply(f, is.factor))){
+                return(all(sapply(f, length) == apply(cv, 2, sum)))
+            } else if(all(sapply(f, is.matrix)) || all(sapply(f, is.data.frame))){
+                return(all(sapply(f, nrow) == apply(cv, 2, sum)))
+            } else {
+                return(FALSE)
             }
-            pred <- list()
-            first.pred <- cv.pred[[my.reps[1]]][[my.type]]
-            # Assemble fits
-            if("fit" %in% names(first.pred))
-                pred$fit <- subtree(cv.pred, my.reps, my.type, "fit", flatten=2)
-            # Assemble vectors and matrices, e.g. `pred`
-            for(field in c("pred", "prob", "stat", "risk")){
-                if(field %in% names(first.pred))
-                    pred[[field]] <- assemble(subtree(cv.pred, my.reps, my.type, field,
-                                              flatten=2), test.subset[,my.reps])[[1]]
-            }
-            # Misc other assembly
-            if(do.roc[my.type])
-                pred <- roc.measures(y, pred)
-            if(do.vimp[my.type])
-                pred$vimp <- sapply(cv.pred[my.reps], function(pr) pr[[my.type]]$vimp)
-            return(pred)
         })
-        names(preds) <- type
-        if(verbose) setTxtProgressBar(pb, r)
-        return(preds)
     })
-    if(verbose) close(pb)
+
+    # Assemble
+    nrep <- attr(test.subset, "nrep")
+    nfold <- attr(test.subset, "nfold")
+    res <- lapply(1:nrep, function(r){
+        rr <- 1:nfold + (r-1)*nfold
+        lapply(types, function(type){
+            mapply(function(field, do.assemble){
+                f <- subtree(batch, rr, type, field, flatten=2)
+                if(do.assemble){
+                    return(assemble(f, test.subset[,rr]))
+                } else {
+                    return(f)
+                }
+            }, names(fields[[type]]), fields[[type]], SIMPLIFY=FALSE)
+        })
+    })
     return(res)
 }
+
 
 ##' Assemble a list of values calculated with a CV or repeated holdout scheme
 ##' 

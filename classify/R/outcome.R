@@ -16,8 +16,9 @@
 ##' @export
 outcome <- function(time, event, levels, censor=NA){
     if(!is.factor(event)) event <- factor(event)
-    time[!event %in% c(base::levels(event), censor)] <- NA
-    if(!missing(levels)) event <- factor(event, levels=levels)
+    if(missing(levels)) levels <- base::levels(event)
+    time[!event %in% c(levels, censor)] <- NA
+    event <- factor(event, levels=levels)
     event[is.na(time) | event %in% censor] <- NA
     x <- data.frame(time=time, event=event)
     class(x) <- "outcome"
@@ -142,8 +143,9 @@ as.character.outcome <- function(x, ...) {
     if (is.R()) class(x) <- NULL
     else        oldClass(x) <- NULL
 
-    ifelse(is.na(x$event), sprintf("?@>%.1f", x$time),
-                           sprintf("%s@%.1f", x$event, x$time))
+    ifelse(is.na(x$time), rep("NA", length(x)),
+           ifelse(is.na(x$event), sprintf("?@>%.1f", x$time),
+                                  sprintf("%s@%.1f", x$event, x$time)))
 }
 
 
@@ -255,6 +257,7 @@ length.outcome <- nrow
 
 ##' Plot outcome vector
 ##' 
+##' @method plot outcome
 ##' @param x outcome vector.
 ##' @param y Y-values.
 ##' @param segments Whether to draw horizontal segments.
