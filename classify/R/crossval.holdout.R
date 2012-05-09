@@ -165,7 +165,7 @@ holdout.groups <- function(y=NULL, frac=.5, nrep=1, balanced=is.factor(y), subse
         valid <- FALSE                                                  # The number of columns is not a multiple of the number of folds
     } else {
         ok <- foreach(k = 1:(ncol(y)/nfold), .combine=cbind) %do% {     # Go through all sets of folds
-            apply(y[, 1:nfold + (k-1)*nfold], 1, function(r){           # and make sure every row is either
+            apply(y[, 1:nfold + (k-1)*nfold,drop=FALSE], 1, function(r){           # and make sure every row is either
                 if(all(is.na(r))) 
                    NA                                                   # all NA
                 else
@@ -320,7 +320,7 @@ assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
     if(missing(test.subset)) stop("test.subset missing.")
     if(!identical(subset, TRUE)){
         y <- y[subset]
-        test.subset <- test.subset[subset,,drop=FALSE]
+        test.subset <- test.subset[subset,]
     }
 
     # Find out what fields there are and which are to be assembled
@@ -331,9 +331,9 @@ assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
         sapply(my.fields, function(field){
             f <- subtree(batch, T, type, field, flatten=2)
             if(all(sapply(f, is.vector)) || all(sapply(f, is.factor))){
-                return(all(sapply(f, length) == apply(cv, 2, sum)))
+                return(all(sapply(f, length) == apply(test.subset, 2, sum, na.rm=TRUE)))
             } else if(all(sapply(f, is.matrix)) || all(sapply(f, is.data.frame))){
-                return(all(sapply(f, nrow) == apply(cv, 2, sum)))
+                return(all(sapply(f, nrow) == apply(test.subset, 2, sum, na.rm=TRUE)))
             } else {
                 return(FALSE)
             }
