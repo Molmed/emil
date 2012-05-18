@@ -5,21 +5,26 @@
 ##' 
 ##' A \code{\link{cforest}} is a random forest based on conditional inference
 ##' trees, using the implementation in the \code{party} package.
-##' 
 ##' These trees can be used for classification, regression or survival
 ##' analysis, but only the survival part has been properly tested.
 ##' 
+##' The parameters to \code{\link{cforest}} are set using a
+##' \code{\link{cforest_control}} object. You should read the documentation
+##' as the default values are choosen for technical reasons, not performance!
+##' Pay special attention to \code{mtry} which is set very low by default.
+##'
 ##' @param x Dataset, observations as rows and descriptors as columns.
 ##' @param y Responses.
 ##' @param formula Formula linking response to descriptors.
-##' @param ... Sent to \code{\link{cforest}}.
+##' @param ctrl.fun Which control function to use, see \code{\link{cforest_control}}.
+##' @param ... Sent to the function specified by \code{ctrl.fun}.
 ##' @return A fitted \code{\link{cforest}} model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-design.cf <- function(x, y, formula=y~., ...){
+design.cf <- function(x, y, formula=y~., ctrl.fun=cforest_unbiased, ...){
     if(is.outcome(y)) y <- as.Surv(y)
     if(any(is.na(y))) stop("`y` contains missing values")
-    list(fit = cforest(formula, data.frame(y=y, as.data.frame(x)), ...))
+    list(fit = cforest(formula, data.frame(y=y, as.data.frame(x)), controls=ctrl.fun(...)))
 }
 
 

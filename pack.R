@@ -15,6 +15,8 @@ system(sprintf("scp %s backch@mumble:projects/R_packages",
 system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:R_packages",
                rev(dir(, "classify_.*\\.tar\\.gz"))[1]))
 
+# Big change? Remember to put it in the git repo!
+
 
 #system("R CMD check classify.roxygen --use-gct") # Check package with GC-torture
 #system("R CMD INSTALL --build --clean classify.roxygen") # Build binary

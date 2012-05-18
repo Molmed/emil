@@ -157,9 +157,9 @@ as.character.outcome <- function(x, ...) {
 ##' @return A factor of events.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-factor.events <- function(x, time=max(x$time), censor.label="no event"){
+factor.events <- function(x, time=max(x$time, na.rm=TRUE), censor.label="no event"){
     events <- as.character(x$event)
-    events[x$time < time] <- NA
+    events[!is.na(x$event) & x$time > time] <- NA
     events[is.na(events)] <- censor.label
     events[is.na(x)] <- NA
     return(factor(events, levels=c(censor.label, levels(x$event))))
@@ -168,7 +168,8 @@ factor.events <- function(x, time=max(x$time), censor.label="no event"){
 
 ##' Return events in integer form
 ##' 
-##' Basically calls \code{\link{factor.events}} and converts to integer.
+##' Basically calls \code{\link{factor.events}} and converts to integer. No
+##' event is coded with 1 and the other event types with > 1.
 ##'
 ##' @param x Outcome vector.
 ##' @param ... Sent to \code{\link{factor.events}}.
