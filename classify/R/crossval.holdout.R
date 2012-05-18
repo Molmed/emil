@@ -214,6 +214,7 @@ holdout.groups <- function(y=NULL, frac=.5, nrep=1, balanced=is.factor(y), subse
     }# else {
     #    warning("Extracted subset is not a valid holdout set. Class membership is discarded.")
     #}
+    return(y)
 }
 
 
@@ -331,9 +332,9 @@ assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
         sapply(my.fields, function(field){
             f <- subtree(batch, T, type, field, flatten=2)
             if(all(sapply(f, is.vector)) || all(sapply(f, is.factor))){
-                return(all(sapply(f, length) == apply(cv, 2, sum)))
+                return(all(sapply(f, length) == apply(test.subset, 2, sum)))
             } else if(all(sapply(f, is.matrix)) || all(sapply(f, is.data.frame))){
-                return(all(sapply(f, nrow) == apply(cv, 2, sum)))
+                return(all(sapply(f, nrow) == apply(test.subset, 2, sum)))
             } else {
                 return(FALSE)
             }

@@ -1,23 +1,42 @@
 ##' @import foreach
 {}
 
-##' Design a clasifier.
+##' Overview of classification and regression methods
+##'
+##' This package includes the following algorithms and custom ones can easily
+##' be implemented by the user, see below.
 ##' 
-##' Fit a classifier to data with parameter selection using internal crossvalidation.
-##' 
-##' @param type Character, the kind of model to design. This package includes
-##'   the following algorithms and custom ones can easily be implemented by the
-##'   user, see below.
+##' Classification:
 ##'   \tabular{rl}{
 ##'     \code{lda} \tab Linear discriminant.\cr
 ##'     \code{qda} \tab Quadratic discriminant.\cr
 ##'     \code{nsc} \tab Nearest shrunken centroid as implemented by Hastie et al.\cr
 ##'     \code{rf} \tab Random forest as implemented by Breiman et al.\cr
 ##'   }
-##'   Each of these have corresponding design functions \code{design.<type>}
-##'   which takes care of the classifier specific details. To implement a custom
-##'   classifier \code{myClassifier} simply make a new design function
-##'   \code{design.myClassifier(x, y, ...)} and it will be callable from this wrapper.
+##' 
+##' Regression:
+##'   \tabular{rl}{
+##'     \code{ols} \tab Ordinary least squares regression, implemented using \code{\link{lm}}.\cr
+##'   }
+##' 
+##' Survival analysis:
+##'   \tabular{rl}{
+##'     \code{ph} \tab Proportional hazards regression (Cox).\cr
+##'     \code{crr} \tab Competing risk regression (Fine & Gray).\cr
+##'     \code{cf} \tab Random forest based on conditional inference trees.\cr
+##'     \code{spcacox} \tab Supervised PCA followed by proportional hazards regression (Bair & Tibshirani 2004).\cr
+##'   }
+##' 
+##' To implement your own method you need to design a design function named
+##' \code{design.<type>} and a predict function named \code{predict.<type>}.
+##' @name classifiers
+{}
+
+##' Design a clasifier.
+##' 
+##' Fit a classifier to data with parameter selection using internal crossvalidation.
+##' 
+##' @param type Character, the kind of model to design, see \code{\link{classifiers}}.
 ##' @param x Dataset, matrix or data.frame.
 ##' @param y Class labels, factor or other type that can be converted to factor.
 ##' @param param List with additional parameters sent to the design function. If multiple
@@ -144,8 +163,8 @@ design <- function(type, x, y, param=NULL, ncv=10, subset=TRUE, pre.trans=NULL, 
     #   The fit.class workaround is to preserve the original method's class.
     #
     fit <- do.call(paste("design", type, sep="."),
-                   c(list(pre.trans(x[subset,, drop=FALSE]),
-                          y[subset]),
+                   c(list(x = pre.trans(x[subset,, drop=FALSE]),
+                          y = y[subset]),
                      unlist(param, recursive=FALSE)))
     fit.class <- class(fit)
     fit <- c(list(descriptors = if(is.blank(colnames(x))) 1:ncol(x) else colnames(x),
@@ -410,8 +429,8 @@ vimp <- function(object, ...){
     if(length(object$responses) != 2)
         stop("Variable importance is only implemented for binary classification problems.")
 
-    if(!any(sapply(sprintf("vimp.%s", class(object)), exists)))
-        stop(sprintf("No variable importance measure is implemented for classifier type \"%s\".", class(object$fit)[1]))
+    # if(!any(sapply(sprintf("vimp.%s", class(object)), exists)))
+    #     stop(sprintf("No variable importance measure is implemented for classifier type \"%s\".", class(object$fit)[1]))
     
     UseMethod("vimp", object)
 }

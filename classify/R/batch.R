@@ -187,7 +187,7 @@ batch.design <- function(type, x, y, param=NULL, ncv=10, subset=TRUE,
 
                 # Test fit and calculate AUC and ROC confusion table if possible
                 if(!identical(my.ts, FALSE)){
-                    pred <- predict(fit, x[na.fill(my.ts, FALSE),, drop=FALSE], ...)
+                    pred <- predict(fit, fit$pre.trans(x[na.fill(my.ts, FALSE),, drop=FALSE]), ...)
                     if(do.roc && !assemble)
                         pred <- roc.measures(y[!is.na(my.ts) & my.ts], pred)
                     if(is.outcome(y) && !is.blank(tune.surv)){

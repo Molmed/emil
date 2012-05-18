@@ -56,7 +56,7 @@ design.lda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs") {
 predict.lda <- function(object, x, ...){
     log.disc.func <- sapply(object$responses, function(lev){
         -log( (2*pi)^(.5*nrow(object$S))*det(object$S)^.5 ) +
-        -.5*apply(sweep(object$pre.trans(as.matrix(x)), 2, object$mu[,lev])^2 %*% solve(object$S), 1, sum)
+        -.5*apply(sweep(as.matrix(x), 2, object$mu[,lev])^2 %*% solve(object$S), 1, sum)
     })
     return(list(pred = factor(object$responses[apply(log.disc.func, 1, function(x) c(which.max(x + log(object$pi)),NA)[1])],
                               levels=object$responses),

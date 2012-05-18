@@ -1,9 +1,8 @@
 ##' Create a vector of outcomes
 ##'
 ##' Heavily modeled after the `Surv` class in the `survival` package.
-##'
 ##' Objects of this class are internally stored as data frames but should be
-##' thought of as vectors and can be treated as such through.
+##' thought of as vectors and can be treated as such through out.
 ##' 
 ##' @param time Time points at which an event ocurred.
 ##' @param event The type of event that ocurred. \code{NA} codes for no event.
@@ -12,6 +11,7 @@
 ##' @return A vector of outcomes.
 ##' @examples
 ##' outcome(runif(15), sample(c(NA, "Mechanical failure", "Out of fuel"), 15, TRUE))
+##' @seealso factor.events, integer.events, plot.outcome.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 outcome <- function(time, event, levels, censor=NA){
@@ -149,14 +149,35 @@ as.character.outcome <- function(x, ...) {
 }
 
 
-##' Return events in integer forms
+##' Get events that has occurred up to a given time
 ##' 
 ##' @param x Outcome vector.
+##' @param time Time point to evaluate at.
+##' @param censor.label What to label the abscense of an event with.
+##' @return A factor of events.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+factor.events <- function(x, time=max(x$time), censor.label="no event"){
+    events <- as.character(x$event)
+    events[x$time < time] <- NA
+    events[is.na(events)] <- censor.label
+    events[is.na(x)] <- NA
+    return(factor(events, levels=c(censor.label, levels(x$event))))
+}
+
+
+##' Return events in integer form
+##' 
+##' Basically calls \code{\link{factor.events}} and converts to integer.
+##'
+##' @param x Outcome vector.
+##' @param ... Sent to \code{\link{factor.events}}.
 ##' @return Integer vector.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-integer.events <- function(x){
-    ifelse(is.na(x$time), NA, na.fill(as.integer(x$event), 0))
+integer.events <- function(x, ...){
+    return(as.integer(factor.events(x, ...)))
+    #ifelse(is.na(x$time), NA, na.fill(as.integer(x$event), 0))
 }
 
 
@@ -261,18 +282,24 @@ length.outcome <- nrow
 ##' @param x outcome vector.
 ##' @param y Y-values.
 ##' @param segments Whether to draw horizontal segments.
+##' @param flip Flip the plot to show time on y.
 ##' @param legendpos Position of legend, see \code{\link{legend}}. Set to NA or
 ##'   NULL to supress legend.
 ##' @param ... Sent to \code{\link{plot}}.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-plot.outcome <- function(x, y, segments=TRUE, legendpos="topright", ...){
+plot.outcome <- function(x, y, segments=TRUE, flip=FALSE, legendpos="topright", ...){
     if(missing(y)) y <- 1:length(x)
 
-    plot(x$time, y, type="n", ...)
-    if(segments) segments(0, y, x$time, y, col=integer.events(x)+1)
-    points(x$time, y, pch=20, col=integer.events(x)+1)
-
+    if(flip){
+        plot(y, x$time, type="n", ...)
+        if(segments) segments(y, 0, y, x$time, col=integer.events(x)+1)
+        points(y, x$time, pch=20, col=integer.events(x)+1)
+    } else {
+        plot(x$time, y, type="n", ...)
+        if(segments) segments(0, y, x$time, y, col=integer.events(x)+1)
+        points(x$time, y, pch=20, col=integer.events(x)+1)
+    }
     if(!is.blank(legendpos)){
         legend(legendpos, c("No event", levels(x$event)), pch=20,
                col=0:length(levels(x$event))+1)

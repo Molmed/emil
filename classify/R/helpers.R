@@ -256,3 +256,4 @@ variable.subsets <- function(vars, multi){
     names(combs) <- NULL
     return(combs)
 }
+

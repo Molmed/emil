@@ -65,7 +65,7 @@ predict.nsc <- function(object, x, ...){
     pred <- list(pred = factor(rep(NA, nrow(x)), levels=levels(object$fit$y)),
                  prob = matrix(NA, nrow(x), length(levels(object$fit$y))))
     non.na <- apply(x, 1, function(xx) !any(is.na(xx)))
-    x <- t(object$pre.trans(x[non.na,, drop=FALSE]))
+    x <- t(x[non.na,, drop=FALSE])
     # Choose the threshold with the lowest error and most shrinkage
     thres <- rev(object$fit$threshold)[which.min(rev(object$cv$error))]
     pred$pred[non.na]  <- pamr.predict(object$fit, x, type="class", threshold=thres, ...)

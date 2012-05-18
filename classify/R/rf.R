@@ -44,7 +44,7 @@ predict.rf <- function(object, x, ...){
     pred <- list(pred = factor(rep(NA, nrow(x)), levels=levels(object$y)),
                  prob = matrix(NA, nrow(x), length(levels(object$y))))
     non.na <- apply(x, 1, function(xx) !any(is.na(xx)))
-    x <- object$pre.trans(x[non.na,, drop=FALSE])
+    x <- x[non.na,, drop=FALSE]
     pred$pred[non.na]  <- NextMethod(object, newdata=x, type="response")
     pred$prob[non.na,] <- NextMethod(object, newdata=x, type="prob", subset=non.na)
     return(pred)
