@@ -149,19 +149,25 @@ as.character.outcome <- function(x, ...) {
 }
 
 
-##' Get events that has occurred up to a given time
-##' 
+##' Get events on factor form
+##'
+##' By default all events are returned regardless of when they occurred. By
+##' setting \code{time} only the events that has occured up until then will be
+##' returned, and cases with shorter follow-up times and no event will be marked
+##' as censored.
+##'
 ##' @param x Outcome vector.
 ##' @param time Time point to evaluate at.
 ##' @param censor.label What to label the abscense of an event with.
 ##' @return A factor of events.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-factor.events <- function(x, time=max(x$time, na.rm=TRUE), censor.label="no event"){
+factor.events <- function(x, time, censor.label="no event"){
     events <- as.character(x$event)
-    events[!is.na(x$event) & x$time > time] <- NA
+    if(!missing(time)) events[!is.na(x$event) & x$time > time] <- NA
     events[is.na(events)] <- censor.label
     events[is.na(x)] <- NA
+    if(!missing(time)) events[is.na(x$event) & x$time < time] <- NA
     return(factor(events, levels=c(censor.label, levels(x$event))))
 }
 
@@ -169,7 +175,7 @@ factor.events <- function(x, time=max(x$time, na.rm=TRUE), censor.label="no even
 ##' Return events in integer form
 ##' 
 ##' Basically calls \code{\link{factor.events}} and converts to integer. No
-##' event is coded with 1 and the other event types with > 1.
+##' event is coded with 0 and the other event types with > 0.
 ##'
 ##' @param x Outcome vector.
 ##' @param ... Sent to \code{\link{factor.events}}.
@@ -177,7 +183,7 @@ factor.events <- function(x, time=max(x$time, na.rm=TRUE), censor.label="no even
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 integer.events <- function(x, ...){
-    return(as.integer(factor.events(x, ...)))
+    return(as.integer(factor.events(x, ...))-1)
     #ifelse(is.na(x$time), NA, na.fill(as.integer(x$event), 0))
 }
 

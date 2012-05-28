@@ -16,6 +16,9 @@ system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:R_packages",
                rev(dir(, "classify_.*\\.tar\\.gz"))[1]))
 
 # Big change? Remember to put it in the git repo!
+system("git status")
+system("git commit -a")
+system("git push")
 
 
 #system("R CMD check classify.roxygen --use-gct") # Check package with GC-torture

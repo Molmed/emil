@@ -3,8 +3,8 @@
 ##' \tabular{ll}{
 ##' Package: \tab classify\cr
 ##' Type: \tab Package\cr
-##' Version: \tab 0.6-18\cr
-##' Date: \tab 2012-05-18\cr
+##' Version: \tab 0.6-20\cr
+##' Date: \tab 2012-05-28\cr
 ##' License: \tab GPL\cr
 ##' LazyLoad: \tab yes\cr
 ##' LazyData: \tab yes\cr

@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: classify
 Type: Package
 Title: Classification toolbox
-Version: 0.6-18
-Date: 2012-05-18
+Version: 0.6-20
+Date: 2012-05-28
 Author: Christofer Backlin, Eva Freyhult, Mats Gustavsson
 Maintainer: Christofer Backlin <christofers.backlin@medsci.uu.se>
 Description: A unified package for designing and evaluating classifiers,
