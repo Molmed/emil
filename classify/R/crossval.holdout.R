@@ -389,6 +389,7 @@ assemble <- function(x, test.subset){
                 values[[i]][test.subset[, k], ] <- x[[k]]
             }
         }
+        if(attr(test.subset, "nrep") == 1) values <- values[[1]]
     } else {
         # Vector assembly
         if(inherits(test.subset, "crossval")){

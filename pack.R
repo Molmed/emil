@@ -1,5 +1,5 @@
-source("update_description.R")
 cd("~/Documents/R/egna paket/classify")
+source("update_description.R")
 library("roxygen2")
 #options(useFancyQuotes = FALSE)
 
