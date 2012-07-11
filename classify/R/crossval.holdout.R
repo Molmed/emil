@@ -45,23 +45,28 @@ expand.classes <- function(y, balanced=TRUE){
 ##'   which that are to be held out). Observations no in \code{subset} are coded
 ##'   as \code{NA} in the returned matrix.
 ##' @param include.na Whether to let the \code{NA} values of \code{y} be part of
-##'   the crossvalidatiton set. Otherwise they are set to \code{FALSE} in all
+##'   the crossvalidatiton set. Otherwise they are set to \code{NA} in all
 ##'   folds.
 ##' @return A list of numeric vectors containing the indices of the objects in
 ##'   each fold.
 ##' @examples
 ##' y <- factor(runif(60) >= .5)
 ##' cv <- crossval.groups(y)
-##' image(cv)
 ##' inner.cv <- lapply(as.data.frame(cv), function(x) crossval.groups(y, subset=!x))
+##' layout(t(1:2)); image(cv, main="Outer CV"); image(inner.cv[[5]], main="Inner CV, fold #5")
 ##' @seealso crossval, expand.smaller.class
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-crossval.groups <- function(y, nfold=10, nrep=1, balanced=is.factor(y), subset=TRUE, include.na=FALSE){
+crossval.groups <- function(y, nfold=5, nrep=1, balanced=is.factor(y), subset=TRUE, include.na=FALSE){
     n <- if(length(y) == 1) y else length(y)
     if(n < nfold) stop("Number of objects cannot be smaller than number of groups")
-    if(is.outcome(y)) y <- factor(integer.events(y))
-    if(include.na && is.factor(y)){
+    if(is.outcome(y)) y <- factor.events(y)
+
+    # Convert subset to logical vector
+    subset <- (1:n) %in% (1:n)[subset]
+    if(!include.na){
+        subset[is.na(y)] <- FALSE
+    } else if(is.factor(y)){
         y <- factor(y, levels=c(levels(y), "NA-proxy-level"))
         y[is.na(y)] <- "NA-proxy-level"
     }
@@ -80,9 +85,9 @@ crossval.groups <- function(y, nfold=10, nrep=1, balanced=is.factor(y), subset=T
         idx <- matrix(c(idx, rep(NA, ceiling(length(idx)/nfold)*nfold-length(idx))), ncol=nfold, byrow=TRUE)
         apply(idx, 2, function(i) 1:n %in% i)
     }
-    if(!include.na && !is.factor(y)) folds[is.na(y),] <- FALSE
+    if(!include.na && !is.factor(y)) folds[is.na(y),] <- NA
     # Make observations not in the subset equal to NA
-    folds[-(1:n)[subset],] <- NA
+    folds[!subset,] <- NA
 
     class(folds) <- c("crossval", "matrix")
     dimnames(folds) <- list(NULL, `rep:fold`=paste(rep(1:nrep, each=nfold), rep(1:nfold, nrep), sep=":"))
@@ -253,6 +258,26 @@ as.data.frame.holdout <- function(x, ..., save.class=FALSE){
         class(y) <- c("holdout", "data.frame")
     }
     return(y)
+}
+
+
+##' Convert crossval, matrix or data frame to holdout set
+##' 
+##' @param x Object
+##' @return holdout matrix or data frame.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+as.holdout <- function(x){
+    if(inherits(x, "crossval") ||
+            (is.matrix(x) && is.logical(x)) ||
+            (is.data.frame(x) && all(sapply(x, is.logical)))){
+        class(x) <- c("holdout", setdiff(class(x), "crossval"))
+        attr(x, "nrep") <- ncol(x)
+        attr(x, "nfold") <- NULL
+        return(x)
+    } else {
+        stop("Unsupported data type.")
+    }
 }
 
 

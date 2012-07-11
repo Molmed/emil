@@ -217,15 +217,19 @@ batch.design <- function(type, x, y, param=NULL, ncv=10, subset=TRUE,
             })
         }
         names(res.type) <- type
-        cat(".")
 
         # Return
-        if(is.blank(save.prefix)) return(res.type)
-        save(ts.i, res.type, file=my.file)
-        cat(sprintf("%s completed.\n", my.file))
-        return(NULL)
+        if(is.blank(save.prefix)){
+            cat(".")
+            return(res.type)
+        } else {
+            save(ts.i, res.type, file=my.file)
+            cat(sprintf("%s completed.\n", my.file))
+            return(NULL)
+        }
     }
     if(!is.blank(save.prefix)) return(invisible())
+    cat("\n")
     if(assemble){
         try(res <- assemble.cv(res, y, subset=subset, test.subset=test.subset))
         if(do.roc){

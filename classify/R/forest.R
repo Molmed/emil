@@ -22,7 +22,11 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 design.cf <- function(x, y, formula=y~., ctrl.fun=cforest_unbiased, ...){
-    if(is.outcome(y)) y <- as.Surv(y)
+    if(is.outcome(y)){
+        if(any(table(y$event)[-1] > 0))
+            stop("cforest cannot handle competing events.")
+        y <- as.Surv(y)
+    }
     if(any(is.na(y))) stop("`y` contains missing values")
     list(fit = cforest(formula, data.frame(y=y, as.data.frame(x)), controls=ctrl.fun(...)))
 }

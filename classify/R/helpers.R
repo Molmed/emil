@@ -26,22 +26,32 @@ is.blank <- function(x, false.triggers=FALSE){
 }
 
 
-##' Replace NA with other value
+##' Replace certain value with other value
 ##' 
 ##' @param x Vector, matrix or data frame.
-##' @param fill The value to replace \code{NA} with.
+##' @param value Value to be relaced.
+##' @param replacement What to replace \code{value} with.
 ##' @return \code{x} but with all \code{NA} replaced with \code{fill}.
 ##' @examples
-##' a <- matrix(0, 3, 3)
+##' a <- matrix(1:9, 3, 3)
+##' fill(a, 3, 1)
 ##' a[2] <- NA
-##' na.fill(a, 1)
-##' is.blank(NULL)
+##' na.fill(a, 17)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-na.fill <- function(x, fill){
-    x[is.na(x)] <- fill
+fill <- function(x, value, replacement){
+    x[if(is.na(value)) is.na(x) else
+      if(is.nan(value)) is.nan(x) else
+          x == value] <- replacement
+    x
+}
+##' @rdname fill
+##' @export
+na.fill <- function(x, replacement){
+    x[is.na(x)] <- replacement
     return(x)
 }
+
 
 
 ##' Test if a save prefix is valid
