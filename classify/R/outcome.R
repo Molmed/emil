@@ -6,21 +6,31 @@
 ##' 
 ##' @param time Time points at which an event ocurred.
 ##' @param event The type of event that ocurred. \code{NA} codes for no event.
-##' @param levels Which levels of event to keep.
+##' @param levels Which levels of event to keep. Defaults to all unique
+##'   values of \code{event}.
 ##' @param censor What values of event should be considered censoring.
+##'   Defaults to \code{NA} and all values in \code{event} not present in
+##'   \code{levels}.
 ##' @return A vector of outcomes.
 ##' @examples
 ##' outcome(runif(15), sample(c(NA, "Mechanical failure", "Out of fuel"), 15, TRUE))
 ##' @seealso factor.events, integer.events, plot.outcome.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-outcome <- function(time, event, levels, censor=NA){
-    if(!is.factor(event)) event <- factor(event)
-    if(missing(levels)) levels <- base::levels(event)
+outcome <- function(time, event, levels, censor){
+    if(missing(censor)){
+        if(missing(levels)){
+            censor <- NA
+        } else {
+            censor <- unique(c(NA, setdiff(as.character(unique(event)), levels)))
+        }
+    }
+    if(missing(levels)) levels <- setdiff(
+        if(is.factor(event)) base::levels(event) else unique(event),
+        censor)
     time[!event %in% c(levels, censor)] <- NA
-    event <- factor(event, levels=levels)
-    event[is.na(time) | event %in% censor] <- NA
-    x <- data.frame(time=time, event=event)
+    event[is.na(time)] <- NA
+    x <- data.frame(time=time, event=factor(event, levels=levels))
     class(x) <- "outcome"
     return(x)
 }
@@ -121,11 +131,11 @@ as.Surv.Surv <- function(x, ...) identity(x)
 as.Surv.outcome <- function(x, main=1, censor=NA, ...){
     if(is.numeric(main)) main <- levels(x$event)[main]
     if(is.numeric(censor)) censor <- levels(x$event)[censor]
-    new.event <- c(NA, FALSE)[1 + (x$event %in% censor)]
-    new.event[x$event %in% main] <- TRUE
+    new.event <- c(NA, 0:1)[1+(!is.na(x$time) & x$event %in% c(main, censor)) + (x$event %in% main)]
     x <- as.matrix(x)
     x[is.na(new.event),1] <- NA
     x[,2] <- new.event
+    colnames(x)[2] <- "status"
     attr(x, "type") <- "right"
     class(x) <- "Surv"
     return(x)

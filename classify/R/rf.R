@@ -19,7 +19,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.rf <- function(x, y, importance=TRUE, ...){
+design.rf <- function(x, y, importance=FALSE, ...){
     idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
     x <- x[idx,, drop=FALSE]
     y <- y[idx]
@@ -30,7 +30,7 @@ design.rf <- function(x, y, importance=TRUE, ...){
 ##' Prediction using random forest.
 ##'
 ##' @method predict rf
-##' @param object Fitted classifier.
+##' @param object Fitted model.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored
 ##' @return TODO
@@ -41,12 +41,17 @@ design.rf <- function(x, y, importance=TRUE, ...){
 ##' @export
 predict.rf <- function(object, x, ...){
     # TODO: Fix missing values
-    pred <- list(pred = factor(rep(NA, nrow(x)), levels=levels(object$y)),
-                 prob = matrix(NA, nrow(x), length(levels(object$y))))
     non.na <- apply(x, 1, function(xx) !any(is.na(xx)))
     x <- x[non.na,, drop=FALSE]
-    pred$pred[non.na]  <- NextMethod(object, newdata=x, type="response")
-    pred$prob[non.na,] <- NextMethod(object, newdata=x, type="prob", subset=non.na)
+    if(is.factor(object$y)){
+        pred <- list(pred = factor(rep(NA, nrow(x)), levels=levels(object$y)),
+                     prob = matrix(NA, nrow(x), length(levels(object$y))))
+        pred$pred[non.na]  <- NextMethod(object, newdata=x, type="response")
+        pred$prob[non.na,] <- NextMethod(object, newdata=x, type="prob", subset=non.na)
+    } else {
+        pred <- list(pred = rep(NA, nrow(x)))
+        pred$pred[non.na] <- NextMethod(object, newdata=x, type="response")
+    }
     return(pred)
 }
 
@@ -68,12 +73,18 @@ predict.rf <- function(object, x, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 vimp.rf <- function(object, type=1, ...){
-    perm.oob <- "MeanDecreaseAccuracy" %in% colnames(object$importance)
-    if(missing(type) && !perm.oob){
-        type <- 2
-        warning("Permutation test was not performed during classifier fitting. Using node impurity as importance measure. If this is really what you want you should specify it explicitly.")
-    }
-    imp <- object$importance[, switch(type, "MeanDecreaseAccuracy", "MeanDecreaseGini")]
-    return(imp)
+    object$importance
+    #if(is.factor(object$y)){
+    #    perm.oob <- "MeanDecreaseAccuracy" %in% colnames(object$importance)
+    #    if(missing(type) && !perm.oob){
+    #        type <- 2
+    #        warning("Permutation test was not performed during classifier fitting. Using node impurity as importance measure. If this is really what you want you should specify it explicitly.")
+    #    }
+    #    imp <- object$importance[, switch(type, "MeanDecreaseAccuracy", "MeanDecreaseGini")]
+    #} else {
+    #    # TODO: Replace this dirty hack with something nicer
+    #    imp <- object$importance[,2]
+    #}
+    #return(imp)
 }
 

@@ -115,43 +115,37 @@ batch.design <- function(type, x, y, param=NULL, ncv=10, subset=TRUE,
     }
 
     # Variable importance
-    if(is.factor(y)){
-        if(length(levels(y)) > 2){
-            if(any(do.vimp)) cat("Variable importance is only implemented for binary classification problems.\n")
-            do.vimp <- sapply(type, function(my.type) FALSE)
-        } else {
-            alert.missing <- !missing(do.vimp)
-            has.vimp <- sapply(type, function(x) exists(sprintf("vimp.%s", x)))
-            if(is.null(names(do.vimp))){
-                if(!length(do.vimp) %in% c(1, length(type))){
-                    cat("NOTE: Length of `do.vimp` does not match length of `type`.\n")
-                }
-                do.vimp <- rep(do.vimp, ceiling(length(type)/length(do.vimp)))[1:length(type)]
-                names(do.vimp) <- type
-            } else {
-                missing.vimp <- type[!type %in% names(do.vimp)]
-                do.vimp[missing.vimp] <- has.vimp[missing.vimp]
-                if(any(!names(do.vimp) %in% type)){
-                    cat(sprintf("NOTE: Types %s in `do.vimp` are not in `type` and will be ignored.\n",
-                        paste("`", names(do.vimp)[!names(do.vimp) %in% type], "`", sep="", collapse=", ")))
-                }
-                do.vimp <- do.vimp[type]
-            }
-            if(alert.missing && any(do.vimp & !has.vimp)){
-                cat(sprintf("NOTE: Variable importance will NOT be calculated for %s, no method found.\n",
-                            paste(sprintf("`%s`", type[do.vimp & !has.vimp]), collapse=", ")))
-            }
-            do.vimp <- do.vimp & has.vimp
+    if(is.factor(y) && length(levels(y)) > 2){
+        if(any(do.vimp)) cat("Variable importance is only implemented for binary classification problems, this might mess up.\n")
+        #do.vimp <- sapply(type, function(my.type) FALSE)
+    }
+    alert.missing <- !missing(do.vimp)
+    has.vimp <- sapply(type, function(x) exists(sprintf("vimp.%s", x)))
+    if(is.null(names(do.vimp))){
+        if(!length(do.vimp) %in% c(1, length(type))){
+            cat("NOTE: Length of `do.vimp` does not match length of `type`.\n")
         }
-        if(any(do.vimp)){
-            cat(sprintf("Variable importance will be calculated for %s.\n",
-                paste(sprintf("`%s`", type[!is.na(do.vimp) & do.vimp]), collapse=", ")))
-        } else {
-            cat("Variable importance will not be calculated.\n")
-        }
-    } else {
-        do.vimp <- rep(FALSE, length(type))
+        do.vimp <- rep(do.vimp, ceiling(length(type)/length(do.vimp)))[1:length(type)]
         names(do.vimp) <- type
+    } else {
+        missing.vimp <- type[!type %in% names(do.vimp)]
+        do.vimp[missing.vimp] <- has.vimp[missing.vimp]
+        if(any(!names(do.vimp) %in% type)){
+            cat(sprintf("NOTE: Types %s in `do.vimp` are not in `type` and will be ignored.\n",
+                paste("`", names(do.vimp)[!names(do.vimp) %in% type], "`", sep="", collapse=", ")))
+        }
+        do.vimp <- do.vimp[type]
+    }
+    if(alert.missing && any(do.vimp & !has.vimp)){
+        cat(sprintf("NOTE: Variable importance will NOT be calculated for %s, no method found.\n",
+                    paste(sprintf("`%s`", type[do.vimp & !has.vimp]), collapse=", ")))
+    }
+    do.vimp <- do.vimp & has.vimp
+    if(any(do.vimp)){
+        cat(sprintf("Variable importance will be calculated for %s.\n",
+            paste(sprintf("`%s`", type[!is.na(do.vimp) & do.vimp]), collapse=", ")))
+    } else {
+        cat("Variable importance will not be calculated.\n")
     }
 
     # ROC-measures
@@ -234,7 +228,7 @@ batch.design <- function(type, x, y, param=NULL, ncv=10, subset=TRUE,
         try(res <- assemble.cv(res, y, subset=subset, test.subset=test.subset))
         if(do.roc){
             cat("Calculating ROC-measures.\n")
-            res <- roc.measures(y, res)
+            try(res <- roc.measures(y, res))
         }
     }
     cat("\n")

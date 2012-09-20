@@ -427,7 +427,7 @@ specificity <- function(pred, class=2, fnr){
 ##' @export
 vimp <- function(object, ...){
     if(length(object$responses) != 2)
-        stop("Variable importance is only implemented for binary classification problems.")
+        warning("Variable importance is only implemented for binary classification problems. This might mess up.")
 
     # if(!any(sapply(sprintf("vimp.%s", class(object)), exists)))
     #     stop(sprintf("No variable importance measure is implemented for classifier type \"%s\".", class(object$fit)[1]))

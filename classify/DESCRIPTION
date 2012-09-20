@@ -2,13 +2,13 @@ Encoding: UTF-8
 Package: classify
 Type: Package
 Title: Classification toolbox
-Version: 0.6-25
-Date: 2012-07-11
+Version: 0.6-33
+Date: 2012-09-18
 Author: Christofer Backlin, Eva Freyhult, Mats Gustavsson
 Maintainer: Christofer Backlin <christofers.backlin@medsci.uu.se>
 Description: A unified package for designing and evaluating classifiers,
   regression models and survival analysis models.
-Depends: cmprsk, foreach, lattice, pamr, party, randomForest, superpc, utils
+Depends: cmprsk, foreach, glmnet, lattice, pamr, party, randomForest, superpc, utils
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes
