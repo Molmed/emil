@@ -5,6 +5,7 @@ library("roxygen2")
 
 roxygen.update.description()
 roxygenize("classify", "classify.roxygen", unlink.target = TRUE)
+system("rm -rf classify.roxygen/inst")
 system("R CMD check classify.roxygen")
 
 system("R CMD INSTALL classify.roxygen")

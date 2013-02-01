@@ -1,4 +1,5 @@
 ##' @import cmprsk
+##' @import survival
 {}
 
 ##' Dataset transforms and varible selection
@@ -79,11 +80,11 @@ coxscore.selection <- function(n, method=c("coxph", "crr")){
         if(method == "coxph") y <- as.Surv(y)
         score <- apply(x, 2, switch(method,
             coxph = function(xx){
-                with(summary(coxph(y ~ xx)),
+                with(summary(survival::coxph(y ~ xx)),
                      abs(coefficients[1]/coefficients[4]))
             },
             crr = function(xx){
-                with(summary(crr(y$time, integer.events(y$event), xx)),
+                with(summary(coxph::crr(y$time, integer.events(y$event), xx)),
                      coef[1] / coef[3])
             }
         ))

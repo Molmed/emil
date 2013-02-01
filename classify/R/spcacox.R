@@ -23,8 +23,8 @@ design.spcacox <- function(x, y, verbose=FALSE){
 
     training.data <- list(x = x, y = y[,1], censoring.status = 1-y[,2])
     if(!verbose) sink("/dev/null")
-    f1 <- superpc.train(training.data, type = "survival")
-    f2 <- superpc.cv(f1, training.data, n.components=10)
+    f1 <- superpc::superpc.train(training.data, type = "survival")
+    f2 <- superpc::superpc.cv(f1, training.data, n.components=10)
     if(!verbose) sink()
 
     # Get the best threshold and number of principal components
@@ -41,7 +41,7 @@ design.spcacox <- function(x, y, verbose=FALSE){
     cur.v0 <- scale(t(x) %*% x.sml.svd$u, center=FALSE, scale=scal * x.sml.svd$d)
 
     # Fit Cox model
-    coxfit <- coxph(y ~ ., as.data.frame(cur.v0))
+    coxfit <- survival::coxph(y ~ ., as.data.frame(cur.v0))
 
     return(list(train=f1, cv=f2, n.components=n.components, threshold=threshold,
                 which.features=which.features, svd=x.sml.svd, scal=scal, coxfit=coxfit))

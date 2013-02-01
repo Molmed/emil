@@ -23,7 +23,7 @@ design.rf <- function(x, y, importance=FALSE, ...){
     idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
     x <- x[idx,, drop=FALSE]
     y <- y[idx]
-    randomForest(x, y, ..., importance=importance)
+    randomForest::randomForest(x, y, ..., importance=importance)
 }
 
 

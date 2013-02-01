@@ -21,14 +21,14 @@
 ##' @return A fitted \code{\link{cforest}} model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-design.cf <- function(x, y, formula=y~., ctrl.fun=cforest_unbiased, ...){
+design.cf <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
     if(is.outcome(y)){
         if(any(table(y$event)[-1] > 0))
             stop("cforest cannot handle competing events.")
         y <- as.Surv(y)
     }
     if(any(is.na(y))) stop("`y` contains missing values")
-    list(fit = cforest(formula, data.frame(y=y, as.data.frame(x)), controls=ctrl.fun(...)))
+    list(fit = party::cforest(formula, data.frame(y=y, as.data.frame(x)), controls=ctrl.fun(...)))
 }
 
 
@@ -46,7 +46,7 @@ design.cf <- function(x, y, formula=y~., ctrl.fun=cforest_unbiased, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 predict.cf <- function(object, x, at, ...){
-    preds <- treeresponse(object$fit, newdata=as.data.frame(x), ...)
+    preds <- party::treeresponse(object$fit, newdata=as.data.frame(x), ...)
     if (missing(at)) {
         risk <- sapply(preds, function(p) {
             1 - p$surv[length(p$surv)]

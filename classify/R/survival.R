@@ -1,3 +1,6 @@
+##' @import survival
+{}
+
 ##' Risk score split point tuning for survival analysis
 ##' 
 ##' Given a set of observations with estimated risks of an event occurring, this
@@ -57,7 +60,7 @@ tune.survival <- function(x, y, method=c("gray", "logrank"), reject=FALSE,
     method <- match.arg(method)
     tune.func <- switch(method,
         gray = function(g) log10(cuminc.test(time, event, g)),
-        logrank = function(g) p.value(survdiff(Surv(time, event) ~ g))
+        logrank = function(g) p.value(survival::survdiff(Surv(time, event) ~ g))
     )
 
     # Calculate support surface
@@ -116,7 +119,7 @@ tune.survival <- function(x, y, method=c("gray", "logrank"), reject=FALSE,
 ##' gg <- factor(sample(1:3,100,replace=TRUE),1:3,c('a','b','c'))
 ##' cc <- sample(0:2,100,replace=TRUE)
 ##' strt <- sample(1:2,100,replace=TRUE)
-##' print(cuminc(ss,cc,gg,strt))
+##' print(cmprsk::cuminc(ss,cc,gg,strt))
 ##' print(cuminc.test(ss,cc,gg,strt))
 ##' @author Eva Freyhult
 ##' @export

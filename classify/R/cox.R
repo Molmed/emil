@@ -1,4 +1,5 @@
 ##' @import cmprsk
+##' @import survival
 {}
 
 ##' Design of Cox proportional hazards model
@@ -13,7 +14,7 @@
 ##' @export
 design.ph <- function(x, y, formula=y~., ...) {
     y <- as.Surv(y)
-    return(coxph(formula, as.data.frame(x), ...))
+    return(survival::coxph(formula, as.data.frame(x), ...))
 }
 
 
@@ -43,7 +44,7 @@ predict.ph <- function(object, x, ...){
 ##' @seealso design, design.ph
 ##' @export
 design.crr <- function(x, y, ...) {
-    return(crr(y$time, integer.events(y), x, ...))
+    return(cmprsk::crr(y$time, integer.events(y), x, ...))
 }
 
 

@@ -33,8 +33,8 @@ design.nsc <- function(x, y, low.mem=FALSE, ...){
     }
     tryCatch({
         sink("/dev/null")
-        fit <- pamr.train(p.data, ...)
-        cv <- pamr.cv(fit, p.data)
+        fit <- pamr::pamr.train(p.data, ...)
+        cv <- pamr::pamr.cv(fit, p.data)
         options(warn = warn.status)
         sink()
         if(low.mem){
@@ -68,8 +68,8 @@ predict.nsc <- function(object, x, ...){
     x <- t(x[non.na,, drop=FALSE])
     # Choose the threshold with the lowest error and most shrinkage
     thres <- rev(object$fit$threshold)[which.min(rev(object$cv$error))]
-    pred$pred[non.na]  <- pamr.predict(object$fit, x, type="class", threshold=thres, ...)
-    pred$prob[non.na,] <- pamr.predict(object$fit, x, type="posterior", threshold=thres, ...)
+    pred$pred[non.na]  <- pamr::pamr.predict(object$fit, x, type="class", threshold=thres, ...)
+    pred$prob[non.na,] <- pamr::pamr.predict(object$fit, x, type="posterior", threshold=thres, ...)
     return(pred)
 }
 
@@ -86,7 +86,7 @@ predict.nsc <- function(object, x, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 vimp.nsc <- function(object, ...){
-    cen <- abs(pamr.predict(object$fit, , object$fit$threshold[which.min(object$cv$error)],
+    cen <- abs(pamr::pamr.predict(object$fit, , object$fit$threshold[which.min(object$cv$error)],
                             type="centroid")[,1] - object$fit$centroid.overall)
     names(cen) <- object$descriptors
     return(cen)

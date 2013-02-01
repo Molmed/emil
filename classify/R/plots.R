@@ -1,3 +1,4 @@
+##' @import foreach
 ##' @import lattice 
 {}
 
@@ -106,7 +107,7 @@ rocplot <- function(pred, class=2, main="Empirical ROC curve", key, col, lty=1, 
         if(!is.list(pred)) stop("Malformed")
         pred <- unlist(pred, recursive=FALSE)
     }
-    plot.data <- foreach(i=1:length(pred), pr=pred, .combine=rbind) %do% {
+    plot.data <- foreach::foreach(i=1:length(pred), pr=pred, .combine=rbind) %do% {
         if(class==1) pr$conf <- rev(pr$conf)
         with(pr, data.frame(id=i,
             fp = conf[[4]]/(conf[[2]]+conf[[4]]),
@@ -117,7 +118,7 @@ rocplot <- function(pred, class=2, main="Empirical ROC curve", key, col, lty=1, 
         col <- 1
     } else {
         if(missing(key)){
-            key <- simpleKey(sapply(unique(names(pred)), function(my.type){
+            key <- lattice::simpleKey(sapply(unique(names(pred)), function(my.type){
                 sprintf("%s, %sAUC = %.3g",
                     toupper(my.type),
                     if(sum(names(pred) == my.type) > 1) "mean " else "",
@@ -128,7 +129,7 @@ rocplot <- function(pred, class=2, main="Empirical ROC curve", key, col, lty=1, 
             col <- key$lines$col[(1:length(pred)-1) %% length(key$lines$col) + 1]
         }
     }
-    xyplot(tp ~ fp, plot.data, groups=id, type="l", 
+    lattice::xyplot(tp ~ fp, plot.data, groups=id, type="l", 
         key = key,
         #col = c("#ff0000", "#ffff00", "#00ff00", "#00ffff", "#0000ff", "#ff00ff"),
         col  = col,
@@ -180,16 +181,16 @@ vimpplot <- function(batch, style, ...){
             })))
         }))
         if(style < 3){
-            return(bwplot(descriptor ~ imp | type, plot.data, scales=list(x="free"),
+            return(lattice::bwplot(descriptor ~ imp | type, plot.data, scales=list(x="free"),
                           panel=if(style==1) panel.bwplot else panel.violin, ...))
         } else {
             plot.data <- transform(plot.data, imp=imp/sapply(split(imp, type), mean)[type])
-            return(stripplot(descriptor ~ imp, plot.data, groups=type, jitter=.8,
+            return(lattice::stripplot(descriptor ~ imp, plot.data, groups=type, jitter=.8,
                              auto.key=TRUE, panel=function(...){
-                                 panel.rect(-1,                   2*1:floor(n.desc/2)-.5,
-                                            2*max(plot.data$imp), 2*1:floor(n.desc/2) + .5,
-                                            col="#eeeeee", border=NA)
-                                 panel.stripplot(...)
+                                 lattice::panel.rect(-1, 2*1:floor(n.desc/2)-.5,
+                                     2*max(plot.data$imp), 2*1:floor(n.desc/2) + .5,
+                                     col="#eeeeee", border=NA)
+                                 lattice::panel.stripplot(...)
                              }, ...))
         }
     } else if(style == 4){
@@ -201,7 +202,7 @@ vimpplot <- function(batch, style, ...){
             })))
         }))
         plot.data <- transform(plot.data, imp=imp/sapply(split(imp, type), mean)[type])
-        return(barchart(descriptor ~ imp, plot.data, groups=type, auto.key=TRUE,
+        return(lattice::barchart(descriptor ~ imp, plot.data, groups=type, auto.key=TRUE,
                         xlim=c(0, 1.1*max(plot.data$imp)), ...))
     }
 }

@@ -22,7 +22,7 @@ design.gn <- function(x, y, family, ...){
         stop("Could not auto detect glmnet family, see `?design.glmnet`.")
     }
     if(inherits(y, "outcome")) y <- as.Surv(y)
-    cv.glmnet(x, y, family=family, ...)
+    glmnet::cv.glmnet(x, y, family=family, ...)
 }
 
 
@@ -31,6 +31,7 @@ design.gn <- function(x, y, family, ...){
 ##' @method predict gn
 ##' @param object Fitted model.
 ##' @param x New data to be predicted.
+##' @param ... Sent to \code{\link{predict.glmnet}}.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export

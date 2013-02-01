@@ -1,6 +1,3 @@
-##' @import utils
-{}
-
 ##' Wrapper for several methods to test if a variable is empty
 ##'
 ##' This is mainly an internal function but as other dependent packages also

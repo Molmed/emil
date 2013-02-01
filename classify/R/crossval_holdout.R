@@ -1,7 +1,6 @@
 ##' @import foreach
 {}
 
-
 ##' Expand classes to same size
 ##'
 ##' Add duplicates of observations in smaller classes to make all class sizes
@@ -20,7 +19,7 @@
 expand.classes <- function(y, balanced=TRUE){
     if(!is.factor(y)) y <- factor(y)
     n <- max(table(y))
-    sort(foreach(idx=split(1:length(y), y), .combine=c) %do% {
+    sort(foreach::foreach(idx=split(1:length(y), y), .combine=c) %do% {
         if(balanced) {
             c(idx, rep(sample(idx), length.out=n-length(idx)))
         } else {
@@ -71,12 +70,12 @@ crossval.groups <- function(y, nfold=5, nrep=1, balanced=is.factor(y), subset=TR
         y[is.na(y)] <- "NA-proxy-level"
     }
     
-    folds <- foreach(r = 1:nrep, .combine=cbind) %do% {
+    folds <- foreach::foreach(r = 1:nrep, .combine=cbind) %do% {
         idx <- if(!balanced){
             sample((1:n)[subset])
         } else {
             levs <- if(is.factor(y)) levels(y) else unique(y)
-            foreach(lev=levs[order(table(y[subset]))], .combine=c) %do% {
+            foreach::foreach(lev=levs[order(table(y[subset]))], .combine=c) %do% {
                 w <- which(y == lev)
                 w <- w[w %in% (1:n)[subset]]
                 if(length(w) < 2) w else sample(w)
@@ -124,10 +123,10 @@ holdout.groups <- function(y=NULL, frac=.5, nrep=1, balanced=is.factor(y), subse
         list((1:n)[subset])
     }
     class.ho <- round(frac*sapply(class.idx, length))
-    ho <- as.matrix(foreach(r = 1:nrep, .combine=cbind) %do% {
+    ho <- as.matrix(foreach::foreach(r = 1:nrep, .combine=cbind) %do% {
         idx <- rep(NA, n)
         idx[subset] <- FALSE
-        foreach(ci = class.idx, c.ho = class.ho) %do% {
+        foreach::foreach(ci = class.idx, c.ho = class.ho) %do% {
             idx[sample(ci, c.ho)] <- TRUE
         }
         return(idx)
@@ -169,7 +168,7 @@ holdout.groups <- function(y=NULL, frac=.5, nrep=1, balanced=is.factor(y), subse
     if(ncol(y) %% nfold != 0){
         valid <- FALSE                                                  # The number of columns is not a multiple of the number of folds
     } else {
-        ok <- foreach(k = 1:(ncol(y)/nfold), .combine=cbind) %do% {     # Go through all sets of folds
+        ok <- foreach::foreach(k = 1:(ncol(y)/nfold), .combine=cbind) %do% {     # Go through all sets of folds
             apply(y[, 1:nfold + (k-1)*nfold,drop=FALSE], 1, function(r){           # and make sure every row is either
                 if(all(is.na(r))) 
                    NA                                                   # all NA
