@@ -1,6 +1,6 @@
-/classify.roxygen
-/classify.roxygen.Rcheck
-classify_*.tar.gz
+/classifyBase.roxygen
+/classifyBase.roxygen.Rcheck
+classifyBase_*.tar.gz
 *.Rapp.history
 *~
 *.swp

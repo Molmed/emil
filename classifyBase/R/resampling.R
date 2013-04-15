@@ -1,38 +1,7 @@
 ##' @import foreach
 {}
 
-##' Expand classes to same size
-##'
-##' Add duplicates of observations in smaller classes to make all class sizes
-##' equal.
-##'
-##' @param y Class membership vector.
-##' @param balanced Logical, whether to make sure all objects within a class occur
-##'   as closely as possible to an equal number of counts.
-##' @return A vector of indices of \code{y} which gives equal class sizes.
-##' @examples
-##' y <- runif(20) < .7
-##' table(y)
-##' table(y[expand.classes(y)])
-##' @author Christofer Backlin
-##' @export
-expand.classes <- function(y, balanced=TRUE){
-    if(!is.factor(y)) y <- factor(y)
-    n <- max(table(y))
-    sort(foreach::foreach(idx=split(1:length(y), y), .combine=c) %do% {
-        if(balanced) {
-            c(idx, rep(sample(idx), length.out=n-length(idx)))
-        } else {
-            c(idx, sample(idx, n-length(idx), replace=TRUE))
-        }
-    })
-}
-
-
 ##' Generate groups for crossvalidation
-##'
-##' This function is correct and working perfectly but should be tidied up
-##' internally when I get the time.
 ##'
 ##' @param y Objects to be divided into groups. Can either be supplied as the
 ##'   data itself or as a scalar which is interpreted as number of objects.
@@ -43,56 +12,48 @@ expand.classes <- function(y, balanced=TRUE){
 ##' @param subset Which objects in \code{y} that are to be selected from (and
 ##'   which that are to be held out). Observations no in \code{subset} are coded
 ##'   as \code{NA} in the returned matrix.
-##' @param include.na Whether to let the \code{NA} values of \code{y} be part of
-##'   the crossvalidatiton set. Otherwise they are set to \code{NA} in all
-##'   folds.
 ##' @return A list of numeric vectors containing the indices of the objects in
 ##'   each fold.
 ##' @examples
 ##' y <- factor(runif(60) >= .5)
-##' cv <- crossval.groups(y)
-##' inner.cv <- lapply(as.data.frame(cv), function(x) crossval.groups(y, subset=!x))
+##' cv <- resample.crossval(y)
+##' inner.cv <- lapply(as.data.frame(cv), function(x) resample.crossval(y, subset=!x))
 ##' layout(t(1:2)); image(cv, main="Outer CV"); image(inner.cv[[5]], main="Inner CV, fold #5")
 ##' @seealso crossval, expand.smaller.class
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-crossval.groups <- function(y, nfold=5, nrep=1, balanced=is.factor(y), subset=TRUE, include.na=FALSE){
+resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=TRUE){
     n <- if(length(y) == 1) y else length(y)
     if(n < nfold) stop("Number of objects cannot be smaller than number of groups")
     if(is.outcome(y)) y <- factor.events(y)
 
     # Convert subset to logical vector
     subset <- (1:n) %in% (1:n)[subset]
-    if(!include.na){
-        subset[is.na(y)] <- FALSE
-    } else if(is.factor(y)){
-        y <- factor(y, levels=c(levels(y), "NA-proxy-level"))
-        y[is.na(y)] <- "NA-proxy-level"
-    }
+    subset[is.na(y)] <- FALSE
     
-    folds <- foreach::foreach(r = 1:nrep, .combine=cbind) %do% {
+    folds <- foreach(r = 1:nrep, .combine=data.frame) %do% {
         idx <- if(!balanced){
             sample((1:n)[subset])
         } else {
             levs <- if(is.factor(y)) levels(y) else unique(y)
-            foreach::foreach(lev=levs[order(table(y[subset]))], .combine=c) %do% {
+            unlist(lapply(levs[order(table(y[subset]))], function(lev){
                 w <- which(y == lev)
                 w <- w[w %in% (1:n)[subset]]
                 if(length(w) < 2) w else sample(w)
-            }
+            }))
         }
-        idx <- matrix(c(idx, rep(NA, ceiling(length(idx)/nfold)*nfold-length(idx))), ncol=nfold, byrow=TRUE)
+        idx <- matrix(c(idx, rep(NA, ceiling(length(idx)/nfold)*nfold-length(idx))),
+                      ncol=nfold, byrow=TRUE)
         apply(idx, 2, function(i) 1:n %in% i)
     }
-    if(!include.na && !is.factor(y)) folds[is.na(y),] <- NA
-    # Make observations not in the subset equal to NA
     folds[!subset,] <- NA
 
-    class(folds) <- c("crossval", "matrix")
-    dimnames(folds) <- list(NULL, `rep:fold`=paste(rep(1:nrep, each=nfold), rep(1:nfold, nrep), sep=":"))
-    attr(folds, "nfold") <- nfold
-    attr(folds, "nrep") <- nrep
-    return(folds)
+    structure(folds,
+        class = c("crossval", "data.frame"),
+        names = sprintf("fold%i:%i", rep(1:nrep, each=nfold), rep(1:nfold, nrep)),
+        nfold = nfold,
+        nrep = nrep,
+        balanced = balanced)
 }
 
 
@@ -110,12 +71,12 @@ crossval.groups <- function(y, nfold=5, nrep=1, balanced=is.factor(y), subset=TR
 ##' @return A list of two vectors or data.frames, depending on \code{ngroup},
 ##'   containing indices of objects that go into each group.
 ##' @examples
-##' holdout.groups(50, 1/3)
-##' holdout.groups(factor(runif(60) >= .5))
-##' @seealso crossval.groups
+##' resample.holdout(50, 1/3)
+##' resample.holdout(factor(runif(60) >= .5))
+##' @seealso resample.crossval
 ##' @author Christofer Backlin
 ##' @export
-holdout.groups <- function(y=NULL, frac=.5, nrep=1, balanced=is.factor(y), subset=TRUE){
+resample.holdout <- function(y=NULL, frac=.5, nrep=5, balanced=is.factor(y), subset=TRUE){
     n <- if(length(y) == 1) y else length(y)
     class.idx <- if(balanced){
         lapply(levels(y), function(lev) intersect(which(y == lev), (1:n)[subset]))
@@ -123,35 +84,33 @@ holdout.groups <- function(y=NULL, frac=.5, nrep=1, balanced=is.factor(y), subse
         list((1:n)[subset])
     }
     class.ho <- round(frac*sapply(class.idx, length))
-    ho <- as.matrix(foreach::foreach(r = 1:nrep, .combine=cbind) %do% {
+    ho <- foreach(r = 1:nrep, .combine=data.frame) %do% {
         idx <- rep(NA, n)
         idx[subset] <- FALSE
-        foreach::foreach(ci = class.idx, c.ho = class.ho) %do% {
+        foreach(ci = class.idx, c.ho = class.ho) %do% {
             idx[sample(ci, c.ho)] <- TRUE
         }
         return(idx)
-    })
-    class(ho) <- c("holdout", "matrix")
-    dimnames(ho) <- list(NULL, replicate=NULL)
-    return(ho)
+    }
+    structure(ho, class = c("holdout", "data.frame"),
+        names = sprintf("fold%i", 1:nrep),
+        frac = frac,
+        balanced = balanced)
 }
 
 
 ##' Extract or replace parts of a crossval matrix
 ##' 
-##' These class methods are designed to maintain the classes and attributes
+##' This class methods is designed to maintain the class and attributes
 ##' of crossval matrices, something which naturally the ordinary
 ##' \code{\link{[}} is not.
 ##' 
 ##' @method [ crossval
 ##' @param x Object to be subsetted.
-##' @param i Row indices.
-##' @param j Col indices.
-##' @param silent Wether to warn if the subset in itself is not a valid cross
-##'   validation scheme.
+##' @param ... Sent to \code{\link{[}}.
 ##' @return See \code{\link{[}}.
 ##' @examples
-##' cv <- crossval.groups(20, nfold=5, nrep=10)
+##' cv <- resample.crossval(20, nfold=5, nrep=10)
 ##' cv2 <- cv[, 11:20]
 ##' class(cv2)
 ##' attr(cv2, "nrep")
@@ -159,123 +118,92 @@ holdout.groups <- function(y=NULL, frac=.5, nrep=1, balanced=is.factor(y), subse
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname extract.crossval
 ##' @export
-`[.crossval` <- function(x, i=TRUE, j=TRUE, silent=TRUE){
-    y <- unclass(x)[i, j, drop=FALSE]
-
+`[.crossval` <- function(x, ...){
     nfold <- attr(x, "nfold")
     nrep <- attr(x, "nrep")
+    balanced <- attr(x, "balanced")
+    x <- structure(NextMethod(), class=setdiff(class(x), "crossval"))
 
-    if(ncol(y) %% nfold != 0){
+    if(ncol(x) %% nfold != 0){
         valid <- FALSE                                                  # The number of columns is not a multiple of the number of folds
     } else {
-        ok <- foreach::foreach(k = 1:(ncol(y)/nfold), .combine=cbind) %do% {     # Go through all sets of folds
-            apply(y[, 1:nfold + (k-1)*nfold,drop=FALSE], 1, function(r){           # and make sure every row is either
+        ok <- sapply(1:(ncol(x)/nfold), function(k) {     # Go through all sets of folds
+            apply(x[, 1:nfold + (k-1)*nfold,drop=FALSE], 1, function(r){           # and make sure every row is either
                 if(all(is.na(r))) 
                    NA                                                   # all NA
                 else
                    !any(is.na(r)) && sum(r) == 1                        # or has no NA and exactly one element == TRUE
             })
-        }
+        })
         ok <- apply(as.matrix(ok), 1, function(r){                      # Make sure all folds
             all(is.na(r)) || (!any(is.na(r)) && all(r))                 # have the same NA rows or are all valid
         })
         valid <- all(ok)
     }
     if(valid){
-        class(y) <- class(x)
-        attr(y, "nfold") <- nfold
-        attr(y, "nrep") <- length((1:ncol(x))[j])/nfold
+        structure(x, class=c("crossval", class(x)), nfold = nfold,
+            nrep = ncol(x)/nfold, balanced = balanced)
     } else {
-        class(y) <- c("holdout", class(y))
-        attr(y, "nrep") <- ncol(y)
-        if(!silent) warning("Extracted subset is not a valid crossvalidation set. Converted to holdout set.")
+        frac <- apply(x, 2, mean, na.rm=TRUE)
+        structure(x, class=c("holdout", class(x)),
+            nfold = NULL, nrep = NULL,
+            frac=if(length(unique(frac)) == 1) frac[1] else NA,
+            balanced=balanced)
     }
-    return(y)
 }
 
 
-##' Extract or replace parts of a holdout matrix
+##' Change class of resampling object
 ##' 
-##' @method [ holdout
-##' @param x Object to be subsetted.
-##' @param i Row indices.
-##' @param j Col indices.
-##' @return See \code{\link{[}}.
-##' @examples
-##' ho <- holdout.groups(20, frac=1/3, nrep=10)
-##' ho2 <- ho[, 4:6]
-##' class(ho2)
-##' ho[, 1:3] <- ho2
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @rdname extract.holdout
-##' @export
-`[.holdout` <- function(x, i=TRUE, j=TRUE){
-    y <- unclass(x)[i, j, drop=FALSE]
-    col.sums <- apply(y, 2, sum)
-    valid <- all(col.sums == col.sums[1])
-    if(valid){
-        class(y) <- class(x)
-    }# else {
-    #    warning("Extracted subset is not a valid holdout set. Class membership is discarded.")
-    #}
-    return(y)
-}
+##' @name resample.conversion
+{}
 
-
-##' Coerce crossval matrix to a Data Frame
-##' 
 ##' @method as.data.frame crossval
 ##' @param x crossval object
-##' @param ... Sent to \code{\link{as.data.frame}}
+##' @param ... Sent to \code{\link{as.data.frame}} or \code{\link{as.matrix}}.
 ##' @param save.class Logical, if true class and attributes will be preserved.
-##' @return crossval data.frame.
-##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname resample.conversion
 ##' @export
 as.data.frame.crossval <- function(x, ..., save.class=FALSE){
-    y <- as.data.frame(unclass(x), ...)
     if(save.class){
-        attr(y, "nfold") <- attr(x, "nfold")
-        attr(y, "nrep") <- attr(x, "nrep")
-        class(y) <- c("crossval", "data.frame")
+        structure(NextMethod("as.data.frame", x, ...), class=c("crossval", "data.frame"),
+            nfold=attr(x, "nfold"), nrep=attr(x, "nrep"), balanced=attr(x, "balanced"))
+    } else {
+        NextMethod("as.data.frame", x)
     }
-    return(y)
 }
-
-
-##' Coerce holdout matrix to a Data Frame
-##' 
+##' @method as.matrix crossval
+##' @rdname resample.conversion
+##' @export
+as.matrix.crossval <- function(x, ..., save.class=FALSE){
+    if(save.class){
+        structure(NextMethod("as.matrix", x, ...), class=c("crossval", "matrix"),
+            nfold=attr(x, "nfold"), nrep=attr(x, "nrep"), balanced=attr(x, "balanced"))
+    } else {
+        NextMethod("as.matrix", x)
+    }
+}
 ##' @method as.data.frame holdout
-##' @param x holdout object
-##' @param ... Sent to \code{\link{as.data.frame}}
-##' @param save.class Logical, if true class will be preserved.
-##' @return holdout data.frame.
-##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname resample.conversion
 ##' @export
 as.data.frame.holdout <- function(x, ..., save.class=FALSE){
-    y <- as.data.frame(unclass(x), ...)
     if(save.class){
-        class(y) <- c("holdout", "data.frame")
-    }
-    return(y)
-}
-
-
-##' Convert crossval, matrix or data frame to holdout set
-##' 
-##' @param x Object
-##' @return holdout matrix or data frame.
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @export
-as.holdout <- function(x){
-    if(inherits(x, "crossval") ||
-            (is.matrix(x) && is.logical(x)) ||
-            (is.data.frame(x) && all(sapply(x, is.logical)))){
-        class(x) <- c("holdout", setdiff(class(x), "crossval"))
-        attr(x, "nrep") <- ncol(x)
-        attr(x, "nfold") <- NULL
-        return(x)
+        structure(NextMethod("as.data.frame", x, ...), class=c("holdout", "data.frame"),
+            frac=attr(x, "frac"), balanced=attr(x, "balanced"))
     } else {
-        stop("Unsupported data type.")
+        NextMethod("as.data.frame", x)
+    }
+}
+##' @method as.matrix holdout
+##' @rdname resample.conversion
+##' @export
+as.matrix.holdout <- function(x, ..., save.class=FALSE){
+    if(save.class){
+        structure(NextMethod("as.matrix", x, ...), class=c("holdout", "matrix"),
+            frac=attr(x, "frac"), balanced=attr(x, "balanced"))
+    } else {
+        NextMethod("as.matrix", x)
     }
 }
 
@@ -283,16 +211,17 @@ as.holdout <- function(x){
 ##' Plot crossval replicates as a heatmap
 ##' 
 ##' @method image crossval
-##' @param x Crossval matrix as returned by \code{\link{crossval.groups}}.
+##' @param x Crossval matrix as returned by \code{\link{resample.crossval}}.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return Nothing
 ##' @examples
-##' image(crossval.groups(60, nfold=3, nrep=8))
+##' image(resample.crossval(60, nfold=3, nrep=8))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 image.crossval <- function(x, ...){
+    if(!is.matrix(x)) x <- as.matrix(x, save.class=TRUE)
     col.matrix <- matrix(c("red", "yellow", "blue", "green")
-                         [1 + unclass(x) + 2*(as.integer(gl(2, nrow(x)*attr(x, "nfold"), length(x)))-1)],
+                         [1 + x + 2*(as.integer(gl(2, nrow(x)*attr(x, "nfold"), length(x)))-1)],
                          nrow(x), ncol(x))
     col.matrix[is.na(x)] <- "transparent"
     plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", xlab="Folds & Replicates", ylab="Observations/Objects")
@@ -303,16 +232,16 @@ image.crossval <- function(x, ...){
 ##' Plot holdout replicates as a heatmap
 ##' 
 ##' @method image holdout
-##' @param x Holdout matrix as returned by \code{\link{holdout.groups}}.
+##' @param x Holdout matrix as returned by \code{\link{resample.holdout}}.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return Nothing
 ##' @examples
-##' image(holdout.groups(60, frac=1/3, nrep=20))
+##' image(resample.holdout(60, frac=1/3, nrep=20))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 image.holdout <- function(x, ...){
     col.matrix <- matrix(c("red", "yellow", "blue", "green")
-                         [1 + unclass(x) + 2*(as.integer(gl(2, nrow(x), length(x)))-1)],
+                         [1 + as.matrix(x) + 2*(as.integer(gl(2, nrow(x), nrow(x)*ncol(x)))-1)],
                          nrow(x), ncol(x))
     col.matrix[is.na(x)] <- "transparent"
     plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", xlab="Replicates", ylab="Observations/Objects")
@@ -328,14 +257,14 @@ image.holdout <- function(x, ...){
 ##' Fields that do not match \code{test.subset} (e.g. \code{fit} or
 ##' \code{error}) will be assembled into lists.
 ##'
-##' @param batch List of predictions, as returned by \code{\link{batch.design}}
+##' @param batch List of predictions, as returned by \code{\link{batch.model}}
 ##'   or \code{\link{predict}}.
 ##' @param y True class labels. If supplied ROC curve will be calculated (only
 ##'   for binary problems).  
-##' @param test.subset CV folds, as returned by \code{\link{crossval.groups}}.
+##' @param test.subset CV folds, as returned by \code{\link{resample.crossval}}.
 ##' @param subset Subset of data to design on.
 ##' @return A combined prediction object on the same form as returned by
-##'   \code{\link{design}} and \code{\link{predict}}.
+##'   \code{\link{batch.model}}.
 ##' @examples
 ##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
@@ -393,7 +322,7 @@ assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
 ##' 
 ##' @param x List of values.
 ##' @param test.subset Matrix of test subsets as returned by
-##'   \code{\link{crossval.groups}} or \code{\link{holdout.groups}}.
+##'   \code{\link{resample.crossval}} or \code{\link{resample.holdout}}.
 ##' @return A matrix with rows corresponding to observations and values
 ##'   assembled across CV folds/HO replicates.
 ##' @examples

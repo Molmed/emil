@@ -1,15 +1,14 @@
-cd("~/Documents/R/egna paket/classify")
 source("update_description.R")
 library("roxygen2")
 #options(useFancyQuotes = FALSE)
 
 roxygen.update.description()
-roxygenize("classify", "classify.roxygen", unlink.target = TRUE)
-system("rm -rf classify.roxygen/inst")
-system("R CMD check classify.roxygen")
+roxygenize("classifyBase", "classifyBase.roxygen", unlink.target = TRUE)
+system("rm -rf classifyBase.roxygen/inst")
+system("R CMD check classifyBase.roxygen")
 
-system("R CMD INSTALL classify.roxygen")
-system("R CMD build classify.roxygen") # Build package
+system("R CMD INSTALL classifyBase.roxygen")
+system("R CMD build classifyBase.roxygen") # Build package
 system(sprintf("scp %s backch@mumble:projects/R_packages",
                rev(dir(, "classify_.*\\.tar\\.gz"))[1]))
 system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:R_packages",
@@ -21,6 +20,6 @@ system("git commit -a")
 system("git push")
 
 
-#system("R CMD check classify.roxygen --use-gct") # Check package with GC-torture
-#system("R CMD INSTALL --build --clean classify.roxygen") # Build binary
+#system("R CMD check classifyBase.roxygen --use-gct") # Check package with GC-torture
+#system("R CMD INSTALL --build --clean classifyBase.roxygen") # Build binary
 

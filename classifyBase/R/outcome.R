@@ -1,6 +1,6 @@
 ##' Create a vector of outcomes
 ##'
-##' Heavily modeled after the `Surv` class in the `survival` package.
+##' Heavily modeled after the \code{\link{Surv}} class in the `survival` package.
 ##' Objects of this class are internally stored as data frames but should be
 ##' thought of as vectors and can be treated as such through out.
 ##' 
@@ -169,16 +169,25 @@ as.character.outcome <- function(x, ...) {
 ##' @param x Outcome vector.
 ##' @param time Time point to evaluate at.
 ##' @param censor.label What to label the abscense of an event with.
+##' @param keep Event types to keep, defaults to all.
 ##' @return A factor of events.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-factor.events <- function(x, time, censor.label="no event"){
+factor.events <- function(x, time, censor.label="no event", keep){
     events <- as.character(x$event)
+    if(missing(keep)){
+        keep <- c(censor.label, levels(x$event))
+    } else {
+        keep <- c(censor.label, keep)
+    }
+    # If a time has been specified clear all events occurng after that time
     if(!missing(time)) events[!is.na(x$event) & x$time > time] <- NA
+    # Replace "no event" with the no event level
     events[is.na(events)] <- censor.label
+    # Keep the missing observations missing
     events[is.na(x)] <- NA
     if(!missing(time)) events[is.na(x$event) & x$time < time] <- NA
-    return(factor(events, levels=c(censor.label, levels(x$event))))
+    return(factor(events, levels=keep))
 }
 
 

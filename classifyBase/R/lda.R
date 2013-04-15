@@ -1,37 +1,24 @@
-##' Design of linear discriminant.
+##' Design of linear discriminant
 ##'
 ##' @param x Dataset, numerical matrix with observations as rows.
 ##' @param y Class labels, factor.
-##' @param pi Class probabilities. Defaults to fraction of objects in each class.
-##'   In case of heavily unbalanced classes this might not be desirable. 
-##' @param use "complete.obs" or "everything" 
-##' @return Fitted LDA.
+##' @param pi Class probabilities. Defaults to fraction of objects in each
+##'   class. In case of heavily unbalanced classes this might not be
+##'   desirable.
+##' @param use Sent to \code{\link{cov}}.
+##' @return Fitted linear discriminant.
 ##' @examples
 ##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
 design.lda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs") {
-    na.method <- pmatch(use, c("complete.obs", "everything"))
-    if(na.method == 1){
-        idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
-        x <- x[idx,, drop=FALSE]
-        y <- y[idx]
-    }
-
-    # Check that all classes are represented
-    y.table <- table(y)
-    if(any(y.table == 0)){
-        stop(sprintf("No observations in class %s",
-                     paste("`", names(y.table)[y.table == 0], "`", sep="", collapse=", ")))
-    }
-
-    # Compute
     s <- matrix(0, ncol(x), ncol(x))
     for(lev in levels(y))
-        s <- s + cov(x[y==lev,, drop=F]) * (sum(y==lev)-1)
+        s <- s + cov(x[y==lev,, drop=F], use=use) * (sum(y==lev)-1)
     s <- s / sum(table(y)-1)
-    fit <- list(pi = pi,
+    fit <- list(responses=levels(y),
+                pi = pi,
                 mu = matrix(sapply(levels(y), function(lev)
                                    apply(x[y==lev,, drop=FALSE], 2, mean)),
                             ncol(x), length(levels(y)),
@@ -40,11 +27,10 @@ design.lda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs") {
     return(fit)
 }
 
-
-##' Prediction using already trained classifier.
+##' Prediction using already trained prediction model
 ##'
 ##' @method predict lda
-##' @param object Fitted classifier as produced by \code{\link{design}}.
+##' @param object Fitted classifier as produced by \code{\link{batch.model}}.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return TODO
@@ -63,4 +49,14 @@ predict.lda <- function(object, x, ...){
                 prob = t(apply(log.disc.func, 1, function(x) exp(x)*object$pi/sum(exp(x)*object$pi)))))
 }
 
+##' Variable importance of a linear discriminant
+##' 
+##' @method vimp lda
+##' @param object Fitted linear discriminant.
+##' @param ... Ignored.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+vimp.lda <- function(object, ...){
+    apply(object$mu, 2, sum)
+}
 
