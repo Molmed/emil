@@ -24,8 +24,6 @@
 {}
 
 
-##' pre.split title
-##' 
 ##' @param x Dataset.
 ##' @param fold A logical vector with \code{FALSE} for design observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
@@ -38,16 +36,12 @@ pre.split <- function(x, fold){
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
-##' pre.center title
-##' 
 ##' @rdname pre.trans
 ##' @export
 pre.center <- function(x, fold){
     pre.scale(x, fold, scale=FALSE)
 }
 
-##' pre.scale title
-##' 
 ##' @param scale Wether to scale each feature to have standard deviation = 1.
 ##' @rdname pre.trans
 ##' @export
@@ -63,15 +57,18 @@ pre.scale <- function(x, fold, scale=TRUE){
          test=fun(x[na.fill(fold, FALSE),,drop=FALSE]))
 }
 
-##' pre.impute.median title
-##'
-##' Not yet implemented.
-##'
-##' @param ... Ignored
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname pre.trans
 ##' @export
-pre.impute.median <- function(...){
-    stop("Not yet implemented")
+pre.impute.median <- function(x, fold){
+    na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
+        # Duplicate names may cause problems otherwise
+    na.ind <- na.ind[!is.na(fold[na.ind[,1]]),]
+    na.feats <- unique(na.ind[,"col"])
+    fills <- apply(x[na.fill(!fold, FALSE), na.feats], 2, median, na.rm=TRUE)
+    x[na.ind] <- fills[match(na.ind[,"col"], na.feats)]
+    list(design=x[na.fill(!fold, FALSE),,drop=FALSE],
+         test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
 ##' pre.impute.knn title
@@ -101,7 +98,7 @@ pre.impute.median <- function(...){
 pre.impute.knn <- function(x, fold, k, distmat){
     if(!is.matrix(x))
         stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
-    if(missing(dist.mat))
+    if(missing(distmat))
         stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
 
     if(missing(k)) k <- max(3, round(.05*nrow(x)))

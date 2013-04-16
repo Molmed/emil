@@ -5,14 +5,15 @@ library("roxygen2")
 roxygen.update.description()
 roxygenize("classifyBase", "classifyBase.roxygen", unlink.target = TRUE)
 system("rm -rf classifyBase.roxygen/inst")
+clc()
 system("R CMD check classifyBase.roxygen")
 
 system("R CMD INSTALL classifyBase.roxygen")
 system("R CMD build classifyBase.roxygen") # Build package
-system(sprintf("scp %s backch@mumble:projects/R_packages",
-               rev(dir(, "classify_.*\\.tar\\.gz"))[1]))
-system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:R_packages",
-               rev(dir(, "classify_.*\\.tar\\.gz"))[1]))
+system(sprintf("scp %s backch@mumble:R_packages/src/contrib",
+               rev(dir(, "classifyBase_.*\\.tar\\.gz"))[1]))
+system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:R_packages/src/contrib",
+               rev(dir(, "classifyBase_.*\\.tar\\.gz"))[1]))
 
 # Big change? Remember to put it in the git repo!
 system("git status")

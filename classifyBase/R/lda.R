@@ -24,7 +24,7 @@ design.lda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs") {
                             ncol(x), length(levels(y)),
                             dimnames=list(NULL, levels(y))),
                 S = s)
-    return(fit)
+    fit
 }
 
 ##' Prediction using already trained prediction model

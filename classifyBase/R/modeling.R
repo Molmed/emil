@@ -38,26 +38,34 @@
 ##'   results. Note that the size of these depend on the model type and could
 ##'   potentially be very large.
 ##' @param save.vimp Whether to calculate and return variable importance.
+##' @param .verbose Whether to print status messages.
 ##' @examples
-##' x <- sweep(matrix(rnorm(60*10), 60), 1, rep(c(0,.4), each=30))
+##' x <- sweep(matrix(rnorm(60*10), 60), 1, rep(c(0,.8), each=30))
 ##' y <- gl(2,30)
 ##' pred <- batch.model(x, y, "lda", resample.crossval(y, nfold=3, nrep=3))
 ##'
 ##' \dontrun{
 ##' models <- list(lda=list(pi=list(c(.25, .75), c(.5, .5))), lda=list())
-##' pred <- batch.model(x, y, models, resample.crossval(y, nfold=3, nrep=3))
-##' }
+##' pred <- batch.model(x, y, models, resample.crossval(y, nfold=3, nrep=3))}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.split,
-                   save.fits = FALSE, save.vimp = FALSE){
+                   save.fits = FALSE, save.vimp = FALSE, .verbose=FALSE){
+    msg <- if(.verbose){
+        function(level=1, ...) cat(format(Sys.time(), "%d %b %H:%M"),
+            rep("  ", level), sprintf(...), "\n", sep="")
+    } else {
+        function(...) invisible()
+    }
+
     # This elaborate construction allows us to call an arbitrary design function
     # with a dataset and a list of parameters without combining them in a single
     # list (i.e. `do.call(fun, c(list(data), params))`), which would result in
     # an unnecessary copy of the dataset in the memory.
     do.design.call <- function(type, x, y, param){
         f <- function(...) get(sprintf("design.%s", type))(x=x, y=y, ...)
-        structure(do.call("f", param), class=c(type, "classifier"))
+        fit <- do.call("f", param)
+        structure(fit, class=c(type, "classifier", class(fit)))
     }
 
     # Set up tuning
@@ -83,8 +91,13 @@ batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.spli
             numeric=rmse,
             stop("You must explicitly provide an error function when the response not factor or numeric."))
 
+    counter <- 0
     out$cv <- lapply(test.subset, function(fold){
+        counter <<- counter + 1
+        msg(1, "Fold %i", counter)
         if(any(do.tuning)){
+            msg(2, "Tuning %s", paste(sprintf("%s(%i)", names(do.tuning[do.tuning]),
+                sapply(out$models[do.tuning], length)), collapse=", "))
             tuning.cv <- if(inherits(test.subset, "crossval")){
                 resample.crossval(y, nfold=attr(test.subset, "nfold"),
                     nrep=attr(test.subset, "nrep"), balanced=attr(test.subset, "balanced"),
@@ -98,11 +111,11 @@ batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.spli
             tuning <- lapply(tuning.cv, function(tuning.fold){
                 sets <- pre.trans(x, tuning.fold)
                 lapply(which(do.tuning), function(i){
-                    foreach(my.param=out$models[[i]], .combine=c) %do% {
+                    sapply(out$models[[i]], function(my.param){
                         error.fun(y[na.fill(tuning.fold, FALSE)],
                             predict(do.design.call(names(out$models)[i], sets$design,
                                 y[na.fill(!tuning.fold, FALSE)], my.param), sets$test))
-                    }
+                    })
                 })
             })
             tuning.err <- lapply(seq(do.tuning), function(i)
@@ -115,20 +128,24 @@ batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.spli
                     e <- apply(e, 1, mean)
                     p[[sample(which(e == min(e)), 1)]]
                 }
-            }, out$models, tuning.err)
+            }, out$models, tuning.err, SIMPLIFY=FALSE)
         } else {
             my.param <- out$models
         }
+        msg(2, "Extracting and preprocessing design and test sets")
         sets <- pre.trans(x, fold)
-        res <- foreach(i = seq(out$models)) %do% {
+        res <- lapply(seq(out$models), function(i){
+            msg(2, "Fitting and evaluating %s", names(out$models)[i])
             fit <- do.design.call(names(out$models)[i], sets$design,
                                   y[na.fill(!fold, FALSE)], my.param[[i]])
             pred <- predict(fit, sets$test)
             err <- error.fun(y[na.fill(fold, FALSE)], pred)
-            c(pred, list(error=err), if(save.fits) fit else NULL,
-              if(save.vimp) vimp(fit) else NULL,
+            c(pred,
+              list(error=err),
+              if(save.fits) list(fit=fit) else NULL,
+              if(save.vimp) list(vimp=vimp(fit)) else NULL,
               if(do.tuning[i]) list(param=my.param[[i]], tuning.err=tuning.err[[i]]) else NULL)
-        }
+        })
         names(res) <- names(out$models)
         res
     })
