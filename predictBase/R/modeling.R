@@ -18,7 +18,7 @@
 ##' 
 ##'   To tune a parameter specify its possible values as in a list, e.g.
 ##'   \code{rf=list(mtry=list(500, 1000, 2000), ntree=list(5000))}.
-##'       
+##' 
 ##'   If more than one parameter is to be tuned all combinations of parameter
 ##'   values will be tested. If only specifc combinations should be tested they
 ##'   should be supplied as individual lists on this form:
@@ -42,14 +42,14 @@
 ##' @examples
 ##' x <- sweep(matrix(rnorm(60*10), 60), 1, rep(c(0,.8), each=30))
 ##' y <- gl(2,30)
-##' pred <- batch.model(x, y, "lda", resample.crossval(y, nfold=3, nrep=3))
+##' pred <- batch.predict(x, y, "lda", resample.crossval(y, nfold=3, nrep=3))
 ##'
 ##' \dontrun{
 ##' models <- list(lda=list(pi=list(c(.25, .75), c(.5, .5))), lda=list())
-##' pred <- batch.model(x, y, models, resample.crossval(y, nfold=3, nrep=3))}
+##' pred <- batch.predict(x, y, models, resample.crossval(y, nfold=3, nrep=3))}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.split,
+batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.split,
                    save.fits = FALSE, save.vimp = FALSE, .verbose=FALSE){
     msg <- if(.verbose){
         function(level=1, ...) cat(format(Sys.time(), "%d %b %H:%M"),
@@ -72,7 +72,9 @@ batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.spli
     if(is.character(models))
         models <- structure(vector("list", length(models)), names=models)
     out <- list(models = lapply(models, function(m){
-        if(is.null(names(m))){
+        if(is.null(m)){
+            list(list())
+        } else if(is.null(names(m))){
             # Every element correspond to a complete parameter setup
             m
         } else {
@@ -123,14 +125,14 @@ batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.spli
             names(tuning.err) <- names(do.tuning)
             my.param <- mapply(function(p, e){
                 if(is.blank(e)){
-                    p
+                    p[[1]]
                 } else {
                     e <- apply(e, 1, mean)
                     p[[sample(which(e == min(e)), 1)]]
                 }
             }, out$models, tuning.err, SIMPLIFY=FALSE)
         } else {
-            my.param <- out$models
+            my.param <- lapply(out$models, "[[", 1)
         }
         msg(2, "Extracting and preprocessing design and test sets")
         sets <- pre.trans(x, fold)
@@ -147,8 +149,32 @@ batch.model <- function(x, y, models, test.subset, error.fun, pre.trans=pre.spli
               if(do.tuning[i]) list(param=my.param[[i]], tuning.err=tuning.err[[i]]) else NULL)
         })
         names(res) <- names(out$models)
+        if(counter == 1 && .verbose){
+            os <- object.size(res)
+            os.i <- trunc(log(os)/log(1024))
+            msg(3, "The size of the results from this fold is %.2f %s",
+                exp(log(os) - os.i * log(1024)), c("B", "KiB", "MiB", "GiB", "TiB")[os.i + 1])
+        }
         res
     })
     out
+}
+
+
+##' Design a single classifier
+##' 
+##' This is a general wrapper that fits a prediction model and adds the classes
+##' required for it to be recognized by the package's other functions.
+##' 
+##' @param type Classifier type, e.g. "lda" for linear discriminant.
+##' @param x Dataset.
+##' @param y Response vector.
+##' @param ... Sent to type the specific wrapper, e.g. \code{\link{design.lda}}.
+##' @return A fitted model.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+design <- function(type, x, y, ...){
+    fit <- get(sprintf("design.%s", type))(x=x, y=y, ...)
+    structure(fit, class=c(type, "classifier", class(fit)))
 }
 

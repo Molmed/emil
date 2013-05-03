@@ -30,7 +30,7 @@ design.lda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs") {
 ##' Prediction using already trained prediction model
 ##'
 ##' @method predict lda
-##' @param object Fitted classifier as produced by \code{\link{batch.model}}.
+##' @param object Fitted classifier as produced by \code{\link{batch.predict}}.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return TODO
@@ -49,14 +49,14 @@ predict.lda <- function(object, x, ...){
                 prob = t(apply(log.disc.func, 1, function(x) exp(x)*object$pi/sum(exp(x)*object$pi)))))
 }
 
-##' Variable importance of a linear discriminant
-##' 
-##' @method vimp lda
-##' @param object Fitted linear discriminant.
-##' @param ... Ignored.
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @export
-vimp.lda <- function(object, ...){
-    apply(object$mu, 2, sum)
-}
+# ##' Variable importance of a linear discriminant
+# ##' 
+# ##' @method vimp lda
+# ##' @param object Fitted linear discriminant.
+# ##' @param ... Ignored.
+# ##' @author Christofer \enc{Bäcklin}{Backlin}
+# ##' @export
+# vimp.lda <- function(object, ...){
+#     apply(object$mu, 2, sum)
+# }
 

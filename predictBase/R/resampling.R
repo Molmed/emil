@@ -46,6 +46,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
                       ncol=nfold, byrow=TRUE)
         apply(idx, 2, function(i) 1:n %in% i)
     }
+    if(nrep == 1) folds <- data.frame(folds)
     folds[!subset,] <- NA
 
     structure(folds,
@@ -122,13 +123,15 @@ resample.holdout <- function(y=NULL, frac=.5, nrep=5, balanced=is.factor(y), sub
     nfold <- attr(x, "nfold")
     nrep <- attr(x, "nrep")
     balanced <- attr(x, "balanced")
-    x <- structure(NextMethod(), class=setdiff(class(x), "crossval"))
+    old.class <- setdiff(class(x), "crossval")
+    x <- NextMethod()
+    if(is.null(dim(x))) return(x)
 
     if(ncol(x) %% nfold != 0){
         valid <- FALSE                                                  # The number of columns is not a multiple of the number of folds
     } else {
         ok <- sapply(1:(ncol(x)/nfold), function(k) {     # Go through all sets of folds
-            apply(x[, 1:nfold + (k-1)*nfold,drop=FALSE], 1, function(r){           # and make sure every row is either
+            apply(as.matrix(x)[, 1:nfold + (k-1)*nfold,drop=FALSE], 1, function(r){           # and make sure every row is either
                 if(all(is.na(r))) 
                    NA                                                   # all NA
                 else
@@ -141,11 +144,11 @@ resample.holdout <- function(y=NULL, frac=.5, nrep=5, balanced=is.factor(y), sub
         valid <- all(ok)
     }
     if(valid){
-        structure(x, class=c("crossval", class(x)), nfold = nfold,
+        structure(x, class=c("crossval", old.class), nfold = nfold,
             nrep = ncol(x)/nfold, balanced = balanced)
     } else {
         frac <- apply(x, 2, mean, na.rm=TRUE)
-        structure(x, class=c("holdout", class(x)),
+        structure(x, class=c("holdout", old.class),
             nfold = NULL, nrep = NULL,
             frac=if(length(unique(frac)) == 1) frac[1] else NA,
             balanced=balanced)
@@ -257,25 +260,20 @@ image.holdout <- function(x, ...){
 ##' Fields that do not match \code{test.subset} (e.g. \code{fit} or
 ##' \code{error}) will be assembled into lists.
 ##'
-##' @param batch List of predictions, as returned by \code{\link{batch.model}}
+##' @param batch List of predictions, as returned by \code{\link{batch.predict}}
 ##'   or \code{\link{predict}}.
 ##' @param y True class labels. If supplied ROC curve will be calculated (only
 ##'   for binary problems).  
 ##' @param test.subset CV folds, as returned by \code{\link{resample.crossval}}.
-##' @param subset Subset of data to design on.
 ##' @return A combined prediction object on the same form as returned by
-##'   \code{\link{batch.model}}.
+##'   \code{\link{batch.predict}}.
 ##' @examples
 ##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso assemble, subtree
 ##' @export
-assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
+assemble.cv <- function(batch, y=NULL, test.subset){
     if(missing(test.subset)) stop("test.subset missing.")
-    if(!identical(subset, TRUE)){
-        y <- y[subset]
-        test.subset <- test.subset[subset,]
-    }
 
     # Find out what fields there are and which are to be assembled
     types <- names(batch[[1]])
@@ -285,9 +283,9 @@ assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
         sapply(my.fields, function(field){
             f <- subtree(batch, T, type, field, flatten=2)
             if(all(sapply(f, is.vector)) || all(sapply(f, is.factor))){
-                return(all(sapply(f, length) == apply(test.subset, 2, sum, na.rm=TRUE)))
+                return(all(sapply(f, length) == apply(test.subset, 2, sum)))
             } else if(all(sapply(f, is.matrix)) || all(sapply(f, is.data.frame))){
-                return(all(sapply(f, nrow) == apply(test.subset, 2, sum, na.rm=TRUE)))
+                return(all(sapply(f, nrow) == apply(test.subset, 2, sum)))
             } else {
                 return(FALSE)
             }
@@ -303,9 +301,19 @@ assemble.cv <- function(batch, y=NULL, subset=TRUE, test.subset){
             mapply(function(field, do.assemble){
                 f <- subtree(batch, rr, type, field, flatten=2)
                 if(do.assemble){
-                    return(assemble(f, test.subset[,rr]))
+                    val <- if(is.vector(f[[1]])){
+                        rep(NA, nrow(test.subset))
+                    } else if(is.factor(f[[1]])){
+                        factor(rep(NA, nrow(test.subset)), levels=levels(f[[1]]))
+                    } else if(is.matrix(f[[1]])){
+                        matrix(NA, nrow(test.subset), ncol(f[[1]]))
+                    } else {
+                        stop("Batch contains predictions of a type not known how to assemble.")
+                    }
+                    for(i in 1:nfold) val[test.subset[,rr[i]]] <- f[[i]]
+                    val
                 } else {
-                    return(f)
+                    f
                 }
             }, names(fields[[type]]), fields[[type]], SIMPLIFY=FALSE)
         })

@@ -1,6 +1,6 @@
 ##' Data preprocessing
 ##' 
-##' These functions are run in \code{\link{batch.model}} just prior to model
+##' These functions are run in \code{\link{batch.predict}} just prior to model
 ##' fitting and serve two purposes. 1) They extract design and test sets from
 ##' the entire dataset and 2) they can at the same time apply a transformation
 ##' to preprocess the data for handling missing values, scaling, compression
@@ -83,7 +83,8 @@ pre.impute.median <- function(x, fold){
 ##' @param fold A logical vector with \code{FALSE} for design observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
-##' @param k Number of nearest neightbors to calculate mean from.
+##' @param k Number of nearest neightbors to calculate mean from. Set to < 1 to
+##'   specify a fraction.
 ##' @param distmat Distance matrix.
 ##' @examples
 ##' \dontrun{
@@ -91,19 +92,21 @@ pre.impute.median <- function(x, fold){
 ##' x[sample(length(x), 10)] <- NA
 ##' y <- gl(2,30)
 ##' my.dist <- dist(x)
-##' batch.model(x, y, "lda", pre.trans=function(...) pre.impute.knn(..., k=4, my.dist))
+##' batch.predict(x, y, "lda", pre.trans=function(...) pre.impute.knn(..., k=4, my.dist))
 ##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-pre.impute.knn <- function(x, fold, k, distmat){
+pre.impute.knn <- function(x, fold, k=.05, distmat){
     if(!is.matrix(x))
         stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
     if(missing(distmat))
         stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
 
-    if(missing(k)) k <- max(3, round(.05*nrow(x)))
+    if(k < 1) k <- max(1, round(.05*nrow(x)))
     if(k > sum(!fold, na.rm=TRUE)) stop("k is larger than number of design observations.")
     if(!is.matrix(distmat)) distmat <- as.matrix(distmat)
+    if(any(nrow(x) != dim(distmat)))
+        stop("Distance matrix does not match dataset.")
 
     na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
         # Duplicate names may cause problems otherwise
