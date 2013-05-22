@@ -20,32 +20,42 @@
 ##' and then applied to both design set and test set. It is important to not let
 ##' the test data in any way be part of the fitting of a model, including the
 ##' preprocessing, to not risk information leakage and biased results!
+##' 
+##' @return A list with the following components
+##' \tabular{ll}{
+##'     \code{design} \tab Design set.\cr
+##'     \code{test} \tab Test set.\cr
+##'     \code{features} \tab Logical vector indicating which features were kept
+##'         (TRUE) and discarded (FALSE). This is only set in case of variable
+##'         selection.\cr
+##' }
 ##' @name pre.trans
 {}
 
 
 ##' @param x Dataset.
+##' @param y Response vector.
 ##' @param fold A logical vector with \code{FALSE} for design observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname pre.trans
 ##' @export
-pre.split <- function(x, fold){
+pre.split <- function(x, y, fold){
     list(design=x[na.fill(!fold, FALSE),,drop=FALSE],
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
 ##' @rdname pre.trans
 ##' @export
-pre.center <- function(x, fold){
+pre.center <- function(x, y, fold){
     pre.scale(x, fold, scale=FALSE)
 }
 
 ##' @param scale Wether to scale each feature to have standard deviation = 1.
 ##' @rdname pre.trans
 ##' @export
-pre.scale <- function(x, fold, scale=TRUE){
+pre.scale <- function(x, y, fold, scale=TRUE){
     m <- apply(x[na.fill(!fold, FALSE),,drop=FALSE], 2, mean, na.rm=TRUE)
     if(scale){
         s <- apply(x[na.fill(!fold, FALSE),,drop=FALSE], 2, sd, na.rm=TRUE)
@@ -60,7 +70,7 @@ pre.scale <- function(x, fold, scale=TRUE){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname pre.trans
 ##' @export
-pre.impute.median <- function(x, fold){
+pre.impute.median <- function(x, y, fold){
     na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
         # Duplicate names may cause problems otherwise
     na.ind <- na.ind[!is.na(fold[na.ind[,1]]),]
@@ -80,6 +90,7 @@ pre.impute.median <- function(x, fold){
 ##' wrapper function.
 ##' 
 ##' @param x Dataset.
+##' @param y Response vector.
 ##' @param fold A logical vector with \code{FALSE} for design observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
@@ -96,7 +107,7 @@ pre.impute.median <- function(x, fold){
 ##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-pre.impute.knn <- function(x, fold, k=.05, distmat){
+pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     if(!is.matrix(x))
         stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
     if(missing(distmat))

@@ -111,7 +111,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
                 stop("Cannot determine resampling scheme, needed for parameter tuning.")
             }
             tuning <- lapply(tuning.cv, function(tuning.fold){
-                sets <- pre.trans(x, tuning.fold)
+                sets <- pre.trans(x, y, tuning.fold)
                 lapply(which(do.tuning), function(i){
                     sapply(out$models[[i]], function(my.param){
                         error.fun(y[na.fill(tuning.fold, FALSE)],
@@ -135,28 +135,38 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             my.param <- lapply(out$models, "[[", 1)
         }
         msg(2, "Extracting and preprocessing design and test sets")
-        sets <- pre.trans(x, fold)
+        sets <- pre.trans(x, y, fold)
         res <- lapply(seq(out$models), function(i){
             msg(2, "Fitting and evaluating %s", names(out$models)[i])
             fit <- do.design.call(names(out$models)[i], sets$design,
                                   y[na.fill(!fold, FALSE)], my.param[[i]])
             pred <- predict(fit, sets$test)
             err <- error.fun(y[na.fill(fold, FALSE)], pred)
+            if(save.vimp){
+                if("features" %in% names(sets)){
+                    my.vimp <- list(vimp=rep(NA, ncol(x)))
+                    my.vimp$vimp[sets$features] <- vimp(fit)
+                } else {
+                    my.vimp <- list(vimp=vimp(fit))
+                }
+            } else my.vimp <- NULL
+
             c(pred,
               list(error=err),
               if(save.fits) list(fit=fit) else NULL,
-              if(save.vimp) list(vimp=vimp(fit)) else NULL,
+              my.vimp,
               if(do.tuning[i]) list(param=my.param[[i]], tuning.err=tuning.err[[i]]) else NULL)
         })
         names(res) <- names(out$models)
         if(counter == 1 && .verbose){
             os <- object.size(res)
             os.i <- trunc(log(os)/log(1024))
-            msg(3, "The size of the results from this fold is %.2f %s",
+            msg(3, "Fold result size is %.2f %s",
                 exp(log(os) - os.i * log(1024)), c("B", "KiB", "MiB", "GiB", "TiB")[os.i + 1])
         }
         res
     })
+    msg(1, "Done")
     out
 }
 

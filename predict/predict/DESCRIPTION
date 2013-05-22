@@ -1,0 +1,15 @@
+Encoding: UTF-8
+Package: predict
+Type: Package
+Title: Classification toolbox
+Version: 1.0-4
+Date: 2013-04-26
+Author: Christofer Backlin, Eva Freyhult, Mats Gustafsson
+Maintainer: Christofer Backlin <christofers.backlin@medsci.uu.se>
+Description: This package implements a few commonly used classification models
+  to be used for predictive modelling with the predictBase package.
+Depends: predictBase
+Imports: pamr, party, randomForest
+License: GPL (>=2)
+LazyLoad: yes
+LazyData: yes

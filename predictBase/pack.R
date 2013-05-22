@@ -1,5 +1,5 @@
-cd("/home/christofer/Documents/R/egna paket/predictBase")
 source("update_description.R")
+cd("/home/christofer/Documents/R/egna paket/predictBase")
 library("roxygen2")
 #options(useFancyQuotes = FALSE)
 
