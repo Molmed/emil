@@ -1,5 +1,5 @@
-cd("~/Documents/R/egna paket/predict")
-source("update_description.R")
+cd("~/Documents/R/egna paket/predict/predict")
+source("../update_description.R")
 library("roxygen2")
 #options(useFancyQuotes = FALSE)
 
@@ -14,6 +14,7 @@ system(sprintf("scp %s backch@mumble:~/R_packages/src/contrib/",
                rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
 system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:~/R_packages/src/contrib/",
                rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
+system("mv predict_*.tar.gz ../builds")
 
 # Big change? Remember to put it in the git repo!
 system("git status")

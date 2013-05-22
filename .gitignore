@@ -1,7 +1,9 @@
-/predictBase.roxygen
-/predictBase.roxygen.Rcheck
-predictBase_*.tar.gz
+*.roxygen
+*.roxygen.Rcheck
+predict*_*.tar.gz
+builds
 *.Rapp.history
 *~
 *.swp
 *.bak
+old
