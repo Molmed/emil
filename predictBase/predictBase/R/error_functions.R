@@ -29,6 +29,35 @@ error.rate <- function(true, pred){
     mean(true != pred$pred)
 }
 
+##' Weighted error rate
+##' 
+##' If different types of errors are associated with different costs a weighted
+##' error function might be more appropriate than the standard.
+##' 
+##' This function is not in itself an error function, but used to generate error
+##' functions. Either supply a (manually) predefined cost matrix or a response
+##' vector for a classification problem to define it automatically.
+##' 
+##' The automatically defined error function will return 0 if all predictions
+##' are correct, 1 if all predictions are incorrect and 0.5 if all predictions
+##' are the same (regardless of class, i.e. if one class is smaller it will be
+##' given a higher missclassification cost).
+##' 
+##' @param x Cost matrix or factor response vector.
+##' @return An error function.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+weighted.error.rate <- function(x){
+    if(is.factor(x)){
+        if(length(levels(x)) != 2)
+            stop("In multi-class-problems you must manually supply a cost matrix.")
+        x <- matrix(c(0, rev(length(x)/table(x)*.5), 0), 2)
+    }
+    function(true, pred){
+        mean(rep(x, table(true, pred$pred)))
+    }
+}
+
 ##' @rdname error.fun
 ##' @export
 neg.auc <- function(true, pred){
