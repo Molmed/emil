@@ -1,4 +1,4 @@
-##' @import survival
+##' @import cmprsk
 {}
 
 ##' Gray's test
@@ -114,6 +114,7 @@ p.value <- function(x, log=FALSE, ...) UseMethod("p.value")
 ##' @param ... Ignored. Kept for S3 consistency.
 ##' @return Two-sided p-value.
 ##' @examples
+##' library(cmprsk)
 ##' time <- 1:20
 ##' event <- c(rep(0, 9), rep(2, 3), rep(1, 8))
 ##' data <- rep(0:1, each=10)
@@ -158,3 +159,27 @@ p.value.survdiff <- function(x, log=FALSE, ...){
     }
 }
 
+
+# ##' Design competing risk regression model
+# ##' 
+# ##' @param x Dataset.
+# ##' @param y Response vector of class \code{\link{outcome}}.
+# ##' @param ... Sent to \code{\link{crr}}
+# ##' @author Christofer \enc{Bäcklin}{Backlin}
+# ##' @export
+# design.crr <- function(x, y, ...){
+#     cmprsk::crr(y$time, integer.events(y)+1, x, ...)
+# }
+# 
+# 
+# ##' Predictions using competing risk regression model
+# ##' 
+# ##' Not implemented yet.
+# ##' 
+# ##' @param ... Ignored.
+# ##' @author Christofer \enc{Bäcklin}{Backlin}
+# ##' @export
+# predict.crr <- function(...){
+#     stop("predict.crr is not implemented yet.")
+# }
+ 

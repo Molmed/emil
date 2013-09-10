@@ -34,8 +34,9 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
         p.data$x <- rbind(p.data$x, dummy=0)
     }
     if(missing(error.fun)){
-        error.fun <- if(exists("error.fun", envir=parent.frame())){
-            get("error.fun", envir=parent.frame())
+        error.fun.frame <- sapply(sys.frames(), function(env) "error.fun" %in% ls(env))
+        if(any(error.fun.frame)){
+            error.fun <- get("error.fun", envir=sys.frames()[[max(which(error.fun.frame))]])
         } else {
             if(is.factor(y)){
                 error.rate
@@ -103,17 +104,10 @@ predict.nsc <- function(object, x, thres, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 vimp.nsc <- function(object, ...){
-    cen <- abs(pamr::pamr.predict(object$fit, , object$fit$threshold[which.min(object$cv$error)],
-                            type="centroid")[,1] - object$fit$centroid.overall)
+    cen <- pamr::pamr.predict(object$fit, ,
+            object$fit$threshold[which.min(object$cv$error)], type="centroid") -
+        object$fit$centroid.overall / object$fit$sd
     names(cen) <- object$descriptors
     return(cen)
-}
-
-
-
-f <- function(n){
-    x <- rnorm(n)
-    plot(x, rep(0, n))
-    points(mean(x), 0, cex=2, lwd=4)
 }
 

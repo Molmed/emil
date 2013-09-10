@@ -81,7 +81,7 @@ pre.impute.median <- function(x, y, fold){
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
-##' pre.impute.knn title
+##' Foldwise kNN imputation
 ##' 
 ##' Any k-NN method needs to have a distance matrix of the dataset it works on.
 ##' When doing repeated model designs on subsets of the entire dataset it is
@@ -121,7 +121,7 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 
     na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
         # Duplicate names may cause problems otherwise
-    na.ind <- na.ind[!is.na(fold[na.ind[,1]]),]
+    na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
 
     NN <- apply(distmat, 1, function(z)
         setdiff(order(z), which(na.fill(fold, TRUE))))
@@ -133,3 +133,37 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
+##' Regular kNN imputation
+##'
+##' If you want to impute, build model and predict you should use
+##' \code{\link{pre.impute.knn}}. This function imputes using all observations
+##' without caring about crossvalidation folds.
+##' 
+##' @param x Dataset.
+##' @param k Number of nearest neighbors to use.
+##' @param distmat Distance matrix.
+##' @return An imputed matrix.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+impute.knn <- function(x, k=.05, distmat){
+    if(!is.matrix(x))
+        stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
+    if(missing(distmat))
+        stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
+
+    if(k < 1) k <- max(1, round(.05*nrow(x)))
+    if(k > nrow(x)-1) stop("k is larger than the maximal number of neighbors.")
+    if(!is.matrix(distmat)) distmat <- as.matrix(distmat)
+    if(any(nrow(x) != dim(distmat)))
+        stop("Distance matrix does not match dataset.")
+
+    na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
+        # Duplicate names may cause problems otherwise
+
+    NN <- apply(distmat, 1, function(z) order(z))
+    fills <- apply(na.ind, 1, function(i){
+        mean(na.exclude(x[NN[-1, i[1]], i[2]])[1:k])
+    })
+    x[na.ind] <- fills
+    x
+}
