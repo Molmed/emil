@@ -34,7 +34,13 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
         p.data$x <- rbind(p.data$x, dummy=0)
     }
     if(missing(error.fun)){
-        error.fun.frame <- sapply(sys.frames(), function(env) "error.fun" %in% ls(env))
+        error.fun.frame <- sapply(sys.frames(), function(env){
+            # Dirty hack! TODO: Make nicer
+            tryCatch({
+                ef <- get("error.fun", envir=env)
+                TRUE
+            }, error=function(...) FALSE)
+        })
         if(any(error.fun.frame)){
             error.fun <- get("error.fun", envir=sys.frames()[[max(which(error.fun.frame))]])
         } else {

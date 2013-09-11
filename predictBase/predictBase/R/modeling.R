@@ -144,8 +144,15 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             err <- error.fun(y[na.fill(fold, FALSE)], pred)
             if(save.vimp){
                 if("features" %in% names(sets)){
-                    my.vimp <- list(vimp=rep(NA, ncol(x)))
-                    my.vimp$vimp[sets$features] <- vimp(fit)
+                    temp.vimp <- vimp(fit)
+                    temp.map <- cumsum(sets$features)
+                    temp.map[!sets$features] <- NA
+                    if(is.data.frame(temp.vimp) || is.matrix(temp.vimp)){
+                        my.vimp <- list(vimp=temp.vimp[temp.map,,drop=FALSE])
+                    } else if(is.vector(temp.vimp)){
+                        my.vimp <- list(vimp=temp.vimp[temp.map])
+                    }
+                    rm(temp.vimp, temp.map)
                 } else {
                     my.vimp <- list(vimp=vimp(fit))
                 }

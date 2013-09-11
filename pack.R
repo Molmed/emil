@@ -51,3 +51,10 @@ system("git push")
 system("R CMD check predictBase.roxygen --use-gct") # Check package with GC-torture
 system("R CMD INSTALL --build --clean predictBase.roxygen") # Build binary
 
+
+X <- matrix(rnorm(80*4), 80)
+y <- gl(2, 40)
+cv <- resample.crossval(y, 5, 5)
+pred <- batch.predict(X, y, "nsc", test.subset=cv)
+ssubtree(pred$cv, T, 1, "error")
+

@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: predictBase
 Type: Package
 Title: Predictive modeling toolbox
-Version: 1.0-24
-Date: 2013-09-10
+Version: 1.0-25
+Date: 2013-09-11
 Author: Christofer Backlin
 Maintainer: Christofer Backlin <christofers.backlin@medsci.uu.se>
 Description: A toolbox for designing and evaluating predictive models with
