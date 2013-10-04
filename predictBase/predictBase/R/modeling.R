@@ -14,15 +14,15 @@
 ##'   
 ##'   Models are to be specified as a list where each element's name determine
 ##'   the type (e.g. \code{"rf"} for random forest) and each element's content
-##'   sets parameters (e.g. \code{rf=list(mtry=5000)}).
+##'   sets parameters (e.g. \code{list(rf=list(mtry=5000))}).
 ##' 
 ##'   To tune a parameter specify its possible values as in a list, e.g.
-##'   \code{rf=list(mtry=list(500, 1000, 2000), ntree=list(5000))}.
+##'   \code{list(rf=list(mtry=list(500, 1000, 2000), ntree=list(5000)))}.
 ##' 
 ##'   If more than one parameter is to be tuned all combinations of parameter
 ##'   values will be tested. If only specifc combinations should be tested they
 ##'   should be supplied as individual lists on this form:
-##'   \code{rf=list(list(mtry=500, ntree=100), list(mtry=2000, ntree=50))}
+##'   \code{list(rf=list(list(mtry=500, ntree=100), list(mtry=2000, ntree=50)))}
 ##' @param test.subset A resampling scheme as returned from
 ##'   \code{\link{resample.crossval}} or \code{\link{resample.holdout}}.
 ##' @param error.fun An optimization function. If omitted it will be selected
@@ -79,7 +79,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             m
         } else {
             # Every element correspond to one parameter, return all combinations
-            apply(do.call(expand.grid, lapply(m, seq)), 1, function(i){
+            apply(do.call(expand.grid, lapply(m, seq_along)), 1, function(i){
                 mapply("[[", m, i, SIMPLIFY=FALSE) 
             })
         }
@@ -96,7 +96,13 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
     counter <- 0
     out$cv <- lapply(test.subset, function(fold){
         counter <<- counter + 1
-        msg(1, "Fold %i", counter)
+        if(inherits(test.subset, "crossval")){
+            msg(1, sub("^fold(\\d):(\\d)$", "Replicate \\1, fold \\2", colnames(test.subset)[counter]))
+        } else if(inherits(test.subset, "holdout")){
+            msg(1, sub("^fold(\\d)$", "Fold \\2", colnames(test.subset)[counter]))
+        } else {
+            msg(1, colnames(test.subset)[counter])
+        }
         if(any(do.tuning)){
             msg(2, "Tuning %s", paste(sprintf("%s(%i)", names(do.tuning[do.tuning]),
                 sapply(out$models[do.tuning], length)), collapse=", "))
@@ -120,7 +126,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
                     })
                 })
             })
-            tuning.err <- lapply(seq(do.tuning), function(i)
+            tuning.err <- lapply(seq_along(do.tuning), function(i)
                 if(do.tuning[i]) ssubtree(tuning, T, i) else NULL)
             names(tuning.err) <- names(do.tuning)
             my.param <- mapply(function(p, e){
@@ -128,7 +134,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
                     p[[1]]
                 } else {
                     e <- apply(e, 1, mean)
-                    p[[sample(which(e == min(e)), 1)]]
+                    p[[order(e, runif(length(e)))[1]]]
                 }
             }, out$models, tuning.err, SIMPLIFY=FALSE)
         } else {
@@ -136,7 +142,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
         }
         msg(2, "Extracting and preprocessing design and test sets")
         sets <- pre.trans(x, y, fold)
-        res <- lapply(seq(out$models), function(i){
+        res <- lapply(seq_along(out$models), function(i){
             msg(2, "Fitting and evaluating %s", names(out$models)[i])
             fit <- do.design.call(names(out$models)[i], sets$design,
                                   y[na.fill(!fold, FALSE)], my.param[[i]])

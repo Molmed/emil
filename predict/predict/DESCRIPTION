@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: predict
 Type: Package
 Title: Classification toolbox
-Version: 1.0-8
-Date: 2013-09-11
+Version: 1.0-9
+Date: 2013-09-30
 Author: Christofer Backlin, Eva Freyhult, Mats Gustafsson
 Maintainer: Christofer Backlin <christofers.backlin@medsci.uu.se>
 Description: This package implements a few commonly used classification models

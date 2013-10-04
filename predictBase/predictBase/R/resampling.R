@@ -10,19 +10,25 @@
 ##' @param balanced Whether the groups should be balanced or not, i.e. if the
 ##'   class ratio over groups should be kept constant (as far as possible).
 ##' @param subset Which objects in \code{y} that are to be selected from (and
-##'   which that are to be held out). Observations no in \code{subset} are coded
-##'   as \code{NA} in the returned matrix.
+##'   which that are to be held out).
+##'   Observations not in \code{subset} are coded as \code{NA} in the returned
+##'   matrix. If \code{subset} is a resampling scheme, a list of inner
+##'   cross validation schemes will be returned.
 ##' @return A list of numeric vectors containing the indices of the objects in
 ##'   each fold.
 ##' @examples
 ##' y <- factor(runif(60) >= .5)
 ##' cv <- resample.crossval(y)
-##' inner.cv <- lapply(as.data.frame(cv), function(x) resample.crossval(y, subset=!x))
+##' inner.cv <- resample.crossval(y, subset=cv)
 ##' layout(t(1:2)); image(cv, main="Outer CV"); image(inner.cv[[5]], main="Inner CV, fold #5")
 ##' @seealso crossval, expand.smaller.class
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=TRUE){
+    if(inherits(subset, c("crossval", "holdout"))){
+        return(lapply(subset, function(s) resample.crossval(y, nfold, nrep, balanced, subset=!s)))
+    }
+
     n <- if(length(y) == 1) y else length(y)
     if(n < nfold) stop("Number of objects cannot be smaller than number of groups")
     if(is.outcome(y)) y <- factor.events(y)
@@ -64,11 +70,13 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
 ##'   data itself or as a scalar which is interpreted as number of objects.
 ##' @param frac Fraction of objects to hold out (0 < frac < 1).
 ##' @param nrep Number of replicates.
-##'   from design sets.
 ##' @param balanced Whether the groups should be balanced or not, i.e. if the
 ##'   class ratio over groups should be kept constant.
 ##' @param subset Which objects in \code{y} that are to be selected from (and
 ##'   which that are to be held out).
+##'   Observations not in \code{subset} are coded as \code{NA} in the returned
+##'   matrix. If \code{subset} is a resampling scheme, a list of inner
+##'   cross validation schemes will be returned.
 ##' @return A list of two vectors or data.frames, depending on \code{ngroup},
 ##'   containing indices of objects that go into each group.
 ##' @examples
@@ -78,6 +86,10 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
 ##' @author Christofer Backlin
 ##' @export
 resample.holdout <- function(y=NULL, frac=.5, nrep=5, balanced=is.factor(y), subset=TRUE){
+    if(inherits(subset, c("crossval", "holdout"))){
+        return(lapply(subset, function(s) resample.holdout(y, frac, nrep, balanced, subset=!s)))
+    }
+
     n <- if(length(y) == 1) y else length(y)
     class.idx <- if(balanced){
         lapply(levels(y), function(lev) intersect(which(y == lev), (1:n)[subset]))

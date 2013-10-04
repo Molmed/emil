@@ -61,7 +61,7 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
             if(slim.fit){
                 cv$cv.objects <- NULL
             }
-            cv$error <- sapply(seq(cv$thres), function(i)
+            cv$error <- sapply(seq_along(cv$thres), function(i)
                 error.fun(cv$y, list(pred=cv$yhat[[i]], prob=cv$prob[,,i])))
         }, error=function(...){
             options(warn = warn.status)

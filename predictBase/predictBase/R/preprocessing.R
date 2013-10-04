@@ -96,7 +96,11 @@ pre.impute.median <- function(x, y, fold){
 ##'   to be included.
 ##' @param k Number of nearest neightbors to calculate mean from. Set to < 1 to
 ##'   specify a fraction.
-##' @param distmat Distance matrix.
+##' @param distmat Distance matrix. A matrix, \code{\link{dist}} object or
+##'   \code{"auto"}. Notice that \code{"auto"} will recalculate the distance
+##'   matrix in each fold, which is only meaningful in case the features of
+##'   \code{x} vary between folds. Otherwise you are just wasting time.
+##'   
 ##' @examples
 ##' \dontrun{
 ##' x <- sweep(matrix(rnorm(60*10), 60), 1, rep(0:1/3, each=30))
@@ -110,12 +114,19 @@ pre.impute.median <- function(x, y, fold){
 pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     if(!is.matrix(x))
         stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
-    if(missing(distmat))
-        stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
 
     if(k < 1) k <- max(1, round(.05*nrow(x)))
     if(k > sum(!fold, na.rm=TRUE)) stop("k is larger than number of design observations.")
-    if(!is.matrix(distmat)) distmat <- as.matrix(distmat)
+
+    if(missing(distmat))
+        stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
+    if(is.character(distmat) && distmat == "auto"){
+        distmat <- matrix(NA, nrow(x), nrow(x))
+        idx <- !is.na(fold)
+        distmat[idx, idx] <- as.matrix(dist(x[idx,]))
+    } else if(!is.matrix(distmat)){
+        distmat <- as.matrix(distmat)
+    }
     if(any(nrow(x) != dim(distmat)))
         stop("Distance matrix does not match dataset.")
 
@@ -138,6 +149,8 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 ##' If you want to impute, build model and predict you should use
 ##' \code{\link{pre.impute.knn}}. This function imputes using all observations
 ##' without caring about crossvalidation folds.
+##'
+##' For additional information on the parameters see \code{\link{pre.impute.knn}}.
 ##' 
 ##' @param x Dataset.
 ##' @param k Number of nearest neighbors to use.
@@ -148,12 +161,18 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 impute.knn <- function(x, k=.05, distmat){
     if(!is.matrix(x))
         stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
-    if(missing(distmat))
-        stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
 
     if(k < 1) k <- max(1, round(.05*nrow(x)))
     if(k > nrow(x)-1) stop("k is larger than the maximal number of neighbors.")
-    if(!is.matrix(distmat)) distmat <- as.matrix(distmat)
+
+    if(missing(distmat))
+        stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
+    if(is.character(distmat) && distmat == "auto"){
+        distmat <- dist(x)
+    }
+    if(!is.matrix(distmat)){
+        distmat <- as.matrix(distmat)
+    }
     if(any(nrow(x) != dim(distmat)))
         stop("Distance matrix does not match dataset.")
 

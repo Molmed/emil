@@ -146,7 +146,7 @@ ssubtree <- function(...) subtree(..., fun=sapply)
 ##' @param y Function values.
 ##' @return Area under function.
 ##' @examples
-##' x <- seq(0, pi, length=100)
+##' x <- seq(0, pi, length.out=100)
 ##' trapz(x, sin(x))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @noRd
