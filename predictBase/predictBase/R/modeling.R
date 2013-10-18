@@ -51,6 +51,11 @@
 ##' @export
 batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.split,
                    save.fits = FALSE, save.vimp = FALSE, .verbose=FALSE){
+    if(nrow(x) != length(y))
+        stop("x and y does not match.")
+    if(!missing(test.subset) && nrow(x) != nrow(test.subset))
+        stop("x and test.subset does not match.")
+
     msg <- if(.verbose){
         function(level=1, ...) cat(format(Sys.time(), "%d %b %H:%M"),
             rep("  ", level), sprintf(...), "\n", sep="")

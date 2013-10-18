@@ -1,4 +1,4 @@
-##' @import randomForest
+# @import randomForest
 ##' @import party
 ##' @import predictBase
 {}
@@ -6,14 +6,14 @@
 ##' Design of random forest.
 ##'
 ##' Directly calling the \code{randomForest} package implementation. See
-##' \code{\link{randomForest}} for parameter specification.
+##' \code{\link[randomForest]{randomForest}} for parameter specification.
 ##'
 ##' @param x Dataset, numerical matrix with observations as rows.
 ##' @param y Class labels, factor.
 ##' @param importance Whether to calculate permuted OOB error as a variable
-##'   importance measure, see \code{\link{importance.randomForest}}. Set to
+##'   importance measure, see \code{\link[randomForest]{importance.randomForest}}. Set to
 ##'   \code{FASLE} to speed up computation.
-##' @param ... Sent to \code{\link{randomForest}}.
+##' @param ... Sent to \code{\link[randomForest]{randomForest}}.
 ##' @return Fitted random forest.
 ##' @examples
 ##' # TODO
@@ -21,6 +21,7 @@
 ##' @seealso design
 ##' @export
 design.rf <- function(x, y, importance=FALSE, ...){
+    require(randomForest)
     #idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
     #x <- x[idx,, drop=FALSE]
     #y <- y[idx]
@@ -49,6 +50,7 @@ design.rf <- function(x, y, importance=FALSE, ...){
 ##' @seealso predict
 ##' @export
 predict.rf <- function(object, x, ...){
+    require(randomForest)
     p <- getFromNamespace("predict.randomForest", "randomForest")
     if(is.factor(object$y)){
         list(pred = p(object, newdata=x, type="response"),

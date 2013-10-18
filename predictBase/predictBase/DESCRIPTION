@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: predictBase
 Type: Package
 Title: Predictive modeling toolbox
-Version: 1.1-1
-Date: 2013-10-04
+Version: 1.1-2
+Date: 2013-10-18
 Author: Christofer Backlin
 Maintainer: Christofer Backlin <christofers.backlin@medsci.uu.se>
 Description: A toolbox for designing and evaluating predictive models with
@@ -14,6 +14,7 @@ Description: A toolbox for designing and evaluating predictive models with
   (linear discriminant) to serve as an example. For a collection of ready-to-use
   models types please refer to the full `predict` package.
 Depends: foreach
+Suggests: predict
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes

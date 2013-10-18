@@ -1,6 +1,3 @@
-##' @import party
-{}
-
 ##' Design conditional inference forest
 ##' 
 ##' A \code{\link{cforest}} is a random forest based on conditional inference
@@ -22,6 +19,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 design.cf <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
+    library(party)
     if(is.outcome(y)){
         if(any(table(y$event)[-1] > 0))
             stop("cforest cannot handle competing events.")
@@ -46,6 +44,7 @@ design.cf <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 predict.cf <- function(object, x, at, ...){
+    library(party)
     preds <- party::treeresponse(object$fit, newdata=as.data.frame(x), ...)
     if (missing(at)) {
         risk <- sapply(preds, function(p) {

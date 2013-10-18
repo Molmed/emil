@@ -80,6 +80,12 @@ pre.impute.median <- function(x, y, fold){
     list(design=x[na.fill(!fold, FALSE),,drop=FALSE],
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname impute
+##' @export
+impute.median <- function(x){
+    pre.impute.median(x, , rep(FALSE, nrow(x)))$design
+}
 
 ##' Foldwise kNN imputation
 ##' 
@@ -144,10 +150,11 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
-##' Regular kNN imputation
+##' Regular imputation
 ##'
 ##' If you want to impute, build model and predict you should use
-##' \code{\link{pre.impute.knn}}. This function imputes using all observations
+##' \code{\link{pre.impute.median}} or \code{\link{pre.impute.knn}}.
+##' This function imputes using all observations
 ##' without caring about crossvalidation folds.
 ##'
 ##' For additional information on the parameters see \code{\link{pre.impute.knn}}.
@@ -157,32 +164,9 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 ##' @param distmat Distance matrix.
 ##' @return An imputed matrix.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname impute
 ##' @export
 impute.knn <- function(x, k=.05, distmat){
-    if(!is.matrix(x))
-        stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
-
-    if(k < 1) k <- max(1, round(.05*nrow(x)))
-    if(k > nrow(x)-1) stop("k is larger than the maximal number of neighbors.")
-
-    if(missing(distmat))
-        stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
-    if(is.character(distmat) && distmat == "auto"){
-        distmat <- dist(x)
-    }
-    if(!is.matrix(distmat)){
-        distmat <- as.matrix(distmat)
-    }
-    if(any(nrow(x) != dim(distmat)))
-        stop("Distance matrix does not match dataset.")
-
-    na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
-        # Duplicate names may cause problems otherwise
-
-    NN <- apply(distmat, 1, function(z) order(z))
-    fills <- apply(na.ind, 1, function(i){
-        mean(na.exclude(x[NN[-1, i[1]], i[2]])[1:k])
-    })
-    x[na.ind] <- fills
-    x
+    pre.impute.knn(x, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$design
 }
+

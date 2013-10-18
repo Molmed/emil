@@ -1,6 +1,3 @@
-##' @import cmprsk
-{}
-
 ##' Gray's test
 ##' 
 ##' An extraction from \code{\link{cuminc}} that only performs the test for the
@@ -30,6 +27,7 @@
 ##' @export
 cuminc.test <- function (ftime, fstatus, group, strata, rho = 0, cencode = 0, failcode = 1,
                         subset, na.action = na.omit){
+    library(cmprsk)                        
     if(is.outcome(ftime)){
         y <- ftime
         ftime <- y$time

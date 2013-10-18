@@ -1,8 +1,3 @@
-##' @import pamr
-##' @import predictBase
-{}
-
-
 ##' Design of nearest shrunken centroids.
 ##'
 ##' Wrapped version of the \code{pamr} package implementation. Note that
@@ -17,7 +12,7 @@
 ##'   memory efficient. This means that the element \code{cv$cv.objects} 
 ##'   containing the cross validated fits will be dropped from the returned
 ##'   classifier.
-##' @param ... Sent to \code{\link{pamr.train}}.
+##' @param ... Sent to \code{\link[pamr]{pamr.train}}.
 ##' @return Fitted LDA or QDA.
 ##' @examples
 ##' # TODO 
@@ -25,6 +20,7 @@
 ##' @seealso design
 ##' @export
 design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
+    require(pamr)
     p.data <- list(x=t(x), y=y)
     rm(x, y)
     warn.status <- unlist(options("warn"))
@@ -45,9 +41,9 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
             error.fun <- get("error.fun", envir=sys.frames()[[max(which(error.fun.frame))]])
         } else {
             if(is.factor(y)){
-                error.rate
+                error.fun <- error.rate
             } else if(is.numeric(y)){
-                rmse
+                error.fun <- rmse
             } else {
                 stop("You must specify an error function!")
             }
@@ -86,6 +82,7 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
 ##' @seealso predict
 ##' @export
 predict.nsc <- function(object, x, thres, ...){
+    require(pamr)
     if(ncol(x) == 1){
         x <- rbind(t(x), dummy=0)
     } else {
@@ -104,12 +101,14 @@ predict.nsc <- function(object, x, thres, ...){
 ##' classwise shrunken centroid (which is the same for both classes except sign).
 ##' 
 ##' @method vimp nsc
+# @importFrom pamr pamr.predict
 ##' @param object Fitted NSC classifier
 ##' @param ... Ignored.
 ##' @return An importance vector with elements corresponding to variables.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 vimp.nsc <- function(object, ...){
+    require(pamr)
     cen <- pamr::pamr.predict(object$fit, ,
             object$fit$threshold[which.min(object$cv$error)], type="centroid") -
         object$fit$centroid.overall / object$fit$sd
