@@ -55,6 +55,10 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
         stop("x and y does not match.")
     if(!missing(test.subset) && nrow(x) != nrow(test.subset))
         stop("x and test.subset does not match.")
+    if(any(is.na(y))){
+        warning("There are NAs present in the response vector. These will not be used for neither design nor test.")
+        test.subset[is.na(y),] <- NA
+    }
 
     msg <- if(.verbose){
         function(level=1, ...) cat(format(Sys.time(), "%d %b %H:%M"),

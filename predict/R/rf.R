@@ -1,8 +1,3 @@
-# @import randomForest
-##' @import party
-##' @import predictBase
-{}
-
 ##' Design of random forest.
 ##'
 ##' Directly calling the \code{randomForest} package implementation. See

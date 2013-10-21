@@ -1,21 +1,21 @@
 ##' Design conditional inference forest
 ##' 
-##' A \code{\link{cforest}} is a random forest based on conditional inference
+##' A \code{\link[party]{cforest}} is a random forest based on conditional inference
 ##' trees, using the implementation in the \code{party} package.
 ##' These trees can be used for classification, regression or survival
 ##' analysis, but only the survival part has been properly tested.
 ##' 
-##' The parameters to \code{\link{cforest}} are set using a
-##' \code{\link{cforest_control}} object. You should read the documentation
+##' The parameters to \code{\link[party]{cforest}} are set using a
+##' \code{\link[party]{cforest_control}} object. You should read the documentation
 ##' as the default values are choosen for technical reasons, not performance!
 ##' Pay special attention to \code{mtry} which is set very low by default.
 ##'
 ##' @param x Dataset, observations as rows and descriptors as columns.
 ##' @param y Responses.
 ##' @param formula Formula linking response to descriptors.
-##' @param ctrl.fun Which control function to use, see \code{\link{cforest_control}}.
+##' @param ctrl.fun Which control function to use, see \code{\link[party]{cforest_control}}.
 ##' @param ... Sent to the function specified by \code{ctrl.fun}.
-##' @return A fitted \code{\link{cforest}} model.
+##' @return A fitted \code{\link[party]{cforest}} model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 design.cf <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
@@ -39,7 +39,7 @@ design.cf <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
 ##' @param x New data to be used for predictions.
 ##' @param at Time point to evaluate survival curves at. If omitted it is set
 ##'   to the last observed time point.
-##' @param ... Sent to \code{\link{treeresponse}}·
+##' @param ... Sent to \code{\link[party]{treeresponse}}·
 ##' @return The predicted chance of survival.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
@@ -82,8 +82,8 @@ predict.cf <- function(object, x, at, ...){
 #     event[!event %in% levels(event)[1:2]] <- NA
 #     s <- Surv(time, as.integer(event)-1)
 #     s.na <- is.na(s)
-#     fit <- cforest(s ~ ., data.frame(s=s, t(x))[!s.na,], subset=!test.fold[!s.na])
-#     preds <- treeresponse(fit, newdata=data.frame(t(x[,test.fold])))
+#     fit <- party::cforest(s ~ ., data.frame(s=s, t(x))[!s.na,], subset=!test.fold[!s.na])
+#     preds <- party::treeresponse(fit, newdata=data.frame(t(x[,test.fold])))
 #     return(sapply(preds, function(p){
 #         1-p$surv[which(p$time > at)[1]-1]
 #     }))

@@ -1,19 +1,19 @@
 ##' Gray's test
 ##' 
-##' An extraction from \code{\link{cuminc}} that only performs the test for the
+##' An extraction from \code{\link[cmprsk]{cuminc}} that only performs the test for the
 ##' event of interest.
 ##' 
-##' @param ftime Times or outcome vector, see \code{\link{cuminc}}.
+##' @param ftime Times or outcome vector, see \code{\link[cmprsk]{cuminc}}.
 ##' @param fstatus Event types if \code{ftime} is numeric, see
-##'   \code{\link{cuminc}}. Event of interest if \code{ftime} is of class
+##'   \code{\link[cmprsk]{cuminc}}. Event of interest if \code{ftime} is of class
 ##'   outcome.
-##' @param group See \code{\link{cuminc}}.
-##' @param strata See \code{\link{cuminc}}.
-##' @param rho See \code{\link{cuminc}}.
-##' @param cencode See \code{\link{cuminc}}.
-##' @param failcode See \code{\link{cuminc}}.
-##' @param subset See \code{\link{cuminc}}.
-##' @param na.action See \code{\link{cuminc}}.
+##' @param group See \code{\link[cmprsk]{cuminc}}.
+##' @param strata See \code{\link[cmprsk]{cuminc}}.
+##' @param rho See \code{\link[cmprsk]{cuminc}}.
+##' @param cencode See \code{\link[cmprsk]{cuminc}}.
+##' @param failcode See \code{\link[cmprsk]{cuminc}}.
+##' @param subset See \code{\link[cmprsk]{cuminc}}.
+##' @param na.action See \code{\link[cmprsk]{cuminc}}.
 ##' @return P-value for event of interest.
 ##' @examples
 ##' set.seed(2)
@@ -135,7 +135,7 @@ p.value.crr <- function(x, log=FALSE, ...){
 ##' Extracts p-value from a logrank test
 ##' 
 ##' @method p.value survdiff
-##' @param x Logrank test result, as returned by \code{\link{survdiff}}.
+##' @param x Logrank test result, as returned by \code{\link[survival]{survdiff}}.
 ##' @param log See \code{\link{p.value}}.
 ##' @param ... Ignored. Kept for S3 consistency.
 ##' @return p-value.
@@ -162,7 +162,7 @@ p.value.survdiff <- function(x, log=FALSE, ...){
 # ##' 
 # ##' @param x Dataset.
 # ##' @param y Response vector of class \code{\link{outcome}}.
-# ##' @param ... Sent to \code{\link{crr}}
+# ##' @param ... Sent to \code{\link[cmprsk]{crr}}
 # ##' @author Christofer \enc{Bäcklin}{Backlin}
 # ##' @export
 # design.crr <- function(x, y, ...){

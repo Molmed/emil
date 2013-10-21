@@ -73,7 +73,7 @@ pre.scale <- function(x, y, fold, scale=TRUE){
 pre.impute.median <- function(x, y, fold){
     na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
         # Duplicate names may cause problems otherwise
-    na.ind <- na.ind[!is.na(fold[na.ind[,1]]),]
+    na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
     na.feats <- unique(na.ind[,"col"])
     fills <- apply(x[na.fill(!fold, FALSE), na.feats], 2, median, na.rm=TRUE)
     x[na.ind] <- fills[match(na.ind[,"col"], na.feats)]
