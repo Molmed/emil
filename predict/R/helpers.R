@@ -163,3 +163,27 @@ trapz <- function(x,y){
     sum((y[-1]+y[-n])/2 * (x[-1] - x[-n]))
 }
 
+
+##' Print a timestamped and indented log message
+##' 
+##' @param level Indentation level.
+##' @param ... Sent to \code{\link{sprintf}}.
+##' @param time Whether or not to print timestamp.
+##' @param file Sent to \code{\link{cat}}.
+##' @examples
+##' 
+##' equipment <- c("flashlight", "snacks", "pick")
+##' {
+##'     trace.msg(1, "Begin descent")
+##'     trace.msg(2, "Oh no, forgot the %s!", sample(equipment, 1))
+##'     trace.msg(2, "Hello? Can you throw it down to me?", time=FALSE)
+##'     trace.msg(1, "Aw shucks, I'm coming back up.")
+##' }
+##' 
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+trace.msg <- function(level=1, ..., time=TRUE, file=NULL)
+    cat(if(time) format(Sys.time(), "%d %b %H:%M") else
+                 paste(rep(" ", 12), collapse=""),
+        rep("  ", level), sprintf(...), "\n", sep="")
+

@@ -75,7 +75,7 @@ pre.impute.median <- function(x, y, fold){
         # Duplicate names may cause problems otherwise
     na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
     na.feats <- unique(na.ind[,"col"])
-    fills <- apply(x[na.fill(!fold, FALSE), na.feats], 2, median, na.rm=TRUE)
+    fills <- apply(x[na.fill(!fold, FALSE), na.feats, drop=FALSE], 2, median, na.rm=TRUE)
     x[na.ind] <- fills[match(na.ind[,"col"], na.feats)]
     list(design=x[na.fill(!fold, FALSE),,drop=FALSE],
          test=x[na.fill(fold, FALSE),,drop=FALSE])
@@ -167,6 +167,6 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 ##' @rdname impute
 ##' @export
 impute.knn <- function(x, k=.05, distmat){
-    pre.impute.knn(x, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$design
+    pre.impute.knn(x, fold=rep(FALSE, nrow(x)), k=k, distmat=distmat)$design
 }
 

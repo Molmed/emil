@@ -55,17 +55,13 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
         stop("x and y does not match.")
     if(!missing(test.subset) && nrow(x) != nrow(test.subset))
         stop("x and test.subset does not match.")
-    if(any(is.na(y))){
-        warning("There are NAs present in the response vector. These will not be used for neither design nor test.")
-        test.subset[is.na(y),] <- NA
+    na.idx <- Reduce("|", lapply(test.subset, function(idx) is.na(y) & !is.na(idx)))
+    if(any(na.idx)){
+        warning("Response vector `y` contains NA values that are not NA in `test.subset`. These will not be used for neither design nor test.")
+        test.subset[na.idx,] <- NA
     }
 
-    msg <- if(.verbose){
-        function(level=1, ...) cat(format(Sys.time(), "%d %b %H:%M"),
-            rep("  ", level), sprintf(...), "\n", sep="")
-    } else {
-        function(...) invisible()
-    }
+    msg <- if(.verbose) trace.msg else function(...) invisible()
 
     # This elaborate construction allows us to call an arbitrary design function
     # with a dataset and a list of parameters without combining them in a single
@@ -184,7 +180,8 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             os <- object.size(res)
             os.i <- trunc(log(os)/log(1024))
             msg(3, "Fold result size is %.2f %s",
-                exp(log(os) - os.i * log(1024)), c("B", "KiB", "MiB", "GiB", "TiB")[os.i + 1])
+                exp(log(os) - os.i * log(1024)), c("B", "KiB", "MiB", "GiB", "TiB")[os.i + 1],
+                time=FALSE)
         }
         res
     })

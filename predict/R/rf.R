@@ -16,7 +16,7 @@
 ##' @seealso design
 ##' @export
 design.rf <- function(x, y, importance=FALSE, ...){
-    require(randomForest)
+    library(randomForest)
     #idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
     #x <- x[idx,, drop=FALSE]
     #y <- y[idx]
@@ -45,7 +45,7 @@ design.rf <- function(x, y, importance=FALSE, ...){
 ##' @seealso predict
 ##' @export
 predict.rf <- function(object, x, ...){
-    require(randomForest)
+    library(randomForest)
     p <- getFromNamespace("predict.randomForest", "randomForest")
     if(is.factor(object$y)){
         list(pred = p(object, newdata=x, type="response"),

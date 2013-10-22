@@ -14,7 +14,7 @@ system(sprintf("scp %s backch@tank:~/R_packages/src/contrib",
                rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
 system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:R_packages/src/contrib",
                rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
-system("mv predict_*.tar.gz ../builds")
+system("mv predict_*.tar.gz builds")
 
 
 #---------------------------------------------------------------------[ Commit ]

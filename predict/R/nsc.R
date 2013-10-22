@@ -20,15 +20,7 @@
 ##' @seealso design
 ##' @export
 design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
-    require(pamr)
-    p.data <- list(x=t(x), y=y)
-    rm(x, y)
-    warn.status <- unlist(options("warn"))
-    if(nrow(p.data$x) == 1){
-        warning("pamr implementation of NSC is not designed to handle univariate data. Dirty hack used.")
-        options(warn = -1)
-        p.data$x <- rbind(p.data$x, dummy=0)
-    }
+    library(pamr)
     if(missing(error.fun)){
         error.fun.frame <- sapply(sys.frames(), function(env){
             # Dirty hack! TODO: Make nicer
@@ -48,6 +40,14 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
                 stop("You must specify an error function!")
             }
         }
+    }
+    p.data <- list(x=t(x), y=y)
+    rm(x, y)
+    warn.status <- unlist(options("warn"))
+    if(nrow(p.data$x) == 1){
+        warning("pamr implementation of NSC is not designed to handle univariate data. Dirty hack used.")
+        options(warn = -1)
+        p.data$x <- rbind(p.data$x, dummy=0)
     }
     invisible(capture.output(
         tryCatch({
@@ -70,6 +70,9 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
 
 ##' Prediction using nearest shrunken centroids.
 ##'
+##' In case multiple thresholds give the same error the largest one is chosen
+##' (i.e. the one keeping the fewest features).
+##'
 ##' @method predict nsc
 ##' @param object Fitted classifier.
 ##' @param x Dataset of observations to be classified.
@@ -82,14 +85,15 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
 ##' @seealso predict
 ##' @export
 predict.nsc <- function(object, x, thres, ...){
-    require(pamr)
+    library(pamr)
     if(ncol(x) == 1){
         x <- rbind(t(x), dummy=0)
     } else {
         x <- t(x)
     }
     if(missing(thres))
-        thres <- rev(object$fit$threshold)[which.min(rev(object$cv$error))]
+        thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+    rev(object$fit$threshold)[which.min(rev(object$cv$error))]
     list(pred=pamr::pamr.predict(object$fit, x, type="class", threshold=thres, ...),
          prob=pamr::pamr.predict(object$fit, x, type="posterior", threshold=thres, ...))
 }
@@ -99,19 +103,23 @@ predict.nsc <- function(object, x, thres, ...){
 ##' 
 ##' Calculated as the absolute difference between the overall centroid and a
 ##' classwise shrunken centroid (which is the same for both classes except sign).
+##'
+##' In case multiple thresholds give the same error the largest one is chosen
+##' (i.e. the one keeping the fewest features).
 ##' 
 ##' @method vimp nsc
-# @importFrom pamr pamr.predict
 ##' @param object Fitted NSC classifier
+##' @param thres What threshold to use for classification.
 ##' @param ... Ignored.
 ##' @return An importance vector with elements corresponding to variables.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-vimp.nsc <- function(object, ...){
+vimp.nsc <- function(object, ..., thres){
     require(pamr)
-    cen <- pamr::pamr.predict(object$fit, ,
-            object$fit$threshold[which.min(object$cv$error)], type="centroid") -
-        object$fit$centroid.overall / object$fit$sd
+    if(missing(thres))
+        thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+    cen <- (pamr::pamr.predict(object$fit, , thres, type="centroid") -
+            object$fit$centroid.overall) / object$fit$sd
     names(cen) <- object$descriptors
     return(cen)
 }
