@@ -389,3 +389,31 @@ assemble <- function(x, test.subset){
     return(values)
 }
 
+
+
+#assemble <- function(x, test.subset){
+#    # Make sure everything is in order
+#    if(is.matrix(test.subset))
+#        test.subset <- as.data.frame(test.subset)
+#    if(any(sapply(x, class) != class(x[[1]])))
+#        stop("All elements in `x` are not of the same class.")
+#    if(!inherits(x[[1]], "data.frame"))
+#        x <- lapply(x, function(x) data.frame(x=x))
+#    n <- sapply(x, nrow)
+#    if(any(n != sapply(test.subset, sum)))
+#        stop("Values and resampling scheme does not match.")
+#
+#    # Do the assembly
+#    if(inherit(test.subset, "crossval")){
+#        ts <- t(apply(test.subset, 1, which))
+#        split(do.call(rbind, x)[unlist(cumsum(c(0, n))[ts] + ave(ts, ts, FUN=seq_along)),,drop=FALSE],
+#           sprintf("rep%i", rep(1:attr(test.subset, "nrep"), each=nrow(test.subset))))
+#    } else {
+#        do.call(data.frame, mapply(function(ts, my.x){
+#            xx <- rep(NA, length(ts))
+#            xx[ts] <- my.x
+#            xx
+#        }, test.subset, x, SIMPLIFY=FALSE))
+#    }
+#}
+

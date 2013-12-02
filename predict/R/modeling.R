@@ -51,6 +51,11 @@
 ##' @export
 batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.split,
                    save.fits = FALSE, save.vimp = FALSE, .verbose=FALSE){
+
+
+#---------------------------------------------------------------[ Initial test ]
+#   Taking care of the most obvious user misstakes.
+
     if(nrow(x) != length(y))
         stop("x and y does not match.")
     if(!missing(test.subset) && nrow(x) != nrow(test.subset))
@@ -63,17 +68,55 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
 
     msg <- if(.verbose) trace.msg else function(...) invisible()
 
+
+#-------------------------------------------------------------[ Call functions ]
+
     # This elaborate construction allows us to call an arbitrary design function
     # with a dataset and a list of parameters without combining them in a single
     # list (i.e. `do.call(fun, c(list(data), params))`), which would result in
     # an unnecessary copy of the dataset in the memory.
+    #
+    # To find the correct function, we first look into <R_GlobalEnv> to see if
+    # the user has overlayered it. If not, we search the package namespace.
+    #
+    # @param type The type of classifier to design.
+    # @param x Dataset.
+    # @param y Response vector.
+    # @param param Model parameters.
     do.design.call <- function(type, x, y, param){
-        f <- function(...) get(sprintf("design.%s", type))(x=x, y=y, ...)
+        fun.name <- sprintf("design.%s", type)
+        if(fun.name %in% ls(envir=globalenv())){
+            f <- function(...) get(fun.name, envir=globalenv())(x=x, y=y, ...)
+        } else {
+            f <- function(...) get(fun.name)(x=x, y=y, ...)
+        }
         fit <- do.call("f", param)
         structure(fit, class=c(type, "classifier", class(fit)))
     }
+    # @param object Fitted classifier.
+    # @param ... Sent to prediction function.
+    do.predict.call <- function(object, ...){
+        fun.name <- sprintf("predict.%s", class(object)[1])
+        if(fun.name %in% ls(envir=globalenv())){
+            get(fun.name, envir=globalenv())(object, ...)
+        } else {
+            predict(object, ...)
+        }
+    }
+    # @param object Fitted classifier.
+    # @param ... Sent to vimp function.
+    do.vimp.call <- function(object, ...){
+        fun.name <- sprintf("vimp.%s", class(object)[1])
+        if(fun.name %in% ls(envir=globalenv())){
+            get(fun.name, envir=globalenv())(object, ...)
+        } else {
+            vimp(object, ...)
+        }
+    }
 
-    # Set up tuning
+
+#------------------------------------------[ Set up model definiton and tuning ]
+
     if(is.character(models))
         models <- structure(vector("list", length(models)), names=models)
     out <- list(models = lapply(models, function(m){
@@ -97,6 +140,9 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             factor=error.rate,
             numeric=rmse,
             stop("You must explicitly provide an error function when the response not factor or numeric."))
+
+
+#----------------------------------------------------------[ Perform modelling ]
 
     counter <- 0
     out$cv <- lapply(test.subset, function(fold){
@@ -126,7 +172,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
                 lapply(which(do.tuning), function(i){
                     sapply(out$models[[i]], function(my.param){
                         error.fun(y[na.fill(tuning.fold, FALSE)],
-                            predict(do.design.call(names(out$models)[i], sets$design,
+                            do.predict.call(do.design.call(names(out$models)[i], sets$design,
                                 y[na.fill(!tuning.fold, FALSE)], my.param), sets$test))
                     })
                 })
@@ -151,11 +197,11 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             msg(2, "Fitting and evaluating %s", names(out$models)[i])
             fit <- do.design.call(names(out$models)[i], sets$design,
                                   y[na.fill(!fold, FALSE)], my.param[[i]])
-            pred <- predict(fit, sets$test)
+            pred <- do.predict.call(fit, sets$test)
             err <- error.fun(y[na.fill(fold, FALSE)], pred)
             if(save.vimp){
                 if("features" %in% names(sets)){
-                    temp.vimp <- vimp(fit)
+                    temp.vimp <- do.vimp.call(fit)
                     temp.map <- cumsum(sets$features)
                     temp.map[!sets$features] <- NA
                     if(is.data.frame(temp.vimp) || is.matrix(temp.vimp)){
@@ -165,7 +211,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
                     }
                     rm(temp.vimp, temp.map)
                 } else {
-                    my.vimp <- list(vimp=vimp(fit))
+                    my.vimp <- list(vimp=do.vimp.call(fit))
                 }
             } else my.vimp <- NULL
 

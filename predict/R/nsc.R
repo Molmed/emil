@@ -12,6 +12,14 @@
 ##'   memory efficient. This means that the element \code{cv$cv.objects} 
 ##'   containing the cross validated fits will be dropped from the returned
 ##'   classifier.
+##' @param cv Cross validation scheme for shrinkage tuning. It should
+##'   be supplied on one of the following forms:
+##'   \itemize{
+##'     \item{Resampling scheme produced with \code{\link{resample.crossval}}
+##'       or \code{\link{resample.holdout}}.}
+##'     \item{List with elements named \code{nrep} and \code{nfold}}
+##'     \item{\code{NA}, \code{NULL} or \code{FALSE} to suppress shrinkage tuning.}
+##'   }
 ##' @param ... Sent to \code{\link[pamr]{pamr.train}}.
 ##' @return Fitted LDA or QDA.
 ##' @examples
@@ -19,7 +27,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
+design.nsc <- function(x, y, error.fun, slim.fit=FALSE, cv, ...){
     library(pamr)
     if(missing(error.fun)){
         error.fun.frame <- sapply(sys.frames(), function(env){
@@ -52,19 +60,30 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, ...){
     invisible(capture.output(
         tryCatch({
             fit <- pamr::pamr.train(p.data, ...)
-            cv <- pamr::pamr.cv(fit, p.data)
-            options(warn = warn.status)
-            if(slim.fit){
-                cv$cv.objects <- NULL
+            if(missing(cv)){
+                fit.cv <- pamr::pamr.cv(fit, p.data)
+            } else if(is.null(cv) || (length(cv) == 1 && (is.na(cv) || cv == FALSE))) {
+                fit.cv <- NULL
+            } else {
+                if(!inherits(cv, c("crossval", "holdout")))
+                    cv <- resample.crossval(p.data$y, nrep=cv$nrep, nfold=cv$nfold)
+                if(nrow(cv) != length(p.data(y)))
+                    stop("Resampling set for shrinkage selection does not match dataset in size.")
+                fit.cv <- pamr::pamr.cv(fit, p.data,
+                    folds=lapply(as.data.frame(cv), which))
+                options(warn = warn.status)
+                if(slim.fit){
+                    fit.cv$cv.objects <- NULL
+                }
+                fit.cv$error <- sapply(seq_along(fit.cv$thres), function(i)
+                    error.fun(fit.cv$y, list(pred=fit.cv$yhat[[i]], prob=fit.cv$prob[,,i])))
             }
-            cv$error <- sapply(seq_along(cv$thres), function(i)
-                error.fun(cv$y, list(pred=cv$yhat[[i]], prob=cv$prob[,,i])))
         }, error=function(...){
             options(warn = warn.status)
             stop(...)
         })
     ))
-    return(list(fit=fit, cv=cv))
+    return(list(fit=fit, cv=fit.cv))
 }
 
 
@@ -91,8 +110,11 @@ predict.nsc <- function(object, x, thres, ...){
     } else {
         x <- t(x)
     }
-    if(missing(thres))
+    if(missing(thres)){
+        if(is.null(object$cv))
+            stop("`thres` was neither tuned during the design nor given explicitly.")
         thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+    }
     rev(object$fit$threshold)[which.min(rev(object$cv$error))]
     list(pred=pamr::pamr.predict(object$fit, x, type="class", threshold=thres, ...),
          prob=pamr::pamr.predict(object$fit, x, type="posterior", threshold=thres, ...))

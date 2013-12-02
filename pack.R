@@ -5,7 +5,6 @@ library("roxygen2")
 
 roxygen.update.description()
 roxygenize("predict", "predict.roxygen", unlink.target = TRUE)
-system("rm -rf predict.roxygen/inst")
 system("R CMD check predict.roxygen")
 
 system("R CMD INSTALL predict.roxygen")

@@ -169,6 +169,7 @@ trapz <- function(x,y){
 ##' @param level Indentation level.
 ##' @param ... Sent to \code{\link{sprintf}}.
 ##' @param time Whether or not to print timestamp.
+##' @param linebreak Whether to finish the message with a linebreak or not.
 ##' @param file Sent to \code{\link{cat}}.
 ##' @examples
 ##' 
@@ -182,8 +183,15 @@ trapz <- function(x,y){
 ##' 
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-trace.msg <- function(level=1, ..., time=TRUE, file=NULL)
-    cat(if(time) format(Sys.time(), "%d %b %H:%M") else
+trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file="")
+    cat(sep="", file=file,
+        # timestamp
+        if(time) format(Sys.time(), "%d %b %H:%M") else
                  paste(rep(" ", 12), collapse=""),
-        rep("  ", level), sprintf(...), "\n", sep="")
-
+        # indent
+        rep("  ", level),
+        # message
+        sprintf(...),
+        # linebreak
+        if(linebreak) "\n" else "")
+        

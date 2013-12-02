@@ -7,13 +7,13 @@
 ##' etc.
 ##' 
 ##' The following functions are provided in this package:
-##' \tabular{ll}{
-##'     \code{\link{pre.split}} \tab Only split, no transformation.\cr
-##'     \code{\link{pre.center}} \tab Center data to have mean 0 of each feature.\cr
-##'     \code{\link{pre.scale}} \tab Center and scale data to have mean 0 and standard deviation 1. \cr
-##'     \code{\link{pre.impute.median}} \tab Impute missing values with feature medians.\cr
-##'     \code{\link{pre.impute.knn}} \tab Impute missing values with k-NN, see
-##'         \code{\link{pre.impute.knn}} for details on how to set parameters.\cr
+##' \describe{
+##'     \item{\code{\link{pre.split}}}{Only split, no transformation.}
+##'     \item{\code{\link{pre.center}}}{Center data to have mean 0 of each feature.}
+##'     \item{\code{\link{pre.scale}}}{Center and scale data to have mean 0 and standard deviation 1. }
+##'     \item{\code{\link{pre.impute.median}}}{Impute missing values with feature medians.}
+##'     \item{\code{\link{pre.impute.knn}}}{Impute missing values with k-NN, see
+##'         \code{\link{pre.impute.knn}} for details on how to set parameters.}
 ##' }
 ##' 
 ##' Note that all transformations are defined based on the design data only
@@ -28,6 +28,31 @@
 ##'     \code{features} \tab Logical vector indicating which features were kept
 ##'         (TRUE) and discarded (FALSE). This is only set in case of variable
 ##'         selection.\cr
+##' }
+##'
+##' @examples
+##' # A splitter that only keeps variables with a classwise mean difference > `d`
+##' \dontrun{
+##' # Define the transformation
+##' my.split <- function(x, y, fold, d=2){
+##'     design.idx <- na.fill(!fold, FALSE)
+##'     test.idx <- na.fill(fold, FALSE)
+##'     class.means <- sapply(
+##'         split(as.data.frame(x[design.idx,,drop=FALSE]), y[design.idx]),
+##'         sapply, mean, na.rm=TRUE)
+##'     diff.feats <- apply(class.means, 1, range) > d
+##'     return(list(
+##'         design = x[design.idx, diff.feats, drop=FALSE],
+##'         test = x[test.idx, diff.feats, drop=FALSE],
+##'         features = diff.feats))
+##' }
+##'
+##' # Use it during modelling
+##' pred <- batch.predict(x, y, "rf", pre.trans=my.split)
+##'
+##' # Example of how the end user can change the `d` parameter,
+##' # without redefining the function
+##' pred <- batch.predict(x, y, "rf", pre.trans=function(...) my.split(..., d=4))
 ##' }
 ##' @name pre.trans
 {}
