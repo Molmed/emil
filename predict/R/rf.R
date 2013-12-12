@@ -61,11 +61,11 @@ predict.rf <- function(object, x, ...){
 ##' @method vimp rf
 ##' @param object Fitted NSC classifier
 ##' @param type Importance can be assessed in two ways:
-##'   \tabular{ll}{
-##'     1.\tab Permuted out-of-bag prediction error (default). This can only be
+##'   \describe{
+##'     \item{1.}{Permuted out-of-bag prediction error (default). This can only be
 ##'            used if the classifier was designed with argument
-##'            \code{importance=TRUE} which is default.\cr
-##'     2.\tab Total decrease in node impurity.\cr
+##'            \code{importance=TRUE} which is default.}
+##'     \item{2.}{Total decrease in node impurity.}
 ##'   }
 ##' @param ... Ignored.
 ##' @return An importance vector with elements corresponding to variables.

@@ -274,8 +274,6 @@ image.holdout <- function(x, ...){
 ##'
 ##' @param batch List of predictions, as returned by \code{\link{batch.predict}}
 ##'   or \code{\link{predict}}.
-##' @param y True class labels. If supplied ROC curve will be calculated (only
-##'   for binary problems).  
 ##' @param test.subset CV folds, as returned by \code{\link{resample.crossval}}.
 ##' @return A combined prediction object on the same form as returned by
 ##'   \code{\link{batch.predict}}.
@@ -284,7 +282,7 @@ image.holdout <- function(x, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso assemble, subtree
 ##' @export
-assemble.cv <- function(batch, y=NULL, test.subset){
+assemble.cv <- function(batch, test.subset){
     if(missing(test.subset)) stop("test.subset missing.")
 
     # Find out what fields there are and which are to be assembled

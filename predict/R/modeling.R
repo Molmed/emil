@@ -1,3 +1,35 @@
+##' Get a desired plug-in function
+##'
+##' @param fun.name Plug-in name, e.g. "design.nsc".
+##' @param location The location to search for the function at. Can be specified
+##'   as:
+##'   \describe{
+##'     \item{\code{NA}}{First look in the global environment, then the regular
+##'       package search path.}
+##'     \item{\code{"package:x"}}{Only look among the functions exported from
+##'       package \emph{x}.}
+##'     \item{\code{"namespace:x"}}{Only look in the namespace of package
+##'       \emph{x}}
+##'   }
+##' @return A function.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+get.plugin <- function(fun.name, location){
+    if(grepl("^namespace:", location)){
+        # The user has specified what namespace to get the function from
+        getFromNamespace(fun.name, sub("^namespace:", "", location))
+    } else if(grepl("^package:", location)){
+        # The user has specified what package to get the function from
+        getExportedValue(sub("^package:", "", location), fun.name)
+    } else if(fun.name %in% ls(envir=globalenv())){
+        # The function has been defined (or overlayered) in the global environment
+        get(fun.name, envir=globalenv())
+    } else {
+        # Follow the standard search path
+        get(fun.name)
+    }
+}
+
+
 ##' Run a whole design procedure
 ##' 
 ##' Design and evaluate the performance of a collection of prediction models with
@@ -34,10 +66,13 @@
 ##'   from the entire dataset including customized data preprocessing
 ##'   e.g. imputation, centering, compression etc. See \code{\link{pre.trans}}
 ##'   for details.
-##' @param save.fits Whether to include the designed models in the returned
+##' @param save.fit Whether to include the designed models in the returned
 ##'   results. Note that the size of these depend on the model type and could
 ##'   potentially be very large.
-##' @param save.vimp Whether to calculate and return variable importance.
+##' @param save.predict Whether to make and return predictions. If
+##'   \code{FALSE} only fitted models are returned.
+##' @param save.vimp Whether to calculate and return variable importance
+##'   scores.
 ##' @param .verbose Whether to print status messages.
 ##' @examples
 ##' x <- sweep(matrix(rnorm(60*10), 60), 1, rep(c(0,.8), each=30))
@@ -50,7 +85,8 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.split,
-                   save.fits = FALSE, save.vimp = FALSE, .verbose=FALSE){
+                   save.fit = FALSE, save.predict = TRUE, save.vimp = FALSE,
+                   .verbose=FALSE){
 
 
 #---------------------------------------------------------------[ Initial test ]
@@ -65,54 +101,11 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
         warning("Response vector `y` contains NA values that are not NA in `test.subset`. These will not be used for neither design nor test.")
         test.subset[na.idx,] <- NA
     }
+    if(!save.fit && !save.predict && !save.vimp)
+        stop("Current call would not return any results.")
 
     msg <- if(.verbose) trace.msg else function(...) invisible()
-
-
-#-------------------------------------------------------------[ Call functions ]
-
-    # This elaborate construction allows us to call an arbitrary design function
-    # with a dataset and a list of parameters without combining them in a single
-    # list (i.e. `do.call(fun, c(list(data), params))`), which would result in
-    # an unnecessary copy of the dataset in the memory.
-    #
-    # To find the correct function, we first look into <R_GlobalEnv> to see if
-    # the user has overlayered it. If not, we search the package namespace.
-    #
-    # @param type The type of classifier to design.
-    # @param x Dataset.
-    # @param y Response vector.
-    # @param param Model parameters.
-    do.design.call <- function(type, x, y, param){
-        fun.name <- sprintf("design.%s", type)
-        if(fun.name %in% ls(envir=globalenv())){
-            f <- function(...) get(fun.name, envir=globalenv())(x=x, y=y, ...)
-        } else {
-            f <- function(...) get(fun.name)(x=x, y=y, ...)
-        }
-        fit <- do.call("f", param)
-        structure(fit, class=c(type, "classifier", class(fit)))
-    }
-    # @param object Fitted classifier.
-    # @param ... Sent to prediction function.
-    do.predict.call <- function(object, ...){
-        fun.name <- sprintf("predict.%s", class(object)[1])
-        if(fun.name %in% ls(envir=globalenv())){
-            get(fun.name, envir=globalenv())(object, ...)
-        } else {
-            predict(object, ...)
-        }
-    }
-    # @param object Fitted classifier.
-    # @param ... Sent to vimp function.
-    do.vimp.call <- function(object, ...){
-        fun.name <- sprintf("vimp.%s", class(object)[1])
-        if(fun.name %in% ls(envir=globalenv())){
-            get(fun.name, envir=globalenv())(object, ...)
-        } else {
-            vimp(object, ...)
-        }
-    }
+    msg(1, "Initializing analysis.")
 
 
 #------------------------------------------[ Set up model definiton and tuning ]
@@ -140,6 +133,63 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             factor=error.rate,
             numeric=rmse,
             stop("You must explicitly provide an error function when the response not factor or numeric."))
+
+
+#-------------------------------------------------------------[ Fetch plug-ins ]
+
+    types <- unique(names(out$models))
+    locations <- ifelse(grepl(":::", types),
+        sprintf("namespace:%s", sub(":.*", "", types)),
+        ifelse(grepl("::", types),
+            sprintf("package:%s", sub(":.*", "", types)),
+            NA))
+    names(locations) <- types
+    suppressWarnings(
+        missing.packages <- !sapply(na.omit(sub(".*:", "", locations)),
+                                    require, character.only=TRUE))
+    if(any(missing.packages))
+        stop(sprintf("Could not load package%s %s",
+            if(sum(missing.packages) > 1) "s" else "",
+            paste("`", names(missing.packages), "`", sep="", collapse=", ")))
+    fun.names <- lapply(types, function(type)
+        sprintf("%s.%s",
+            c("design", 
+                if(save.predict || do.tuning[type]) "predict" else NULL,
+                if(save.vimp) "vimp" else NULL),
+            sub(".*:", "", type)))
+    plugin <- mapply(function(fun, loc)
+        sapply(fun, function(x) tryCatch(get.plugin(x, loc), error=function(...) NULL)),
+        fun.names, locations, SIMPLIFY=FALSE)
+    names(plugin) <- types
+    missing.plugins <- unlist(lapply(plugin, lapply, is.null))
+    if(any(missing.plugins))
+        stop(sprintf("Could not find plug-in%s %s",
+            if(sum(missing.plugins) > 1) "s" else "",
+            paste("`", unlist(fun.names)[missing.plugins], "`", sep="", collapse=", ")))
+
+    # Output a summary of what plug-ins will be used
+    for(i in seq_along(plugin)){
+        msg(2, "Plug-ins for model `%s`:", types[i], time = FALSE)
+        msg(3, "Using `%s` from %s",
+            fun.names[[i]],
+            sapply(plugin[[i]], function(x) capture.output(environment(x))),
+            time = FALSE)
+    }
+
+    # This elaborate construction allows us to call an arbitrary design function
+    # with a dataset and a list of parameters without combining them in a single
+    # list (i.e. `do.call(fun, c(list(data), params))`), which would result in
+    # an unnecessary copy of the dataset in the memory.
+    #
+    # @param fun Function to call.
+    # @param x Dataset.
+    # @param y Response vector.
+    # @param param Model parameters.
+    # @param type Model name. Only used for setting the class.
+    do.design.call <- function(fun, x, y, param, type){
+        fit <- do.call(function(...) fun(x=x, y=y, ...), param)
+        structure(fit, class=c(sub(".*:", "", type), "classifier", class(fit)))
+    }
 
 
 #----------------------------------------------------------[ Perform modelling ]
@@ -171,9 +221,16 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
                 sets <- pre.trans(x, y, tuning.fold)
                 lapply(which(do.tuning), function(i){
                     sapply(out$models[[i]], function(my.param){
-                        error.fun(y[na.fill(tuning.fold, FALSE)],
-                            do.predict.call(do.design.call(names(out$models)[i], sets$design,
-                                y[na.fill(!tuning.fold, FALSE)], my.param), sets$test))
+                        error.fun(
+                            y[na.fill(tuning.fold, FALSE)],
+                            plugin[[names(models)[i]]]$predict(
+                                do.design.call(
+                                    plugin[[names(out$models)[i]]]$design,
+                                    sets$design,
+                                    y[na.fill(!tuning.fold, FALSE)],
+                                    my.param,
+                                    names(out$models)[i]),
+                                sets$test))
                     })
                 })
             })
@@ -195,13 +252,17 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
         sets <- pre.trans(x, y, fold)
         res <- lapply(seq_along(out$models), function(i){
             msg(2, "Fitting and evaluating %s", names(out$models)[i])
-            fit <- do.design.call(names(out$models)[i], sets$design,
-                                  y[na.fill(!fold, FALSE)], my.param[[i]])
-            pred <- do.predict.call(fit, sets$test)
+            fit <- do.design.call(
+                plugin[[names(models)[i]]]$design,
+                sets$design,
+                y[na.fill(!fold, FALSE)],
+                my.param[[i]],
+                names(out$models)[i])
+            pred <- plugin[[names(models)[i]]]$predict(fit, sets$test)
             err <- error.fun(y[na.fill(fold, FALSE)], pred)
             if(save.vimp){
                 if("features" %in% names(sets)){
-                    temp.vimp <- do.vimp.call(fit)
+                    temp.vimp <- plugin[[names(models)[i]]]$vimp(fit)
                     temp.map <- cumsum(sets$features)
                     temp.map[!sets$features] <- NA
                     if(is.data.frame(temp.vimp) || is.matrix(temp.vimp)){
@@ -211,13 +272,13 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
                     }
                     rm(temp.vimp, temp.map)
                 } else {
-                    my.vimp <- list(vimp=do.vimp.call(fit))
+                    my.vimp <- list(vimp=plugin[[names(models)[i]]]$vimp(fit))
                 }
             } else my.vimp <- NULL
 
             c(pred,
               list(error=err),
-              if(save.fits) list(fit=fit) else NULL,
+              if(save.fit) list(fit=fit) else NULL,
               my.vimp,
               if(do.tuning[i]) list(param=my.param[[i]], tuning.err=tuning.err[[i]]) else NULL)
         })
@@ -226,7 +287,7 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
             os <- object.size(res)
             os.i <- trunc(log(os)/log(1024))
             msg(3, "Fold result size is %.2f %s",
-                exp(log(os) - os.i * log(1024)), c("B", "KiB", "MiB", "GiB", "TiB")[os.i + 1],
+                exp(log(os) - os.i * log(1024)), c("B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB")[os.i + 1],
                 time=FALSE)
         }
         res
@@ -245,11 +306,23 @@ batch.predict <- function(x, y, models, test.subset, error.fun, pre.trans=pre.sp
 ##' @param x Dataset.
 ##' @param y Response vector.
 ##' @param ... Sent to type the specific wrapper, e.g. \code{\link{design.lda}}.
+##' @param .verbose Whether to print a status message on what plug-in was
+##'   used.
 ##' @return A fitted model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-design <- function(type, x, y, ...){
-    fit <- get(sprintf("design.%s", type))(x=x, y=y, ...)
-    structure(fit, class=c(type, "classifier", class(fit)))
+design <- function(type, x, y, ..., .verbose=FALSE){
+    location <- if(grepl(":::", type)){
+        sprintf("namespace:%s", sub(":.*", "", type))
+    } else if(grepl("::", type)){
+        sprintf("package:%s", sub(":.*", "", type))
+    } else {
+        NA
+    }
+    fun <- get.plugin(fun.name, location)
+    if(.verbose) cat(sprintf("Using `%s%` from %s\n",
+        fun.name, capture.output(environment(fun))))
+    fit <- fun(x=x, y=y, ...)
+    structure(fit, class=c(sub(".*:", "", type), "classifier", class(fit)))
 }
 

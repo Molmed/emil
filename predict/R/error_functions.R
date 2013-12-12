@@ -1,14 +1,16 @@
 ##' Error functions
 ##' 
 ##' For classification problems:
-##' \tabular{rl}{
-##'     \code{error.rate} \tab Fraction of predictions that were incorrect.\cr
-##'     \code{neg.auc} \tab -AUC.\cr
+##' \describe{
+##'   \item{\code{error.rate}}{Fraction of predictions that were incorrect.}
+##'   \item{\code{neg.auc}}{-AUC.}
+##'   \item{\code{\link{neg.geo.mean}}}{Negative geometric mean. Good for
+##'     problems with imbalanced class sizes.}
 ##' }
 ##' For regression problems:
-##' \tabular{rl}{
-##'     \code{mse} \tab Mean square error.\cr
-##'     \code{rmse} \tab Root mean square error.\cr
+##' \describe{
+##'     \item{\code{mse}}{Mean square error.}
+##'     \item{\code{rmse}}{Root mean square error.}
 ##' }
 ##' For survival analysis no error functions are implemented so far.
 ##'
@@ -89,4 +91,26 @@ rmse <- function(true, pred){
 ##' @export
 mse <- function(true, pred){
     mean((true-pred$pred)^2)
+}
+
+##' Negative geometric mean of class specific predictive accuracy
+##' 
+##' When dealing with imbalanced classification problem, i.e. where the class
+##' sizes are very different, small classes tend to be overlooked when tuning
+##' parameters by optimizing error rate. Blagus and Lusa (2013) suggested to
+##' remedy the problem by using this performance measure instead.
+##' 
+##' @param true See \code{\link{error.fun}}.
+##' @param pred See \code{\link{error.fun}}.
+##' @return A numeric scalar.
+##' @seealso error.fun
+##' @references
+##' Blagus, R., & Lusa, L. (2013).
+##' \emph{Improved shrunken centroid classifiers for high-dimensional class-imbalanced data.}
+##' BMC bioinformatics, 14, 64.
+##' doi:10.1186/1471-2105-14-64
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+neg.geo.mean <- function(true, pred){
+    -exp(mean(log( tapply(pred$pred == true, true, mean) )))
 }

@@ -183,7 +183,8 @@ trapz <- function(x,y){
 ##' 
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file="")
+trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file=""){
+    for(msg in sprintf(...)){
     cat(sep="", file=file,
         # timestamp
         if(time) format(Sys.time(), "%d %b %H:%M") else
@@ -191,7 +192,9 @@ trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file="")
         # indent
         rep("  ", level),
         # message
-        sprintf(...),
+        msg,
         # linebreak
         if(linebreak) "\n" else "")
-        
+    }
+}
+

@@ -20,6 +20,10 @@
 ##'     \item{List with elements named \code{nrep} and \code{nfold}}
 ##'     \item{\code{NA}, \code{NULL} or \code{FALSE} to suppress shrinkage tuning.}
 ##'   }
+##' @param threshold Shrinkage thresholds to try (referred to as 'lambda' in the
+##'   litterature). Chosen and tuned automatically by default, but must be given
+##'   by the user if not tuned (see the \code{cv} argument) if you wish to use
+##'   it with \code{\link{batch.predict}}.
 ##' @param ... Sent to \code{\link[pamr]{pamr.train}}.
 ##' @return Fitted LDA or QDA.
 ##' @examples
@@ -27,7 +31,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.nsc <- function(x, y, error.fun, slim.fit=FALSE, cv, ...){
+design.nsc <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
     library(pamr)
     if(missing(error.fun)){
         error.fun.frame <- sapply(sys.frames(), function(env){
@@ -67,7 +71,7 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, cv, ...){
             } else {
                 if(!inherits(cv, c("crossval", "holdout")))
                     cv <- resample.crossval(p.data$y, nrep=cv$nrep, nfold=cv$nfold)
-                if(nrow(cv) != length(p.data(y)))
+                if(nrow(cv) != length(p.data$y))
                     stop("Resampling set for shrinkage selection does not match dataset in size.")
                 fit.cv <- pamr::pamr.cv(fit, p.data,
                     folds=lapply(as.data.frame(cv), which))
@@ -95,7 +99,19 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, cv, ...){
 ##' @method predict nsc
 ##' @param object Fitted classifier.
 ##' @param x Dataset of observations to be classified.
-##' @param thres What threshold to use for classification.
+##' @param threshold What threshold to use for classification. Can be supplied
+##'   in the following ways:
+##'   \describe{
+##'     \item{Numeric scalar}{A predefined value. In this case you also want to
+##'       run \code{\link{design.nsc}} with \code{cv=FALSE} to not do any
+##'       unnecessary tuning.}
+##'     \item{unset}{Uses the threshold that got the best tuning performance. In
+##'       case of ties, the largest threshold is used, i.e. resulting in the
+##'       smallest number of variables.}
+##'     \item{function}{A function for resolving ties in the tuning. Set it to
+##'       \code{\link{min}} to use the smallest threshold that got the best tuning
+##'       performance for example.}
+##'   }
 ##' @param ... Ignored
 ##' @return TODO
 ##' @examples
@@ -103,18 +119,27 @@ design.nsc <- function(x, y, error.fun, slim.fit=FALSE, cv, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.nsc <- function(object, x, thres, ...){
+predict.nsc <- function(object, x, threshold, ...){
     library(pamr)
     if(ncol(x) == 1){
         x <- rbind(t(x), dummy=0)
     } else {
         x <- t(x)
     }
-    if(missing(thres)){
-        if(is.null(object$cv))
-            stop("`thres` was neither tuned during the design nor given explicitly.")
-        thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+    if(missing(threshold)){
+        if(is.null(object$cv)){
+            if(length(object$fit$threshold) == 1){
+                thres <- object$fit$threshold
+            } else {
+                stop("The shrinkage parameter `threshold` was neither tuned during the design nor given explicitly.")
+            }
+        } else {
+            thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+        }
+    } else if(is.function(threshold)){
+        thres <- threshold(object$fit$threshold[object$cv$error == min(object$cv$error)])
     }
+
     rev(object$fit$threshold)[which.min(rev(object$cv$error))]
     list(pred=pamr::pamr.predict(object$fit, x, type="class", threshold=thres, ...),
          prob=pamr::pamr.predict(object$fit, x, type="posterior", threshold=thres, ...))
@@ -131,15 +156,24 @@ predict.nsc <- function(object, x, thres, ...){
 ##' 
 ##' @method vimp nsc
 ##' @param object Fitted NSC classifier
-##' @param thres What threshold to use for classification.
+##' @param threshold What threshold to use for classification.
 ##' @param ... Ignored.
 ##' @return An importance vector with elements corresponding to variables.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-vimp.nsc <- function(object, ..., thres){
+vimp.nsc <- function(object, ..., threshold){
     require(pamr)
-    if(missing(thres))
-        thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+    if(missing(threshold)){
+        if(is.null(object$cv)){
+            if(length(object$fit$threshold) == 1){
+                thres <- object$fit$threshold
+            } else {
+                stop("The shrinkage parameter `threshold` was neither tuned during the design nor given explicitly.")
+            }
+        } else {
+            thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+        }
+    }
     cen <- (pamr::pamr.predict(object$fit, , thres, type="centroid") -
             object$fit$centroid.overall) / object$fit$sd
     names(cen) <- object$descriptors

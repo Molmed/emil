@@ -1,18 +1,18 @@
 Encoding: UTF-8
 Package: predict
 Type: Package
-Title: Classification toolbox
-Version: 2.1-6
-Date: 2013-12-02
-Author: Christofer Backlin, Eva Freyhult, Mats Gustafsson
-Maintainer: Christofer Backlin <christofers.backlin@medsci.uu.se>
+Title: Predictive modelling toolbox
+Version: 2.2-0
+Date: 2013-12-11
+Author: Christofer Backlin, Mats Gustafsson
+Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
 Description: A toolbox for designing and evaluating predictive models with
   resampling methods. The aim of this package is to provide a simple and
   efficient general framework for working with any type of prediction problem,
   be it classification, regression or survival analysis, that is easy to extend
   and adapt to your specific setting. A few commonly used methods for
   classification, regression and survival analysis are included.
-Depends: foreach
+Imports: foreach
 Suggests: cmprsk, glmnet, party, pamr, randomForest
 License: GPL (>=2)
 LazyLoad: yes

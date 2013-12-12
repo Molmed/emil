@@ -11,7 +11,7 @@ system("R CMD INSTALL predict.roxygen")
 system("R CMD build predict.roxygen") # Build package
 system(sprintf("scp %s backch@tank:~/R_packages/src/contrib",
                rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
-system(sprintf("scp %s chrib@kalkyl.uppmax.uu.se:R_packages/src/contrib",
+system(sprintf("scp %s chrib@milou.uppmax.uu.se:R_packages/src/contrib",
                rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
 system("mv predict_*.tar.gz builds")
 

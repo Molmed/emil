@@ -1,3 +1,5 @@
+TODO: Make sure all functions can handle both matrices and data.frames
+
 ##' Data preprocessing
 ##' 
 ##' These functions are run in \code{\link{batch.predict}} just prior to model
@@ -22,12 +24,12 @@
 ##' preprocessing, to not risk information leakage and biased results!
 ##' 
 ##' @return A list with the following components
-##' \tabular{ll}{
-##'     \code{design} \tab Design set.\cr
-##'     \code{test} \tab Test set.\cr
-##'     \code{features} \tab Logical vector indicating which features were kept
+##' \describe{
+##'     \item{\code{design}:}{Design set.}
+##'     \item{\code{test}:}{Test set.}
+##'     \item{\code{features}:}{Logical vector indicating which features were kept
 ##'         (TRUE) and discarded (FALSE). This is only set in case of variable
-##'         selection.\cr
+##'         selection.}
 ##' }
 ##'
 ##' @examples
