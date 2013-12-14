@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: predict
 Type: Package
 Title: Predictive modelling toolbox
-Version: 2.2-0
-Date: 2013-12-11
+Version: 2.2-1
+Date: 2013-12-14
 Author: Christofer Backlin, Mats Gustafsson
 Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
 Description: A toolbox for designing and evaluating predictive models with
