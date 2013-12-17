@@ -2,17 +2,21 @@
 ##' 
 ##' For classification problems:
 ##' \describe{
-##'   \item{\code{error.rate}}{Fraction of predictions that were incorrect.}
-##'   \item{\code{neg.auc}}{-AUC.}
+##'   \item{\code{\link{error.rate}}}{Fraction of predictions that were incorrect.}
+##'   \item{\code{\link{neg.auc}}}{-AUC.}
 ##'   \item{\code{\link{neg.geo.mean}}}{Negative geometric mean. Good for
 ##'     problems with imbalanced class sizes.}
 ##' }
 ##' For regression problems:
 ##' \describe{
-##'     \item{\code{mse}}{Mean square error.}
-##'     \item{\code{rmse}}{Root mean square error.}
+##'     \item{\code{\link{mse}}}{Mean square error.}
+##'     \item{\code{\link{rmse}}}{Root mean square error.}
 ##' }
-##' For survival analysis no error functions are implemented so far.
+##'
+##' For survival analysis problem:
+##' \describe{
+##'     \item{\code{\link{neg.harrell.C}}}{Negative Harrell's concordance index.}
+##' }
 ##'
 ##' @param true The true response values, be it class labels, numeric values or
 ##'   survival outcomes.
@@ -114,3 +118,11 @@ mse <- function(true, pred){
 neg.geo.mean <- function(true, pred){
     -exp(mean(log( tapply(pred$pred == true, true, mean) )))
 }
+
+##' @rdname error.fun
+##' @export
+neg.harrell.C <- function(true, pred){
+    nice.require("Hmisc", "is required for calculating Harrell's C.")
+    rcorr.cens(pred$risk, as.Surv(true)[1])
+}
+

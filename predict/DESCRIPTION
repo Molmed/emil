@@ -13,7 +13,7 @@ Description: A toolbox for designing and evaluating predictive models with
   and adapt to your specific setting. A few commonly used methods for
   classification, regression and survival analysis are included.
 Imports: foreach
-Suggests: cmprsk, glmnet, party, pamr, randomForest
+Suggests: caret, cmprsk, glmnet, party, pamr, randomForest
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes

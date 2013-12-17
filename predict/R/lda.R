@@ -12,7 +12,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.lda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs") {
+fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
     s <- matrix(0, ncol(x), ncol(x))
     for(lev in levels(y))
         s <- s + cov(x[y==lev,, drop=F], use=use) * (sum(y==lev)-1)

@@ -31,7 +31,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.nsc <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
+fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
     library(pamr)
     if(missing(error.fun)){
         error.fun.frame <- sapply(sys.frames(), function(env){
@@ -119,7 +119,7 @@ design.nsc <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.nsc <- function(object, x, threshold, ...){
+predict.pamr <- function(object, x, threshold, ...){
     library(pamr)
     if(ncol(x) == 1){
         x <- rbind(t(x), dummy=0)
@@ -161,7 +161,7 @@ predict.nsc <- function(object, x, threshold, ...){
 ##' @return An importance vector with elements corresponding to variables.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-vimp.nsc <- function(object, ..., threshold){
+vimp.pamr <- function(object, ..., threshold){
     require(pamr)
     if(missing(threshold)){
         if(is.null(object$cv)){

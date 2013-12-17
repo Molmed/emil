@@ -15,7 +15,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.rf <- function(x, y, importance=FALSE, ...){
+fit.randomForest <- function(x, y, importance=FALSE, ...){
     library(randomForest)
     #idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
     #x <- x[idx,, drop=FALSE]
@@ -44,7 +44,7 @@ design.rf <- function(x, y, importance=FALSE, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.rf <- function(object, x, ...){
+predict.randomForest <- function(object, x, ...){
     library(randomForest)
     p <- getFromNamespace("predict.randomForest", "randomForest")
     if(is.factor(object$y)){
@@ -72,7 +72,7 @@ predict.rf <- function(object, x, ...){
 ##' @seealso vimp
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-vimp.rf <- function(object, type=1, ...){
+vimp.randomForest <- function(object, type=1, ...){
     if(is.blank(object$importance))
         stop("To calculate variable importance of random forsests you must set the design parameter `importance=TRUE`, see `?design.rf`.")
     object$importance

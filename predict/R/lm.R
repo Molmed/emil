@@ -9,7 +9,7 @@
 ##' @return Fitted linear model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-design.ols <- function(x, y, formula=y~., ...){
+fit.lm <- function(x, y, formula=y~., ...){
     df <- data.frame(y, x)
     rm(y,x)
     vars.missing <- all.vars(formula)[!all.vars(formula) %in% names(df)]
@@ -38,7 +38,7 @@ design.ols <- function(x, y, formula=y~., ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.ols <- function(object, x, ...){
+predict.lm <- function(object, x, ...){
     list(pred = predict.lm(object, data.frame(y=NA, x), ...))
 }
 

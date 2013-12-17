@@ -51,40 +51,63 @@ na.fill <- function(x, replacement){
 }
 
 
-##' Test if a save prefix is valid
+##' Load a package and offer to install if missing
 ##' 
-##' @param save.prefix String including path to directory and file prefix.
-##' @param create.dir Create directory if needed.
-##' @return Nothing, throws an error if unsuccessful.
+##' @param pkg Package name.
+##' @param reason A status message that informs the user why the package is
+##'   needed.
+##' @return Nothing
 ##' @examples
-##' \dontrun{save.test("myFolder")}
+##' nice.require("base", "is required to do anything at all")
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @noRd
-save.test <- function(save.prefix=NULL, create.dir){
-    if(!is.blank(save.prefix)){
-        save.path <- sub("/[^/]*$", "", sprintf("./%s", save.prefix))
-        if(!file.exists(save.path)){
-            if(missing(create.dir)){
-                cat("Directory does not exist. Do you want to create it? [Y/n]\n")
-                create.dir <- tolower(readline()) %in% c("", "y", "yes")
-            }
-            if(create.dir){
-                dir.create(save.path, recursive=TRUE)
-            } else {
-                stop("Directory does not exist.")
-            }
+nice.require <- function(pkg, reason="is required"){
+    if(!eval(substitute(require(pkg), list(pkg=pkg)))){
+        cat(sprintf("Package `%s` %s. Install now? (Y/n) ", pkg, reason))
+        if(grepl("^(y(es)?)?$", tolower(readline()))){
+            install.packages(pkg)
+            if(!eval(substitute(require(pkg), list(pkg=pkg))))
+                stop("Cannot load package `%s`.", pkg)
+        } else {
+            stop(sprintf("`%s` was not installed.", pkg))
         }
-        tryCatch({
-            about <- "Classify package just tested if a path for saving results was valid. It did. Please delete this file."
-            save(about, file=sprintf("%s/.savetest.Rdata", save.path))
-            unlink(sprintf("%s/.savetest", save.path))
-            rm(about)
-        }, error=function(...){
-            stop(sprintf("Could not save to prefix \"%s\"", save.path))
-        })
     }
-    invisible()
 }
+
+
+# ##' Test if a save prefix is valid
+# ##' 
+# ##' @param save.prefix String including path to directory and file prefix.
+# ##' @param create.dir Create directory if needed.
+# ##' @return Nothing, throws an error if unsuccessful.
+# ##' @examples
+# ##' \dontrun{save.test("myFolder")}
+# ##' @author Christofer \enc{Bäcklin}{Backlin}
+# ##' @noRd
+# save.test <- function(save.prefix=NULL, create.dir){
+#     if(!is.blank(save.prefix)){
+#         save.path <- sub("/[^/]*$", "", sprintf("./%s", save.prefix))
+#         if(!file.exists(save.path)){
+#             if(missing(create.dir)){
+#                 cat("Directory does not exist. Do you want to create it? [Y/n]\n")
+#                 create.dir <- tolower(readline()) %in% c("", "y", "yes")
+#             }
+#             if(create.dir){
+#                 dir.create(save.path, recursive=TRUE)
+#             } else {
+#                 stop("Directory does not exist.")
+#             }
+#         }
+#         tryCatch({
+#             about <- "Classify package just tested if a path for saving results was valid. It did. Please delete this file."
+#             save(about, file=sprintf("%s/.savetest.Rdata", save.path))
+#             unlink(sprintf("%s/.savetest", save.path))
+#             rm(about)
+#         }, error=function(...){
+#             stop(sprintf("Could not save to prefix \"%s\"", save.path))
+#         })
+#     }
+#     invisible()
+# }
 
 
 ##' Recursive unlisting of nested lists

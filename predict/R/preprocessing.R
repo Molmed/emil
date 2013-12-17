@@ -1,9 +1,9 @@
-TODO: Make sure all functions can handle both matrices and data.frames
+#TODO: Make sure all functions can handle both matrices and data.frames
 
 ##' Data preprocessing
 ##' 
 ##' These functions are run in \code{\link{batch.predict}} just prior to model
-##' fitting and serve two purposes. 1) They extract design and test sets from
+##' fitting and serve two purposes. 1) They extract fitting and test sets from
 ##' the entire dataset and 2) they can at the same time apply a transformation
 ##' to preprocess the data for handling missing values, scaling, compression
 ##' etc.
@@ -18,14 +18,14 @@ TODO: Make sure all functions can handle both matrices and data.frames
 ##'         \code{\link{pre.impute.knn}} for details on how to set parameters.}
 ##' }
 ##' 
-##' Note that all transformations are defined based on the design data only
-##' and then applied to both design set and test set. It is important to not let
-##' the test data in any way be part of the fitting of a model, including the
+##' Note that all transformations are defined based on the fitting data only
+##' and then applied to both fitting set and test set. It is important to not let
+##' the test data in any way be part of the model fitting, including the
 ##' preprocessing, to not risk information leakage and biased results!
 ##' 
 ##' @return A list with the following components
 ##' \describe{
-##'     \item{\code{design}:}{Design set.}
+##'     \item{\code{fit}:}{Fitting set.}
 ##'     \item{\code{test}:}{Test set.}
 ##'     \item{\code{features}:}{Logical vector indicating which features were kept
 ##'         (TRUE) and discarded (FALSE). This is only set in case of variable
@@ -37,14 +37,14 @@ TODO: Make sure all functions can handle both matrices and data.frames
 ##' \dontrun{
 ##' # Define the transformation
 ##' my.split <- function(x, y, fold, d=2){
-##'     design.idx <- na.fill(!fold, FALSE)
+##'     fit.idx <- na.fill(!fold, FALSE)
 ##'     test.idx <- na.fill(fold, FALSE)
 ##'     class.means <- sapply(
-##'         split(as.data.frame(x[design.idx,,drop=FALSE]), y[design.idx]),
+##'         split(as.data.frame(x[fit.idx,,drop=FALSE]), y[fit.idx]),
 ##'         sapply, mean, na.rm=TRUE)
 ##'     diff.feats <- apply(class.means, 1, range) > d
 ##'     return(list(
-##'         design = x[design.idx, diff.feats, drop=FALSE],
+##'         fit = x[fit.idx, diff.feats, drop=FALSE],
 ##'         test = x[test.idx, diff.feats, drop=FALSE],
 ##'         features = diff.feats))
 ##' }
@@ -62,14 +62,14 @@ TODO: Make sure all functions can handle both matrices and data.frames
 
 ##' @param x Dataset.
 ##' @param y Response vector.
-##' @param fold A logical vector with \code{FALSE} for design observations,
+##' @param fold A logical vector with \code{FALSE} for fitting observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname pre.trans
 ##' @export
 pre.split <- function(x, y, fold){
-    list(design=x[na.fill(!fold, FALSE),,drop=FALSE],
+    list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
@@ -90,7 +90,7 @@ pre.scale <- function(x, y, fold, scale=TRUE){
     } else {
         fun <- function(z) sweep(z, 2, m, "-")
     }
-    list(design=fun(x[na.fill(!fold, FALSE),,drop=FALSE]),
+    list(fit=fun(x[na.fill(!fold, FALSE),,drop=FALSE]),
          test=fun(x[na.fill(fold, FALSE),,drop=FALSE]))
 }
 
@@ -104,27 +104,27 @@ pre.impute.median <- function(x, y, fold){
     na.feats <- unique(na.ind[,"col"])
     fills <- apply(x[na.fill(!fold, FALSE), na.feats, drop=FALSE], 2, median, na.rm=TRUE)
     x[na.ind] <- fills[match(na.ind[,"col"], na.feats)]
-    list(design=x[na.fill(!fold, FALSE),,drop=FALSE],
+    list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname impute
 ##' @export
 impute.median <- function(x){
-    pre.impute.median(x, , rep(FALSE, nrow(x)))$design
+    pre.impute.median(x, , rep(FALSE, nrow(x)))$fit
 }
 
 ##' Foldwise kNN imputation
 ##' 
 ##' Any k-NN method needs to have a distance matrix of the dataset it works on.
-##' When doing repeated model designs on subsets of the entire dataset it is
+##' When doing repeated model fittings on subsets of the entire dataset it is
 ##' unnecessary to recalculate it every time, therefore this function requires
 ##' the user to manually calculate it prior to resampling and supply it in a
 ##' wrapper function.
 ##' 
 ##' @param x Dataset.
 ##' @param y Response vector.
-##' @param fold A logical vector with \code{FALSE} for design observations,
+##' @param fold A logical vector with \code{FALSE} for fitting observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
 ##' @param k Number of nearest neightbors to calculate mean from. Set to < 1 to
@@ -149,7 +149,7 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
         stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
 
     if(k < 1) k <- max(1, round(.05*nrow(x)))
-    if(k > sum(!fold, na.rm=TRUE)) stop("k is larger than number of design observations.")
+    if(k > sum(!fold, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
 
     if(missing(distmat))
         stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
@@ -173,7 +173,7 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
         mean(na.exclude(x[NN[-1, i[1]], i[2]])[1:k])
     })
     x[na.ind] <- fills
-    list(design=x[na.fill(!fold, FALSE),,drop=FALSE],
+    list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
@@ -194,6 +194,6 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 ##' @rdname impute
 ##' @export
 impute.knn <- function(x, k=.05, distmat){
-    pre.impute.knn(x, fold=rep(FALSE, nrow(x)), k=k, distmat=distmat)$design
+    pre.impute.knn(x, fold=rep(FALSE, nrow(x)), k=k, distmat=distmat)$fit
 }
 

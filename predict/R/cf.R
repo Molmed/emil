@@ -18,7 +18,7 @@
 ##' @return A fitted \code{\link[party]{cforest}} model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-design.cf <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
+fit.cforest <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
     library(party)
     if(is.outcome(y)){
         if(any(table(y$event)[-1] > 0))
@@ -43,7 +43,7 @@ design.cf <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
 ##' @return The predicted chance of survival.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-predict.cf <- function(object, x, at, ...){
+predict.cforest <- function(object, x, at, ...){
     library(party)
     preds <- party::treeresponse(object$fit, newdata=as.data.frame(x), ...)
     if (missing(at)) {

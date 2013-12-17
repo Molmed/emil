@@ -11,7 +11,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
+fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
     fit <- list(responses=levels(y),
                 pi = pi,
                 mu = matrix(sapply(levels(y), function(lev)

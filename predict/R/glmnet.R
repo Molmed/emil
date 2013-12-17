@@ -23,10 +23,10 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso design
 ##' @export
-design.gln <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
+fit.elasticNet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     if(!is.factor(y))
         stop("The glmnet wrapper is only implemented for classification (factor response) so far.")
-    library(glmnet)
+    nice.require("glmnet", "is required to fit elastic net models")
     if(missing(family)){
         if(inherits(y, c("outcome", "Surv"))) family <- "cox" else
         if(is.factor(y))
@@ -93,8 +93,8 @@ design.gln <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.gln <- function(object, x, s, ...){
-    library(glmnet)
+predict.elasticNet <- function(object, x, s, ...){
+    nice.require("glmnet", "is required to make precdictions with an elastic net model")
     if(missing(s)){
         if("lambda.min" %in% names(object)){
             s <- object$lambda.min

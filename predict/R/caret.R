@@ -7,7 +7,7 @@
 ##' @param y Response.
 ##' @param ... Sent to \code{\link{train}}.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-design.caret <- function(x, y, ...){
+fit.caret <- function(x, y, ...){
     train(x, y, ...)
 }
 
