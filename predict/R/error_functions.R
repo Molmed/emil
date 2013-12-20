@@ -123,6 +123,6 @@ neg.geo.mean <- function(true, pred){
 ##' @export
 neg.harrell.C <- function(true, pred){
     nice.require("Hmisc", "is required for calculating Harrell's C.")
-    rcorr.cens(pred$risk, as.Surv(true)[1])
+    rcorr.cens(pred$risk, as.Surv(true))[1]
 }
 
