@@ -207,17 +207,30 @@ trapz <- function(x,y){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file=""){
-    for(msg in sprintf(...)){
-    cat(sep="", file=file,
-        # timestamp
-        if(time) format(Sys.time(), "%d %b %H:%M") else
-                 paste(rep(" ", 12), collapse=""),
-        # indent
-        rep("  ", level),
-        # message
-        msg,
-        # linebreak
-        if(linebreak) "\n" else "")
+    if(level){
+        for(msg in sprintf(...)){
+        cat(sep="", file=file,
+            # timestamp
+            if(time) format(Sys.time(), "%d %b %H:%M") else
+                     paste(rep(" ", 12), collapse=""),
+            # indent
+            rep("  ", level),
+            # message
+            msg,
+            # linebreak
+            if(linebreak) "\n" else "")
+        }
     }
+}
+
+
+##' Increase a non-FALSE variable
+##' 
+##' Only intended for internal use.
+##' 
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @noRd
+increase <- function(x, i=1){
+    x + i*as.logical(x)
 }
 

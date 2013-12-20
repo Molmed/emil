@@ -26,7 +26,7 @@
 ##' @export
 resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=TRUE){
     if(inherits(subset, c("crossval", "holdout"))){
-        return(lapply(subset, function(s) resample.crossval(y, nfold, nrep, balanced, subset=!s)))
+        return(lapply(subset, function(s) resample.crossval(y, nfold, nrep, balanced, subset=na.fill(!s, FALSE))))
     }
 
     n <- if(length(y) == 1) y else length(y)
@@ -87,7 +87,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
 ##' @export
 resample.holdout <- function(y=NULL, frac=.5, nrep=5, balanced=is.factor(y), subset=TRUE){
     if(inherits(subset, c("crossval", "holdout"))){
-        return(lapply(subset, function(s) resample.holdout(y, frac, nrep, balanced, subset=!s)))
+        return(lapply(subset, function(s) resample.holdout(y, frac, nrep, balanced, subset=na.fill(!s, FALSE))))
     }
 
     n <- if(length(y) == 1) y else length(y)
@@ -106,9 +106,29 @@ resample.holdout <- function(y=NULL, frac=.5, nrep=5, balanced=is.factor(y), sub
         return(idx)
     }
     structure(ho, class = c("holdout", "data.frame"),
-        names = sprintf("fold%i", 1:nrep),
+        names = sprintf("rep%i", 1:nrep),
         frac = frac,
         balanced = balanced)
+}
+
+
+##' Generate a resampling scheme of the same kind as a prototype
+##'
+##' @param y Response vector.
+##' @param prototype A resampling schemea.
+##' @param fold A resampling fold to use to define the subset.
+##' @return A resampling scheme.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @noRd
+sub.resample <- function(y, prototype, fold){
+    if(inherits(prototype, "crossval")){
+        resample.crossval(y, nfold=attr(prototype, "nfold"),
+            nrep=attr(prototype, "nrep"), balanced=attr(prototype, "balanced"),
+            subset=na.fill(!fold, FALSE))
+    } else if(inherits(prototype, "holdout")){
+        resample.holdout(y, frac=attr(prototype, "frac"), nrep=ncol(prototype),
+            balanced=attr(prototype, "balanced"), subset=na.fill(!fold, FALSE))
+    }
 }
 
 
