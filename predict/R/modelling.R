@@ -67,7 +67,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 modelling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, predict.fun, vimp.fun){
-    if(any(sapply(list(NA, NULL, FALSE), identical, param))){
+    if(any(sapply(list(NA, FALSE), identical, param))){
         warning("`param` must be supplied as a list. Assuming you really want `list()` i.e. to not set any parameters.")
         param <- list()
     }
@@ -76,9 +76,9 @@ modelling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, p
             mapply("[[", param, i, SIMPLIFY=FALSE)
         })
     }
-    structure(class = "modelling.procedure", .Data = list(
+    proc <- structure(class = "modelling.procedure", .Data = list(
         method = if(missing(method)) NULL else method,
-        param = if(length(param) < 2) param else NULL,
+        param = if(length(param) == 0) list() else if(length(param) == 1) param[[1]] else NULL,
         tuning = if(length(param) < 2) NULL else list(param = param, error = NULL),
         fit.fun =
             if(missing(fit.fun)){
@@ -94,6 +94,9 @@ modelling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, p
             } else vimp.fun,
         error.fun = NULL
     ))
+    if(!is.function(proc$fit.fun))
+        stop("No fitting function found.")
+    proc
 }
 
 
@@ -180,9 +183,9 @@ batch.model <- function(proc, x, y,
     structure(class="modelling.result", .Data=lapply(test.subset, function(fold){
         counter <<- counter + 1
         if(inherits(test.subset, "crossval")){
-            trace.msg(.verbose, sub("^fold(\\d):(\\d)$", "Replicate \\1, fold \\2:", colnames(test.subset)[counter]), time=FALSE)
+            trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", colnames(test.subset)[counter]), time=FALSE)
         } else if(inherits(test.subset, "holdout")){
-            trace.msg(.verbose, sub("^rep(\\d)$", "Replicate \\1:", colnames(test.subset)[counter]), time=FALSE)
+            trace.msg(.verbose, sub("^rep(\\d+)$", "Replicate \\1:", colnames(test.subset)[counter]), time=FALSE)
         } else {
             trace.msg(.verbose, colnames(test.subset)[counter], time=FALSE)
         }
@@ -204,10 +207,11 @@ batch.model <- function(proc, x, y,
                 list(error = p$error.fun(y[na.fill(fold, FALSE)], predictions)),
                 if(.save$fit) list(fit = model) else NULL,
                 if(.save$pred) list(pred = predictions) else NULL,
-                if(.save$vimp) list(vimp = p$vimp.fun(model)) else NULL
+                if(.save$vimp) list(vimp = p$vimp.fun(model)) else NULL,
+                if(.save$tuning) list(param=p$param, tuning = p$tuning) else NULL
             )
         })
-        if(any(do.tuning) && .save$tuning) res$tuning <- fold.proc
+        #if(any(do.tuning) && .save$tuning) res$tuning <- fold.proc
         if(counter == 1 && .verbose){
             os <- object.size(res)
             os.i <- trunc(log(os)/log(1024))
@@ -259,6 +263,7 @@ fit <- function(proc, x, y, ..., .verbose){
 
 
 ##' @param ... Sent to \code{\link{batch.model}}.
+##' @param retune Whether to retune already tuned processes.
 tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
     trace.msg(.verbose, "Parameter tuning:", time=FALSE)
     if(inherits(proc, "modelling.procedure"))
@@ -291,13 +296,13 @@ tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
     proc.id <- rep(which(do.tuning),
                    sapply(proc[do.tuning], function(p) length(p$tuning$param)))
     for(i in which(do.tuning)){
-        proc[[i]]$tuning$error <- ssubtree(tuning, T, proc.id == i, "error")
+        proc[[i]]$tuning$error <-
+            sapply(tuning, function(tun) unlist(subtree(tun, proc.id == i, "error")))
         rownames(proc[[i]]$tuning$error) <- NULL
         mean.err <- apply(proc[[i]]$tuning$error, 1, mean)
         best.param <- which(mean.err == min(mean.err))
         if(length(best.param) > 1) best.param <- sample(best.param, 1)
         proc[[i]]$param <- proc[[i]]$tuning$param[[best.param]]
-
         proc[[i]]$tuning$result <- tuning[proc.id == i]
     }
     proc
@@ -306,7 +311,8 @@ tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
 
 ##' @param ... Sent to \code{\link{tune}} and \code{\link{batch.model}}.
 evaluate.modelling <- function(proc, x, y, ...,
-    .save=list(fit=FALSE, pred=TRUE, vimp=FALSE), .verbose=TRUE){
+    .save=list(fit=FALSE, pred=TRUE, vimp=FALSE, tuning=TRUE), .verbose=TRUE){
+
 
     trace.msg(.verbose, "Evaluating modelling performance:", time=FALSE)
     if(inherits(proc, "modelling.procedure"))

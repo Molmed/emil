@@ -30,6 +30,8 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
     }
 
     n <- if(length(y) == 1) y else length(y)
+    if(inherits(y, "Surv"))
+        y <- as.factor(y[,"status"])
     if(n < nfold) stop("Number of objects cannot be smaller than number of groups")
     if(is.outcome(y)) y <- factor.events(y)
 

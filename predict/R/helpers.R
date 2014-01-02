@@ -110,25 +110,6 @@ nice.require <- function(pkg, reason="is required"){
 # }
 
 
-##' Recursive unlisting of nested lists
-##' 
-##' @param x Nested lists.
-##' @param n Number of levels to unlist.
-##' @examples
-##' ll <- list(list(list(list(list("hello!")))))
-##' rec.unlist(ll, 3)
-##' @seealso unlist, subtree
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @export
-rec.unlist <- function(x, n){
-    if(is.list(x) && n > 0){
-        return(unlist(rec.unlist(x, n-1), recursive=FALSE, use.names=FALSE))
-    } else {
-        return(x)
-    }
-}
-
-
 ##' Extract a subset of a tree of nested lists
 ##' 
 ##' This function can only be used to extract data, not to assign.
@@ -136,31 +117,30 @@ rec.unlist <- function(x, n){
 ##' @param x List of lists.
 ##' @param i Indices to extract on the first level of the tree.
 ##' @param ... Indices to extract on subsequent levels.
-##' @param fun \code{\link{lapply}} or \code{\link{sapply}} which either
-##'   preserves the structure of the tree or simplifies it.
-##' @param flatten How many levels from the root to flatten.
+##' @param simplify Whether to collapse lists of length one (\code{TRUE}) or
+##'   preserve the original tree structure (\code{FALSE}).
 ##' @return A subset of the list tree.
 ##' @examples
 ##' l <- list(a=1:3, b=4, c=5)
 ##' ll <- list(l, l, l, l)
 ##' lll <- list(cat=ll, mouse=ll, escalator=ll)
 ##' subtree(lll, 1:2, TRUE, "b")
-##' @seealso ssubtree, rec.flat
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-subtree <- function(x, i, ..., fun=lapply, flatten=0){
-    if(missing(i)) return(rec.unlist(x, flatten))
-    rec.unlist(fun(x[i], function(xx) subtree(xx, ..., fun=fun)), flatten)
+subtree <- function(x, i, ..., simplify=TRUE){
+    if(missing(i)){
+        ret <- x
+    } else if(missing(...)){
+        ret <- x[i]
+    } else {
+        ret <- lapply(x[i], subtree, ..., simplify=simplify)
+    }
+    if(simplify && length(ret) == 1){
+        ret[[1]]
+    } else {
+        ret
+    }
 }
-##' Shortcut for sapply subtree
-##'
-##' Same as \code{\link{subtree}} but with the argument \code{fun=sapply}.
-##' 
-##' @param ... Sent to \code{\link{subtree}}.
-##' @seealso subtree
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @export
-ssubtree <- function(...) subtree(..., fun=sapply)
 
 
 ##' Trapezoid rule numerical integration
@@ -233,4 +213,7 @@ trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file=""){
 increase <- function(x, i=1){
     x + i*as.logical(x)
 }
+
+
+
 
