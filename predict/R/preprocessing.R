@@ -2,11 +2,15 @@
 
 ##' Data preprocessing
 ##' 
-##' These functions are run in \code{\link{batch.predict}} just prior to model
+##' These functions are run in \code{\link{batch.model}} just prior to model
 ##' fitting and serve two purposes. 1) They extract fitting and test sets from
 ##' the entire dataset and 2) they can at the same time apply a transformation
-##' to preprocess the data for handling missing values, scaling, compression
+##' to pre-process the data for handling missing values, scaling, compression
 ##' etc.
+##'
+##' They can also be used to modify the form of the data, if required by the
+##' fitting function, e.g. \code{\link{pre.pamr}} that transposes the dataset
+##' to make it compatible with the \code{pamr} and \code{glmnet} processes.
 ##' 
 ##' The following functions are provided in this package:
 ##' \describe{
@@ -25,9 +29,9 @@
 ##' 
 ##' @return A list with the following components
 ##' \describe{
-##'     \item{\code{fit}:}{Fitting set.}
-##'     \item{\code{test}:}{Test set.}
-##'     \item{\code{features}:}{Logical vector indicating which features were kept
+##'     \item{\code{fit}}{Fitting set.}
+##'     \item{\code{test}}{Test set.}
+##'     \item{\code{features}}{Logical vector indicating which features were kept
 ##'         (TRUE) and discarded (FALSE). This is only set in case of variable
 ##'         selection.}
 ##' }
@@ -35,7 +39,6 @@
 ##' @examples
 ##' # A splitter that only keeps variables with a classwise mean difference > `d`
 ##' \dontrun{
-##' # Define the transformation
 ##' my.split <- function(x, y, fold, d=2){
 ##'     fit.idx <- na.fill(!fold, FALSE)
 ##'     test.idx <- na.fill(fold, FALSE)
@@ -49,14 +52,16 @@
 ##'         features = diff.feats))
 ##' }
 ##'
-##' # Use it during modelling
-##' pred <- batch.predict(x, y, "rf", pre.trans=my.split)
+##' # Use it during modeling
+##' proc <- modeling.procedure("rf")
+##' perf <- evaluate.modeling(proc, x, y, pre.process=my.split)
 ##'
 ##' # Example of how the end user can change the `d` parameter,
 ##' # without redefining the function
-##' pred <- batch.predict(x, y, "rf", pre.trans=function(...) my.split(..., d=4))
+##' perf <- evaluate.modeling(proc, x, y,
+##'                            pre.process=function(...) my.split(..., d=4))
 ##' }
-##' @name pre.trans
+##' @name pre.process
 {}
 
 
@@ -66,21 +71,21 @@
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @rdname pre.trans
+##' @rdname pre.process
 ##' @export
 pre.split <- function(x, y, fold){
     list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
          test=x[na.fill(fold, FALSE),,drop=FALSE])
 }
 
-##' @rdname pre.trans
+##' @rdname pre.process
 ##' @export
 pre.center <- function(x, y, fold){
     pre.scale(x, fold, scale=FALSE)
 }
 
 ##' @param scale Wether to scale each feature to have standard deviation = 1.
-##' @rdname pre.trans
+##' @rdname pre.process
 ##' @export
 pre.scale <- function(x, y, fold, scale=TRUE){
     m <- apply(x[na.fill(!fold, FALSE),,drop=FALSE], 2, mean, na.rm=TRUE)
@@ -95,7 +100,7 @@ pre.scale <- function(x, y, fold, scale=TRUE){
 }
 
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @rdname pre.trans
+##' @rdname pre.process
 ##' @export
 pre.impute.median <- function(x, y, fold){
     na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
@@ -140,7 +145,8 @@ impute.median <- function(x){
 ##' x[sample(length(x), 10)] <- NA
 ##' y <- gl(2,30)
 ##' my.dist <- dist(x)
-##' batch.predict(x, y, "lda", pre.trans=function(...) pre.impute.knn(..., k=4, my.dist))
+##' evaluate.modeling(modeling.procedure("lda"), x, y,
+##'     pre.process=function(...) pre.impute.knn(..., k=4, my.dist))
 ##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export

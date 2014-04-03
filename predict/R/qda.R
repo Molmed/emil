@@ -1,4 +1,4 @@
-##' Design of quadratic discriminant.
+##' Fit quadratic discriminant.
 ##'
 ##' @param x Dataset, numerical matrix with observations as rows.
 ##' @param y Class labels, factor.
@@ -9,7 +9,7 @@
 ##' @examples
 ##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso design
+##' @seealso fit
 ##' @export
 fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
     fit <- list(responses=levels(y),
@@ -26,7 +26,7 @@ fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
 
 ##' Prediction using already trained classifier.
 ##'
-##' @method predict qda
+# @method predict qda
 ##' @param object Fitted classifier.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored

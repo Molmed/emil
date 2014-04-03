@@ -1,114 +1,61 @@
-##' Gray's test
-##' 
-##' An extraction from \code{\link[cmprsk]{cuminc}} that only performs the test for the
-##' event of interest.
-##' 
-##' @param ftime Times or outcome vector, see \code{\link[cmprsk]{cuminc}}.
-##' @param fstatus Event types if \code{ftime} is numeric, see
-##'   \code{\link[cmprsk]{cuminc}}. Event of interest if \code{ftime} is of class
-##'   outcome.
-##' @param group See \code{\link[cmprsk]{cuminc}}.
-##' @param strata See \code{\link[cmprsk]{cuminc}}.
-##' @param rho See \code{\link[cmprsk]{cuminc}}.
-##' @param cencode See \code{\link[cmprsk]{cuminc}}.
-##' @param failcode See \code{\link[cmprsk]{cuminc}}.
-##' @param subset See \code{\link[cmprsk]{cuminc}}.
-##' @param na.action See \code{\link[cmprsk]{cuminc}}.
-##' @return P-value for event of interest.
-##' @examples
-##' set.seed(2)
-##' ss <- rexp(100)
-##' gg <- factor(sample(1:3,100,replace=TRUE),1:3,c('a','b','c'))
-##' cc <- sample(0:2,100,replace=TRUE)
-##' strt <- sample(1:2,100,replace=TRUE)
-##' print(cmprsk::cuminc(ss,cc,gg,strt))
-##' print(cuminc.test(ss,cc,gg,strt))
-##' @author Eva Freyhult
-##' @export
-cuminc.test <- function (ftime, fstatus, group, strata, rho = 0, cencode = 0, failcode = 1,
-                        subset, na.action = na.omit){
-    library(cmprsk)                        
-    if(is.outcome(ftime)){
-        y <- ftime
-        ftime <- y$time
-        if(!fstatus %in% levels(y$event) &&
-           !fstatus %in% 1:length(levels(y$event)))
-            stop(sprintf("Invalid event type `%s`", as.character(fstatus)))
-        if(missing(fstatus)){
-            fstatus <- na.fill(as.integer(y$event), 0)
-        } else {
-            # Make our event of interest, `fstatus`, have number 1.
-            fstatus <- match(y$event, c(NA, fstatus, setdiff(levels(y$event), fstatus)))-1
-        }
-    }
-    d <- data.frame(time = ftime, cause = fstatus, group = as.factor(if (missing(group)) 
-        rep(1, length(ftime))
-    else group), strata = as.factor(if (missing(strata)) 
-        rep(1, length(ftime))
-    else strata))
-    if (!missing(subset)) 
-        d <- d[subset, ]
-    tmp <- nrow(d)
-    d <- na.action(d)
-    if (nrow(d) != tmp) 
-        cat(format(tmp - nrow(d)), "cases omitted due to missing values\n")
-    no <- nrow(d)
-    cg <- "  "
-    nst <- length(levels(d$strata))
-    d <- d[order(d$time), ]
-    ugg <- table(d$group)
-    d$group <- factor(d$group, names(ugg)[ugg > 0])
-    ugg <- levels(d$group)
-    censind <- 1*(d$cause != cencode)
-    ng <- length(ugg)
-    if (ng<2)
-      stop("There must be at least two groups")
-    ng1 <- ng - 1
-    ng2 <- ng * ng1/2
-    v <- matrix(0, nrow = ng1, ncol = ng1)
-    storage.mode(v) <- "double"
-    vt <- double(ng2)
-    s <- double(ng1)
-    stat <- double(1)
-    ii <- 1
-    causeind <- ifelse(d$cause == failcode, 1, 0)
-    causeind <- 2 * censind - causeind
-    z2 <- .Fortran("crstm", as.double(d$time), as.integer(causeind), 
-                   as.integer(d$group), as.integer(d$strata), as.integer(no), 
-                   as.double(rho), as.integer(nst), as.integer(ng), 
-                   s, v, as.double(d$time), as.integer(causeind), 
-                   as.integer(d$group), vt, s, vt, double((4 + 3 * 
-                         ng) * ng), integer(4 * ng), PACKAGE = "cmprsk")
-    stat[ii] <- -1
-    a <- qr(z2[[10]])
-    if (a$rank == ncol(a$qr)) {
-      b <- diag(dim(a$qr)[1])
-      stat[ii] <- z2[[9]] %*% qr.coef(a, b) %*% z2[[9]]
-    }
-    
-    pchisq(stat, ng-1, lower.tail=FALSE)
-}
-
 ##' Extraction of p-value from a statistical test
 ##'
 ##' These calculations are written in such a way that they avoid rounding off errors
 ##' that plague the \code{survival} and \code{cmprsk} packages. 
 ##'
 ##' @param x Test, i.e. a fitted object of a supported type.
-##' @param log If \code{TRUE} \code{log(p.value)} is returned. If numeric it denotes
-##'   the base in which the logarithm should be calculated (defaults to natural log).
+##' @param log.p Whether to return the logarithm of the p-value.
 ##' @param ... Sent to class method.
 ##' @return p-value.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso p.value.crr, p.value.survdiff
+##' @seealso p.value.crr, p.value.survdiff, p.value.cuminc
 ##' @export
-p.value <- function(x, log=FALSE, ...) UseMethod("p.value")
+p.value <- function(x, log.p=FALSE, ...) UseMethod("p.value")
+
+
+##' Extract p-value from a Cox proportional hazards model
+##' 
+##' Based on \code{\link{summary.coxph}}.
+##'
+##' @param x Fitted \code{\link[survival]{coxph}} model.
+##' @param log.p Whether to return the logarithm of the p-value.
+##' @param test What test to calculate. \code{"likelihood"} is short for means
+##'   likelihood ratio test.
+##' @param ... Ignored. Kept for S3 consistency.
+##' @return p-value.
+##' @seealso p.value
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+p.value.coxph <- function(x, log.p=FALSE, test=c("logrank", "wald", "likelihood"), ...){
+    test <- match.arg(test)
+    df <- sum(!is.na(x$coefficients))
+    switch(test,
+        logrank = pchisq(x$score, df, lower.tail=FALSE, log.p=log.p),
+        wald = pchisq(x$score, df, lower.tail=FALSE, log.p=log.p),
+        likelihood = pchisq(x$logtest, df, lower.tail=FALSE, log.p=log.p))
+}
+
+
+##' Extract p-value from a cumulative incidence estimation
+##' 
+##' This is also known as Gray's test.
+##' 
+##' @param x Fitted \code{\link[cmprsk]{cuminc}} estimate.
+##' @param log.p Whether to return the logarithm of the p-value.
+##' @param ... Ignored. Kept for S3 consistency.
+##' @return p-value.
+##' @seealso p.value
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+p.value.cuminc <- function(x, log.p=FALSE, ...){
+    pchisq(x$Tests[,"stat"], x$Tests[,"df"], lower.tail=FALSE, log.p=log.p)
+}
+
 
 ##' Extracts p-value from a competing risk model
 ##' 
-##' @method p.value crr
 ##' @param x Fitted crr model, as returned by \code{\link[cmprsk]{crr}}.
-##' @param log See \code{\link{p.value}}.
+##' @param log.p Whether to return the logarithm of the p-value.
 ##' @param ... Ignored. Kept for S3 consistency.
 ##' @return Two-sided p-value.
 ##' @examples
@@ -121,24 +68,21 @@ p.value <- function(x, log=FALSE, ...) UseMethod("p.value")
 ##' # Compare p-values of implementations
 ##' print(x)
 ##' p.value(x)
+##' @seealso p.value
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-p.value.crr <- function(x, log=FALSE, ...){
-    if(log){
-        pval <- log(2) + pnorm(abs(x$coef)/sqrt(diag(x$var)), lower.tail=FALSE, log.p=TRUE)
-        return( if(is.numeric(log)) pval/log(log) else pval )
-    } else {
-        return(2 * pnorm(abs(x$coef)/sqrt(diag(x$var)), lower.tail=FALSE))
-    }
+p.value.crr <- function(x, log.p=FALSE, ...){
+    pval <- pnorm(abs(x$coef)/sqrt(diag(x$var)), lower.tail=FALSE, log.p=log.p)
+    if(log.p) log(2) + pval else 2 * pval
 }
 
 ##' Extracts p-value from a logrank test
 ##' 
-##' @method p.value survdiff
 ##' @param x Logrank test result, as returned by \code{\link[survival]{survdiff}}.
-##' @param log See \code{\link{p.value}}.
+##' @param log.p Whether to return the logarithm of the p-value.
 ##' @param ... Ignored. Kept for S3 consistency.
 ##' @return p-value.
+##' library(survival)
 ##' y <- Surv(time=1:100, event=rep(1:0, each=50))
 ##' groups <- rep(1:2, each=50)
 ##' x <- survdiff(y ~ groups)
@@ -146,26 +90,22 @@ p.value.crr <- function(x, log=FALSE, ...){
 ##' # Compare p-values of implementations
 ##' print(x)
 ##' p.value(x)
+##' @seealso p.value
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-p.value.survdiff <- function(x, log=FALSE, ...){
-    if(log){
-        pval <- pchisq(x$chisq, length(x$n) - 1, lower.tail=FALSE, log.p=TRUE)
-        return( if(is.numeric(log)) pval/log(log) else pval )
-    } else {
-        return(pchisq(x$chisq, length(x$n) - 1, lower.tail=FALSE))
-    }
+p.value.survdiff <- function(x, log.p=FALSE, ...){
+    pchisq(x$chisq, length(x$n) - 1, lower.tail=FALSE, log.p=log.p)
 }
 
 
-# ##' Design competing risk regression model
+# ##' Fit competing risk regression model
 # ##' 
 # ##' @param x Dataset.
 # ##' @param y Response vector of class \code{\link{outcome}}.
 # ##' @param ... Sent to \code{\link[cmprsk]{crr}}
 # ##' @author Christofer \enc{Bäcklin}{Backlin}
 # ##' @export
-# design.crr <- function(x, y, ...){
+# fit.crr <- function(x, y, ...){
 #     cmprsk::crr(y$time, integer.events(y)+1, x, ...)
 # }
 # 

@@ -53,6 +53,8 @@ na.fill <- function(x, replacement){
 
 ##' Load a package and offer to install if missing
 ##' 
+##' If running R in interactive mode, the user is prompted.
+##'
 ##' @param pkg Package name.
 ##' @param reason A status message that informs the user why the package is
 ##'   needed.
@@ -60,8 +62,9 @@ na.fill <- function(x, replacement){
 ##' @examples
 ##' nice.require("base", "is required to do anything at all")
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
 nice.require <- function(pkg, reason="is required"){
-    if(!eval(substitute(require(pkg), list(pkg=pkg)))){
+    if(!eval(substitute(require(pkg), list(pkg=pkg))) && interactive()){
         cat(sprintf("Package `%s` %s. Install now? (Y/n) ", pkg, reason))
         if(grepl("^(y(es)?)?$", tolower(readline()))){
             install.packages(pkg)
@@ -74,43 +77,11 @@ nice.require <- function(pkg, reason="is required"){
 }
 
 
-# ##' Test if a save prefix is valid
-# ##' 
-# ##' @param save.prefix String including path to directory and file prefix.
-# ##' @param create.dir Create directory if needed.
-# ##' @return Nothing, throws an error if unsuccessful.
-# ##' @examples
-# ##' \dontrun{save.test("myFolder")}
-# ##' @author Christofer \enc{Bäcklin}{Backlin}
-# ##' @noRd
-# save.test <- function(save.prefix=NULL, create.dir){
-#     if(!is.blank(save.prefix)){
-#         save.path <- sub("/[^/]*$", "", sprintf("./%s", save.prefix))
-#         if(!file.exists(save.path)){
-#             if(missing(create.dir)){
-#                 cat("Directory does not exist. Do you want to create it? [Y/n]\n")
-#                 create.dir <- tolower(readline()) %in% c("", "y", "yes")
-#             }
-#             if(create.dir){
-#                 dir.create(save.path, recursive=TRUE)
-#             } else {
-#                 stop("Directory does not exist.")
-#             }
-#         }
-#         tryCatch({
-#             about <- "Classify package just tested if a path for saving results was valid. It did. Please delete this file."
-#             save(about, file=sprintf("%s/.savetest.Rdata", save.path))
-#             unlink(sprintf("%s/.savetest", save.path))
-#             rm(about)
-#         }, error=function(...){
-#             stop(sprintf("Could not save to prefix \"%s\"", save.path))
-#         })
-#     }
-#     invisible()
-# }
-
-
 ##' Extract a subset of a tree of nested lists
+##' 
+##' Many functions of the package produce results on the form of nested list,
+##' like \code{\link{evaluate.modeling}}. Use this function to extract only a
+##' subset of the tree. Also note the similar function \code{\link{subframe}}.
 ##' 
 ##' This function can only be used to extract data, not to assign.
 ##' 
@@ -125,6 +96,7 @@ nice.require <- function(pkg, reason="is required"){
 ##' ll <- list(l, l, l, l)
 ##' lll <- list(cat=ll, mouse=ll, escalator=ll)
 ##' subtree(lll, 1:2, TRUE, "b")
+##' @seealso subframe
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 subtree <- function(x, i, ..., simplify=TRUE){
@@ -135,16 +107,68 @@ subtree <- function(x, i, ..., simplify=TRUE){
     } else {
         ret <- lapply(x[i], subtree, ..., simplify=simplify)
     }
-    if(simplify && length(ret) == 1){
-        ret[[1]]
+    if(simplify){
+        if(length(ret) == 1){
+            ret[[1]]
+        } else if(all(sapply(ret, length) == 1)){
+            unlist(ret, recursive=FALSE)
+        } else if((is.numeric(ret[[1]]) || is.character(ret[[1]]) || is.logical(ret[[1]])) &&
+                  all(sapply(lapply(ret, dim), is.null)) &&
+                  all(sapply(ret, class) == class(ret[[1]])) &&
+                  all(sapply(ret, length) == length(ret[[1]]))){
+            do.call(cbind, ret)
+        } else {
+            ret
+        }
     } else {
         ret
     }
 }
 
 
+##' Extract and organize predictions according to a resampling scheme
+##' 
+##' This function arranges predictions of a performance evaluation in a data
+##' frame where the rows correspond do observations and the columns to folds, to
+##' make it easy to study the variability of each observation with respect to
+##' the resampling.
+##' 
+##' @param x Performance evaluation results.
+##' @param ... Indices specify what to extract, sent to \code{\link{subtree}}.
+##' @param test.subset Resampling scheme used to carry out a peformance
+##'   evaluation.
+##' @examples
+##' \dontrun{
+##' cv <- resample.crossval(y, nfold=5, nrep=3)
+##' perf <- evaluate.modeling(proc, x, y, test.subset=cv)
+##' subframe(perf, TRUE, "pred", "prob", 1, test.subset=cv)
+##' }
+##' @seealso subtree
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+subframe <- function(x, ..., test.subset){
+    flatten <- function(x){
+        if(is.list(x)){
+            x <- lapply(x, flatten)
+            if(length(x) == 1)
+                x <- x[[1]]
+        }
+        x
+    }
+    st <- flatten(subtree(x, ..., simplify=FALSE))
+    if(any(sapply(st, length) != sapply(test.subset, sum, na.rm=TRUE)))
+        stop("Data and test.subset does not match.")
+
+    as.data.frame(mapply(
+        function(x, fold) x[ave(fold, fold, FUN=seq_along)*fill(fold, FALSE, NA)],
+        st, test.subset, SIMPLIFY=FALSE))
+}
+
+
 ##' Trapezoid rule numerical integration
 ##' 
+##' Only intended for internal use.
+##'
 ##' @param x Integrand.
 ##' @param y Function values.
 ##' @return Area under function.
@@ -215,5 +239,25 @@ increase <- function(x, i=1){
 }
 
 
-
+##' Print a warning message if not printed earlier
+##' 
+##' To avoid flooding the user with identical warning messages, this function
+##' keeps track of which have already been shown.
+##' 
+##' @param id Warning message id. This is used internally to refer to the
+##'   message.
+##' @param ... Sent to \code{\link{warning}}.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+warn.once <- function(id, ...){
+    if(!id %in% getOption("emil.warnings")){
+        warning(...)
+        options(emil.warnings = c(getOption("predict.warnings"), id))
+    }
+}
+##' @rdname warn.once
+##' @export
+reset.warn.once <- function(){
+    options(emil.warnings = NULL)
+}
 

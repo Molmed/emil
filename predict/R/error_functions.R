@@ -1,22 +1,31 @@
 ##' Error functions
-
+##' 
+##' These functions determine the performance of fitted model based on its
+##' predictions. This is used both for evaluating whole modeling procedures and
+##' to tune model paramaters, i.e. find the parameter values with the best
+##' performance.
+##' 
+##' The parameter tuning routine is designed to minimize its error function (or
+##' optimization criteria), which is why functions that are to be maximized must
+##' have their sign changed, like \code{\link{neg.auc}}.
 ##' 
 ##' For classification problems:
 ##' \describe{
-##'   \item{\code{\link{error.rate}}}{Fraction of predictions that were incorrect.}
-##'   \item{\code{\link{neg.auc}}}{-AUC.}
-##'   \item{\code{\link{neg.geo.mean}}}{Negative geometric mean. Good for
-##'     problems with imbalanced class sizes.}
+##'   \item{\code{error.rate}}{Fraction of predictions that were incorrect.}
+##'   \item{\code{weighted.error.rate}}{See its own documentation.}
+##'   \item{\code{neg.auc}}{Negative area under ROC curve.}
+##'   \item{\code{\link{neg.gmpa}}}{Negative geometric mean of class-specific
+##'     prediction accuracy. Good for problems with imbalanced class sizes.}
 ##' }
 ##' For regression problems:
 ##' \describe{
-##'     \item{\code{\link{mse}}}{Mean square error.}
-##'     \item{\code{\link{rmse}}}{Root mean square error.}
+##'     \item{\code{mse}}{Mean square error.}
+##'     \item{\code{rmse}}{Root mean square error.}
 ##' }
 ##'
 ##' For survival analysis problem:
 ##' \describe{
-##'     \item{\code{\link{neg.harrell.C}}}{Negative Harrell's concordance index.}
+##'     \item{\code{neg.harrell.C}}{Negative Harrell's concordance index.}
 ##' }
 ##'
 ##' @param true The true response values, be it class labels, numeric values or
@@ -42,13 +51,13 @@ error.rate <- function(true, pred){
 ##' error function might be more appropriate than the standard.
 ##' 
 ##' This function is not in itself an error function, but used to generate error
-##' functions. Either supply a (manually) predefined cost matrix or a response
+##' functions. Either supply a predefined cost matrix or a response
 ##' vector for a classification problem to define it automatically.
 ##' 
-##' The automatically defined error function will return 0 if all predictions
-##' are correct, 1 if all predictions are incorrect and 0.5 if all predictions
-##' are the same (regardless of class, i.e. if one class is smaller it will be
-##' given a higher missclassification cost).
+##' The automatically generated cost matrix will generate an error of 0 if all
+##' predictions are correct, 1 if all predictions are incorrect and 0.5 if all
+##' predictions are the same (regardless of class, i.e. if one class is smaller
+##' it will be given a higher missclassification cost).
 ##' 
 ##' @param x Cost matrix or factor response vector.
 ##' @return An error function.
@@ -116,14 +125,14 @@ mse <- function(true, pred){
 ##' doi:10.1186/1471-2105-14-64
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-neg.geo.mean <- function(true, pred){
+neg.gmpa <- function(true, pred){
     -exp(mean(log( tapply(pred$pred == true, true, mean) )))
 }
 
 ##' @rdname error.fun
 ##' @export
 neg.harrell.C <- function(true, pred){
-    nice.require("Hmisc", "is required for calculating Harrell's C.")
-    -rcorr.cens(pred$risk, as.Surv(true))[1]
+    nice.require("Hmisc", "is required for calculating Harrell's C")
+    -Hmisc::rcorr.cens(pred$risk, as.Surv(true))[1]
 }
 

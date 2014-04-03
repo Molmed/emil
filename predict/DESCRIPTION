@@ -2,18 +2,26 @@ Encoding: UTF-8
 Package: predict
 Type: Package
 Title: Predictive modelling toolbox
-Version: 2.2-1
-Date: 2013-12-14
+Version: 3.0-8
+Date: 2014-03-25
 Author: Christofer Backlin, Mats Gustafsson
 Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
 Description: A toolbox for designing and evaluating predictive models with
-  resampling methods. The aim of this package is to provide a simple and
-  efficient general framework for working with any type of prediction problem,
-  be it classification, regression or survival analysis, that is easy to extend
-  and adapt to your specific setting. A few commonly used methods for
-  classification, regression and survival analysis are included.
-Imports: foreach
-Suggests: caret, cmprsk, glmnet, party, pamr, randomForest
+    resampling methods. The aim of this package is to provide a simple and
+    efficient general framework for working with any type of prediction
+    problem, be it classification, regression or survival analysis, that is
+    easy to extend and adapt to your specific setting. A few commonly used
+    methods for classification, regression and survival analysis are included.
+Imports:
+    foreach
+Suggests:
+    caret,
+    cmprsk,
+    glmnet,
+    Hmisc,
+    party,
+    pamr,
+    randomForest
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes

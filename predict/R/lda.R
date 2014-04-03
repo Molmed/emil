@@ -1,4 +1,4 @@
-##' Design of linear discriminant
+##' Fit linear discriminant
 ##'
 ##' @param x Dataset, numerical matrix with observations as rows.
 ##' @param y Class labels, factor.
@@ -10,7 +10,7 @@
 ##' @examples
 ##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso design
+##' @seealso fit
 ##' @export
 fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
     s <- matrix(0, ncol(x), ncol(x))
@@ -29,8 +29,7 @@ fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
 
 ##' Prediction using already trained prediction model
 ##'
-##' @method predict lda
-##' @param object Fitted classifier as produced by \code{\link{batch.predict}}.
+##' @param object Fitted classifier as produced by \code{\link{batch.model}}.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return TODO
@@ -48,15 +47,4 @@ predict.lda <- function(object, x, ...){
                               levels=object$responses),
                 prob = t(apply(log.disc.func, 1, function(x) exp(x)*object$pi/sum(exp(x)*object$pi)))))
 }
-
-# ##' Variable importance of a linear discriminant
-# ##' 
-# ##' @method vimp lda
-# ##' @param object Fitted linear discriminant.
-# ##' @param ... Ignored.
-# ##' @author Christofer \enc{Bäcklin}{Backlin}
-# ##' @export
-# vimp.lda <- function(object, ...){
-#     apply(object$mu, 2, sum)
-# }
 

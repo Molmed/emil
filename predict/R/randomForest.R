@@ -1,4 +1,4 @@
-##' Design of random forest.
+##' Fit random forest.
 ##'
 ##' Directly calling the \code{randomForest} package implementation. See
 ##' \code{\link[randomForest]{randomForest}} for parameter specification.
@@ -13,10 +13,10 @@
 ##' @examples
 ##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso design
+##' @seealso fit
 ##' @export
 fit.randomForest <- function(x, y, importance=FALSE, ...){
-    library(randomForest)
+    nice.require("randomForest")
     #idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
     #x <- x[idx,, drop=FALSE]
     #y <- y[idx]
@@ -34,7 +34,6 @@ fit.randomForest <- function(x, y, importance=FALSE, ...){
 
 ##' Prediction using random forest.
 ##'
-##' @method predict rf
 ##' @param object Fitted model.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored
@@ -45,8 +44,8 @@ fit.randomForest <- function(x, y, importance=FALSE, ...){
 ##' @seealso predict
 ##' @export
 predict.randomForest <- function(object, x, ...){
-    library(randomForest)
-    p <- getFromNamespace("predict.randomForest", "randomForest")
+    nice.require("randomForest")
+    p <- randomForest:::predict.randomForest
     if(is.factor(object$y)){
         list(pred = p(object, newdata=x, type="response"),
              prob = p(object, newdata=x, type="prob"))
@@ -58,12 +57,11 @@ predict.randomForest <- function(object, x, ...){
 
 ##' Variable importance of random forest.
 ##' 
-##' @method vimp rf
 ##' @param object Fitted NSC classifier
 ##' @param type Importance can be assessed in two ways:
 ##'   \describe{
 ##'     \item{1.}{Permuted out-of-bag prediction error (default). This can only be
-##'            used if the classifier was designed with argument
+##'            used if the classifier was fitted with argument
 ##'            \code{importance=TRUE} which is default.}
 ##'     \item{2.}{Total decrease in node impurity.}
 ##'   }
@@ -74,7 +72,7 @@ predict.randomForest <- function(object, x, ...){
 ##' @export
 vimp.randomForest <- function(object, type=1, ...){
     if(is.blank(object$importance))
-        stop("To calculate variable importance of random forsests you must set the design parameter `importance=TRUE`, see `?design.rf`.")
+        stop("To calculate variable importance of random forsests you must set the fitting parameter `importance=TRUE`, see `?fit.randomForest`.")
     object$importance
     #if(is.factor(object$y)){
     #    perm.oob <- "MeanDecreaseAccuracy" %in% colnames(object$importance)

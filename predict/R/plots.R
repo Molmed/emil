@@ -6,7 +6,7 @@
 ##' @param ... Sent to \code{\link{contour}}.
 ##' @return Nothing, produces a plot.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso design
+##' @seealso fit
 ##' @export
 decision.border <- function(fit, x, n=c(100, 100), ...){
     if(ncol(x) != 2){

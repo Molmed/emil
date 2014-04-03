@@ -1,8 +1,8 @@
-##' Design of a linear model fitted with ordinary least squares
+##' Fit a linear model fitted with ordinary least squares
 ##' 
 ##' Based on \code{\link{lm}}.
 ##' 
-##' @param x Dataset.
+##' @param x Descriptors.
 ##' @param y Response, numeric.
 ##' @param formula See \code{\link{lm}}.
 ##' @param ... Sent to \code{\link{lm}}.
@@ -30,8 +30,7 @@ fit.lm <- function(x, y, formula=y~., ...){
 
 ##' Prediction using linear model
 ##' 
-##' @method predict ols
-##' @param object Fitted classifier produced by \code{\link{design.ols}}.
+##' @param object Fitted classifier produced by \code{\link{fit.lm}}.
 ##' @param x Dataset to be predicted upon.
 ##' @param ... Sent to \code{\link{predict.lm}}
 ##' @return A prediction list.

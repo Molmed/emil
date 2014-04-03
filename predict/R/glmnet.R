@@ -1,4 +1,4 @@
-##' Design GLM with LASSO, Ridge or elastic net regularization.
+##' Fit GLM with LASSO, Ridge or elastic net regularization.
 ##' 
 ##' Calling the \code{glmnet} package implementation.
 ##' 
@@ -7,7 +7,7 @@
 ##' an intermediate for a combination. This is typically the variable to tune
 ##' on. The shrinkage, controlled by the \code{lambda} parameter, can be left
 ##' unspecified for internal tuning (works the same way as
-##' \code{\link{design.nsc}}).
+##' \code{\link{fit.glmnet}}).
 ##' 
 ##' @param x Dataset.
 ##' @param y Response vector. Can be of many different types for solving
@@ -21,9 +21,9 @@
 ##' @param ... Sent to \code{\link[glmnet]{cv.glmnet}}.
 ##' @return Fitted GLM.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso design
+##' @seealso fit
 ##' @export
-fit.elasticNet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
+fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     if(!is.factor(y))
         stop("The glmnet wrapper is only implemented for classification (factor response) so far.")
     nice.require("glmnet", "is required to fit elastic net models")
@@ -34,7 +34,7 @@ fit.elasticNet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, .
             family <- "multinomial" else
         if(is.integer(y) & all(y >= 0)) family <- "poisson" else
         if(is.numeric(y)) family <- "gaussian" else
-        stop("Could not auto detect glmnet family, see `?design.glmnet`.")
+        stop("Could not auto detect glmnet family, see `?fit.glmnet`.")
     }
     if(inherits(y, "outcome")) y <- as.Surv(y)
 
@@ -55,13 +55,13 @@ fit.elasticNet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, .
             fit$glmnet.fit$beta <- NULL # This can be very large, and we don't need it
             fit
         })
-        cvm <- subtree(fits, T, "cvm", flatten=1)
+        cvm <- subtree(fits, T, "cvm")
         alpha.i <- which.min(sapply(cvm, min))
         vars <- c("lambda", "cvm", "cvsd", "cvup", "cvlo", "nzero")
         names(vars) <- vars
         return(out <- c(
             list(family = family, alpha = alpha, alpha.min = alpha[alpha.i]),
-            lapply(vars, function(x) subtree(fits, T, x, flatten=1)),
+            lapply(vars, function(x) subtree(fits, T, x)),
             list(name = fits[[1]]$name,
                  glmnet.fit = glmnet(x, y, family=family, alpha=alpha[alpha.i], lambda=lambda, ...)),
             fits[[alpha.i]][c("lambda.min", "lambda.1se")]))
@@ -85,7 +85,6 @@ fit.elasticNet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, .
 ##' Due to the way \code{\link[glmnet]{glmnet}} is implemented, the regularization alpha
 ##' can not be modified after the model is fitted.
 ##'
-##' @method predict gln
 ##' @param object Fitted model.
 ##' @param x New data to be predicted.
 ##' @param s Regularization parameter lambda.
@@ -93,7 +92,12 @@ fit.elasticNet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, .
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.elasticNet <- function(object, x, s, ...){
+predict.glmnet <- function(object, x, s, ...){
+    # In case the glmnet package accidentally fetches this function when calling
+    # `predict`, just pass it along to the correct method.
+    if(inherits(object, "glmnet"))
+        return(glmnet:::predict.glmnet(object, newx=x, s=s, ...))
+
     nice.require("glmnet", "is required to make precdictions with an elastic net model")
     if(missing(s)){
         if("lambda.min" %in% names(object)){
@@ -109,6 +113,6 @@ predict.elasticNet <- function(object, x, s, ...){
     )
     list(pred = factor(predict(object$glmnet.fit, x, s=s, type="class", ...),
                        levels=object$glmnet.fit$classnames),
-         prob = p)
+         prob = as.data.frame(p))
 }
 
