@@ -1,19 +1,20 @@
-cd("/home/christofer/Documents/R/egna paket/predict")
-if(!exists("roxygen.update.description")) source("update_description.R")
+#cd("/home/christofer/Documents/R/egna paket/emil")
+#if(!exists("roxygen.update.description")) source("update_description.R")
 library("roxygen2")
 
-
 roxygen.update.description()
-roxygenize("predict", "predict.roxygen", unlink.target = TRUE)
-system("R CMD check predict.roxygen")
+file.remove(c(dir("emil/man", full.names=TRUE), "emil/man",
+              "emil/NAMESPACE", "emil/emil-Ex.R"))
+roxygenize("emil")
+system("R CMD check emil")
 
-system("R CMD INSTALL predict.roxygen")
-system("R CMD build predict.roxygen") # Build package
+system("R CMD INSTALL emil")
+system("R CMD build emil") # Build package
 system(sprintf("scp %s backch@tank:~/R_packages/src/contrib",
-               rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
+               rev(dir(, "emil_.*\\.tar\\.gz"))[1]))
 system(sprintf("scp %s chrib@milou.uppmax.uu.se:R_packages/src/contrib",
-               rev(dir(, "predict_.*\\.tar\\.gz"))[1]))
-system("mv predict_*.tar.gz builds")
+               rev(dir(, "emil_.*\\.tar\\.gz"))[1]))
+system("mv emil_*.tar.gz builds")
 
 
 #---------------------------------------------------------------------[ Commit ]
@@ -26,13 +27,13 @@ system("git push")
 
 #----------------------------------------------------[ When submitting to CRAN ]
 
-system("R CMD check predictBase.roxygen --use-gct") # Check package with GC-torture
-system("R CMD INSTALL --build --clean predictBase.roxygen") # Build binary
+system("R CMD check emilBase.roxygen --use-gct") # Check package with GC-torture
+system("R CMD INSTALL --build --clean emilBase.roxygen") # Build binary
 
 
 X <- matrix(rnorm(80*4), 80)
 y <- gl(2, 40)
 cv <- resample.crossval(y, 5, 5)
-pred <- batch.predict(X, y, "nsc", test.subset=cv)
-ssubtree(pred$cv, T, 1, "error")
+pred <- batch.emil(X, y, "nsc", test.subset=cv)
+subtree(pred$cv, T, 1, "error")
 
