@@ -167,7 +167,7 @@ image.crossval <- function(x, ...){
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return Nothing, produces a plot.
 ##' @examples
-##' image(resample.holdout(60, frac=1/3, nrep=20))
+##' image(resample.holdout(60, frac=1/3, nfold=20))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 image.holdout <- function(x, ...){

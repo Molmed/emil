@@ -1,10 +1,10 @@
-citHeader("To cite package ‘predict’ in publications use:")
+citHeader("To cite package ‘emil’ in publications use:")
 
 year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date, perl = TRUE)
 vers <- paste("R package version", meta$Version)
 
 citEntry(entry = "Manual",
-         title = "Developer Friendly Predictive Modeling Using the predict Package for R",
+         title = "Evaluation of Modeling without Information Leakage",
          author = personList(as.person("Christofer L Bäcklin"),
                              as.person("Mats G Gustafsson")),
          year = year,
@@ -13,6 +13,6 @@ citEntry(entry = "Manual",
          textVersion =
          paste0("Christofer L Bäcklin, Mats G Gustafsson (",
                 year,
-                "). Developer Friendly Predictive Modeling Using the predict Package for R. ",
+                "). Evaluation of Modeling without Information Leakage. ",
                 vers, "."))
 

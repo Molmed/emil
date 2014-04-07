@@ -8,6 +8,9 @@ file.remove(c(dir("emil/man", full.names=TRUE), "emil/man",
 roxygenize("emil")
 system("R CMD check emil")
 
+# To just check examples
+system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vignettes")
+
 system("R CMD INSTALL emil")
 system("R CMD build emil") # Build package
 system(sprintf("scp %s backch@tank:~/R_packages/src/contrib",

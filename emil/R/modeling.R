@@ -1,4 +1,4 @@
-##' Setup a modeling.procedure
+##' Setup a modeling procedure
 ##'
 ##' A modeling.procedure is an object containing all information necessary to
 ##' carry out and evaluate the performance of a predictive modeling task, with
@@ -7,7 +7,9 @@
 ##' To use an out-of-the box algorithm with default values, only the
 ##' \code{method} argument needs to be set. To deviate from the defaults, e.g.
 ##' by using a custom function for model fitting, or an alternative tuning
-##' grid, set the appropriate parameter with the desired value.
+##' grid, set the appropriate parameter with the desired value. See
+##' \code{\link{emil.extensions}} for a guide on how these functions should be
+##' written.
 ##' 
 ##' @param method The name of the modeling method. Only needed to identify
 ##'   plug-in functions, i.e. if you supply them yourself there is no need to
@@ -26,12 +28,10 @@
 ##'   \code{\link{fit.caret}} to train caret models, must be wrapped in an
 ##'   additional list. That is, to set a parameter value to a list, but not tune it,
 ##'   make it a list of length 1 containing the list to be used (see example 6).
-##' @param fit.fun The function to be used for model fitting. See
-##'   \code{\link{fit.fun}} for details.
-##' @param predict.fun The function to be used for model prediction. See
-##'   \code{\link{predict.fun}} for details.
+##' @param fit.fun The function to be used for model fitting.
+##' @param predict.fun The function to be used for model prediction.
 ##' @param vimp.fun The function to be used for calculating or extracting variable
-##'   importance scores. See \code{\link{vimp.fun}} for details.
+##'   importance scores.
 ##' @param error.fun Performance measure used to evaluate modeling procedures
 ##'   and to tune parameters. See \code{\link{error.fun}} for details.
 ##' @return An object of class \code{modeling.procedure}.
@@ -65,7 +65,7 @@
 ##' library(caret)
 ##' modeling.procedure("caret", list(method = "glmnet",
 ##'     trControl = list(trainControl(verboseIter = TRUE, classProbs = TRUE))))
-##' @seealso fit, tune, evaluate.modeling, batch.model
+##' @seealso fit, tune, evaluate.modeling, batch.model, emil.extensions
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 modeling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, predict.fun, vimp.fun){
