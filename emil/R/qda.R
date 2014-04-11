@@ -26,7 +26,6 @@ fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
 
 ##' Prediction using already trained classifier.
 ##'
-# @method predict qda
 ##' @param object Fitted classifier.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored

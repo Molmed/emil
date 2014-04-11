@@ -13,9 +13,9 @@ system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vig
 
 system("R CMD INSTALL emil")
 system("R CMD build emil") # Build package
-system(sprintf("scp %s backch@tank:~/R_packages/src/contrib",
+system(sprintf("scp %s chrba104@tank:~/R_packages/src/contrib",
                rev(dir(, "emil_.*\\.tar\\.gz"))[1]))
-system(sprintf("scp %s chrib@milou.uppmax.uu.se:R_packages/src/contrib",
+system(sprintf("cp %s ~/R_packages/src/contrib",
                rev(dir(, "emil_.*\\.tar\\.gz"))[1]))
 system("mv emil_*.tar.gz builds")
 

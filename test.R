@@ -1,3 +1,17 @@
+#library(emil)
+source.all("emil/R")
+data(iris)
+
+x <- iris[-5]
+y <- iris$Species
+cv <- resample.crossval(y)
+proc <- modeling.procedure("randomForest")
+perf <- evaluate.modeling(proc, x, y, test.subset=cv, .checkpoint.dir="dir")
+
+
+
+
+
 
 y <- gl(2,30)
 x <- sweep(matrix(rnorm(60*10), 60), 1, rep(0:1/3, each=30))

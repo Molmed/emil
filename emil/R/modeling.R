@@ -152,11 +152,15 @@ print.modeling.procedure <- function(x, ...){
 ##'   into fitting and test subsets.
 ##' @param .save What aspects of the modeling to perform and return to the
 ##'   user.
+##' @param .parallel.cores Number of CPU-cores to use for parallel computation.
+##' @param .checkpoint.dir Directory to save intermediate results to. If set
+##'   the computation can be restarted with minimal loss of results.
 ##' @param .verbose Whether to print an activity log.
-##' @return A list tree where the top level corresponds to folds of the
-##'   resampling scheme, level 2 corresponds to the modeling procedures, and
-##'   level 3 is specified by the \code{.save} parameter. It contains a
-##'   combination of the following elements:
+##' @return A list tree where the top level corresponds to folds (in case of
+##'   multiple folds), the next level corresponds to the modeling procedures
+##'   (in case of multiple procedures), and the final level is specified by the
+##'   \code{.save} parameter. It typically contains a subset of the following
+##'   elements:
 ##'   \describe{
 ##'       \item{\code{error}}{Performance estimate of the fitted model. See
 ##'           \code{\link{error.fun}} for more information.}
@@ -171,7 +175,8 @@ print.modeling.procedure <- function(x, ...){
 ##' @export
 batch.model <- function(proc, x, y,
     test.subset=resample.crossval(y, nfold=2, nrep=2), pre.process=pre.split,
-    .save=list(fit=FALSE, pred=FALSE, vimp=FALSE, tuning=FALSE), .verbose=FALSE){
+    .save=list(fit=FALSE, pred=FALSE, vimp=FALSE, tuning=FALSE),
+    .parallel.cores=1, .checkpoint.dir=NULL, .verbose=FALSE){
 
     if(inherits(proc, "modeling.procedure")){
         multi.proc <- FALSE
@@ -227,19 +232,43 @@ batch.model <- function(proc, x, y,
     proc <- set.debug.flags(proc, debug.flags)
 
 #------------------------------------------------------------------------------o
+#   Set up parallelization and checkpointing
+
+    if(.parallel.cores > 1){
+        nice.require("parallel")
+        options(mc.cores = .parallel.cores)
+        mapply.FUN <- parallel::mcmapply
+    } else {
+        mapply.FUN <- mapply
+    }
+    if(!is.null(.checkpoint.dir)){
+        if(!file.exists(.checkpoint.dir))
+            dir.create(.checkpoint.dir)
+        checkpoint.files <- sprintf("%s/%s.Rdata",
+            .checkpoint.dir, gsub("\\W+", "-", names(test.subset)))
+    } else {
+        checkpoint.files <- NULL
+    }
+
+#------------------------------------------------------------------------------o
 #   Build and test models
 
     counter <- 0
-    res <- structure(class="modeling.result", .Data=lapply(test.subset, function(fold){
-        counter <<- counter + 1
-        if(counter == 1) t1 <- Sys.time()
+    res <- structure(class="modeling.result", .Data=mapply.FUN(function(fold, fold.name, checkpoint.file){
         if(inherits(test.subset, "crossval")){
-            trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", colnames(test.subset)[counter]), time=FALSE)
+            trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", fold.name),
+                      time=.parallel.cores > 1, linebreak=FALSE)
         } else if(inherits(test.subset, "holdout")){
-            trace.msg(.verbose, sub("^fold(\\d+)$", "Fold \\1:", colnames(test.subset)[counter]), time=FALSE)
+            trace.msg(.verbose, sub("^fold(\\d+)$", "Fold \\1:", fold.name),
+                      time=.parallel.cores > 1, linebreak=FALSE)
         } else {
-            trace.msg(.verbose, colnames(test.subset)[counter], time=FALSE)
+            trace.msg(.verbose, fold.name, time=.parallel.cores > 1, linebreak=FALSE)
         }
+        if(!is.null(checkpoint.file) && file.exists(checkpoint.file)){
+            if(.verbose) cat(" Already completed.\n")
+            return(NULL)
+        } else if(.verbose) cat("\n")
+        if(.parallel.cores > 1) .verbose = FALSE
         if(any(do.tuning)){
             tune.subset <- resample.subset(y, fold)
             fold.proc <- tune(proc, x, y, test.subset=tune.subset,
@@ -258,41 +287,60 @@ batch.model <- function(proc, x, y,
                 list(error = p$error.fun(y[na.fill(fold, FALSE)], predictions)),
                 if(.save$fit) list(fit = model) else NULL,
                 if(.save$pred) list(pred = predictions) else NULL,
-                if(.save$vimp) list(vimp = p$vimp.fun(model)) else NULL,
+                if(.save$vimp) list(vimp = fixvimp(p$vimp.fun(model), sets$features)) else NULL,
                 if(.save$tuning && is.tunable(p))
                     list(param=p$param, tuning = p$tuning) else NULL
             )
         })
-        #if(any(do.tuning) && .save$tuning) res$tuning <- fold.proc
-        if(.verbose && counter == 1 && is.data.frame(test.subset) && ncol(test.subset) > 1){
-            t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(test.subset)
-            fmt <- if(difftime(t2, t1, units="days") < 1){
-                "%H:%M"
-            } else if(difftime(t2, t1, units="days") < 2 &&
-                      as.integer(strftime(t2, "%d")) -
-                      as.integer(strftime(t1, "%d")) == 1){
-                "%H:%M tomorrow"
-            } else if(difftime(t2, t1, units="days") < 365){
-                "%H:%M, %b %d"
-            } else {
-                "%H:%M, %b %d, %Y"
-            }
-            trace.msg(increase(.verbose, 1),
-                      "Estimated completion time is %s.", strftime(t2, fmt))
-            os <- object.size(res)
-            os.i <- trunc(log(os)/log(1024))
-            if(os.i == 0){
-                trace.msg(increase(.verbose, 1), "Result size is %i B.", os, time=FALSE)
-            } else {
-                trace.msg(increase(.verbose, 1), "Result size is %.2f %s.",
-                    exp(log(os) - os.i * log(1024)), c("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")[os.i],
-                    time=FALSE)
+        if(.parallel.cores == 1 && is.null(checkpoint.file)){
+            counter <<- counter + 1
+            if(counter == 1) t1 <- Sys.time()
+            if(.verbose && counter == 1 && is.data.frame(test.subset) && ncol(test.subset) > 1){
+                t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(test.subset)
+                fmt <- if(difftime(t2, t1, units="days") < 1){
+                    "%H:%M"
+                } else if(difftime(t2, t1, units="days") < 2 &&
+                          as.integer(strftime(t2, "%d")) -
+                          as.integer(strftime(t1, "%d")) == 1){
+                    "%H:%M tomorrow"
+                } else if(difftime(t2, t1, units="days") < 365){
+                    "%H:%M, %b %d"
+                } else {
+                    "%H:%M, %b %d, %Y"
+                }
+                trace.msg(increase(.verbose, 1),
+                          "Estimated completion time is %s.", strftime(t2, fmt), time=FALSE)
+                os <- object.size(res)
+                os.i <- trunc(log(os)/log(1024))
+                if(os.i == 0){
+                    trace.msg(increase(.verbose, 1), "Result size is %i B.", os, time=FALSE)
+                } else {
+                    trace.msg(increase(.verbose, 1), "Result size is %.2f %s.",
+                        exp(log(os) - os.i * log(1024)), c("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")[os.i],
+                        time=FALSE)
+                }
             }
         }
-        if(multi.proc) res else res[[1]]
-    }))
+        if(!multi.proc) res <- res[[1]]
+        if(is.null(checkpoint.file)){
+            res
+        } else {
+            save(res, file=checkpoint.file)
+            NULL
+        }
+    }, test.subset, names(test.subset), checkpoint.files, SIMPLIFY=FALSE))
+    if(!is.null(.checkpoint.dir)){
+        trace.msg(.verbose, "Assembling checkpoint files.", time=TRUE)
+        ens <- lapply(checkpoint.files, function(cf){
+            en <- new.env()
+            load(cf, envir=en)
+            en
+        })
+        res <- structure(lapply(ens, "[[", "results"), class="modeling.result")
+    }
     if(multi.fold) res else res[[1]]
 }
+
 
 ##' Extractor function for modeling result
 ##' 
@@ -337,7 +385,7 @@ fit <- function(proc, x, y, ..., .verbose){
             paste("`", missing.fun, "`", sep="", collapse=", ")))
     need.tuning <- !sapply(proc, is.tuned)
     if(missing(.verbose)) .verbose <- any(need.tuning)
-    trace.msg(.verbose, "Model fitting:", length(proc), time=FALSE)
+    trace.msg(.verbose, "Model fitting:", length(proc))
     if(any(need.tuning)){
         proc[need.tuning] <- tune(proc[need.tuning], x, y, ...,
             .verbose=increase(.verbose))
@@ -375,7 +423,7 @@ fit <- function(proc, x, y, ..., .verbose){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
-    trace.msg(.verbose, "Parameter tuning:", time=FALSE)
+    trace.msg(.verbose, "Parameter tuning:")
     if(inherits(proc, "modeling.procedure")){
         multi.proc <- FALSE
         proc <- listify(proc)
@@ -466,7 +514,7 @@ evaluate.modeling <- function(proc, x, y, ...,
     .save=list(fit=FALSE, pred=TRUE, vimp=FALSE, tuning=TRUE), .verbose=TRUE){
 
     reset.warn.once()
-    trace.msg(.verbose, "Evaluating modeling performance:", time=FALSE)
+    trace.msg(.verbose, "Evaluating modeling performance:")
     if(inherits(proc, "modeling.procedure")){
         multi.proc <- FALSE
         proc <- listify(proc)
@@ -482,8 +530,9 @@ evaluate.modeling <- function(proc, x, y, ...,
         for(i in which(discard.tuning))
             proc[[i]]$tuning <- NULL
     }
-    batch.model(if(multi.proc) proc else proc[[1]], x, y, ...,
-                .save=.save, .verbose=increase(.verbose))
+
+    return(batch.model(if(multi.proc) proc else proc[[1]], x, y, ...,
+           .save=.save, .verbose=increase(.verbose)))
 }
 
 

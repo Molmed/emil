@@ -16,3 +16,28 @@ vimp <- function(object, ...){
     UseMethod("vimp", object)
 }
 
+
+##' Tidy up variable importance estimates
+##' 
+##' Only intended for internal use.
+##' 
+##' @param x Variable importance estimates.
+##' @param feat A logical vector indicating which features passed feature
+##'   selection in the pre-processing.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @noRd
+fixvimp <- function(x, feat){
+    if(is.null(feat)){
+        return(x)
+    } else if(is.matrix(x)){
+        y <- matrix(NA, length(feat), ncol(x))
+        y[feat,] <- x
+    } else if(is.vector(x)){
+        y <- rep(NA, length(feat))
+        y[feat] <- x
+    } else {
+        stop("Invalid variable importance format.")
+    }
+    y
+}
+

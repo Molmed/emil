@@ -22,11 +22,12 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
     if(ncol(x) == 1){
         warn.once("pamr_univariate", "PAMR not designed to handle univariate data. An all-zero dummy variable added as a workaround.")
     }
-    list(fit = structure(list(
+    c(list(fit = structure(list(
                 x = if(ncol(x) == 1) rbind(t(sets$fit), dummy=0) else t(sets$fit),
                 y = y[na.fill(!fold, FALSE)]),
-            class="pamr.data"),
-         test = if(ncol(x) == 1) rbind(t(sets$test), dummy=0) else t(sets$test))
+                class = "pamr.data"),
+           test = if(ncol(x) == 1) rbind(t(sets$test), dummy=0) else t(sets$test)),
+      sets[setdiff(names(sets), c("fit", "test"))])
 }
 
 ##' Fit nearest shrunken centroids model.
@@ -125,7 +126,6 @@ fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
 ##' In case multiple thresholds give the same error the largest one is chosen
 ##' (i.e. the one keeping the fewest features).
 ##'
-# @method predict nsc
 ##' @param object Fitted classifier.
 ##' @param x Dataset of observations to be classified.
 ##' @param threshold What threshold to use for classification. Can be supplied
@@ -183,7 +183,6 @@ predict.pamr <- function(object, x, threshold, ...){
 ##' In case multiple thresholds give the same error the largest one is chosen
 ##' (i.e. the one keeping the fewest features).
 ##' 
-# @method vimp nsc
 ##' @param object Fitted NSC classifier
 ##' @param threshold What threshold to use for classification.
 ##' @param ... Ignored.
