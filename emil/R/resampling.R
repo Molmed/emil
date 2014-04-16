@@ -143,41 +143,86 @@ resample.subset <- function(y, fold){
 ##' Visualize cross validation scheme
 ##' 
 ##' @param x Cross validation scheme, as returned by \code{\link{resample.crossval}}.
+##' @param col Color palette. Can also be the response vector used to create the
+##'   scheme for automatic coloring.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return Nothing, produces a plot.
 ##' @examples
 ##' image(resample.crossval(60, nfold=3, nrep=8))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-image.crossval <- function(x, ...){
-    col.matrix <- matrix(c("#0091cd", "#54cdff", "#e0a70e", "#fff000")
-                         [1 + as.matrix(x) + 2*(as.integer(gl(2, nrow(x)*attr(x[[1]], "nfold"), prod(dim(x))))-1)],
-                         nrow(x), ncol(x))
-    col.matrix[is.na(x)] <- "transparent"
+image.crossval <- function(x, col, ...){
+    if(!missing(col)){
+        if(inherits(col, "Surv")) col <- as.outcome(col)
+        if(inherits(col, "outcome")) col <- col$event
+        if(is.factor(col)){
+            y <- col
+            nice.require("RColorBrewer")
+            nice.require("colorspace")
+            col <- brewer.pal(max(3, min(12, length(levels(y)))), "Set3")
+            if(length(col) < length(levels(y))){
+                warning("Too few colors to assign unique ones to each class.")
+                col <- rep(col, ceiling(length(levels(y))/12))[seq_along(levels(y))]
+            }
+            col <- hex2RGB(col)
+            col@coords <- rbind(.7*col@coords, col@coords)
+            col <- hex(col)
+            mat <- sweep(as.matrix(x)*length(levels(y)), 1, as.integer(y), "+")
+        }
+    }
+    if(missing(col) || !is.character(col)){
+        col <- c("#0091cd", "#54cdff", "#e0a70e", "#fff000")
+        mat <- 1 + as.matrix(x) + 2*(as.integer(gl(2, nrow(x)*attr(x[[1]], "nfold"), prod(dim(x))))-1)
+    }
+    mat <- matrix(col[mat], nrow(mat))
+    mat[is.na(as.matrix(x))] <- "transparent"
     plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
          xlab=sprintf("Folds (%i sets of %i folds)", attr(x[[1]], "nrep"), attr(x[[1]], "nfold")),
          ylab="Observations")
-    rasterImage(col.matrix, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
+    rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
 }
+
 
 
 ##' Visualize repeated holdout scheme
 ##' 
 ##' @param x Repeated holdout scheme, as returned by \code{\link{resample.holdout}}.
+##' @param col Color palette. Can also be the response vector used to create the
+##'   scheme for automatic coloring.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return Nothing, produces a plot.
 ##' @examples
 ##' image(resample.holdout(60, frac=1/3, nfold=20))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-image.holdout <- function(x, ...){
-    col.matrix <- matrix(c("#0091cd", "#54cdff", "#e0a70e", "#fff000")
-                         [1 + as.matrix(x) + 2*(as.integer(gl(2, nrow(x), prod(dim(x))))-1)],
-                         nrow(x), ncol(x))
-    col.matrix[is.na(x)] <- "transparent"
+image.holdout <- function(x, col, ...){
+    if(!missing(col)){
+        if(inherits(col, "Surv")) col <- as.outcome(col)
+        if(inherits(col, "outcome")) col <- col$event
+        if(is.factor(col)){
+            y <- col
+            nice.require("RColorBrewer")
+            nice.require("colorspace")
+            col <- brewer.pal(max(3, min(12, length(levels(y)))), "Set3")
+            if(length(col) < length(levels(y))){
+                warning("Too few colors to assign unique ones to each class.")
+                col <- rep(col, ceiling(length(levels(y))/12))[seq_along(levels(y))]
+            }
+            col <- hex2RGB(col)
+            col@coords <- rbind(.7*col@coords, col@coords)
+            col <- hex(col)
+            mat <- sweep(as.matrix(x)*length(levels(y)), 1, as.integer(y), "+")
+        }
+    }
+    if(missing(col) || !is.character(col)){
+        col <- c("#0091cd", "#54cdff")
+        mat <- 1 + as.matrix(x)
+    }
+    mat <- matrix(col[mat], nrow(mat))
+    mat[is.na(as.matrix(x))] <- "transparent"
     plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
          xlab="Folds", ylab="Observations")
-    rasterImage(col.matrix, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
+    rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
 }
 
 

@@ -247,7 +247,7 @@ batch.model <- function(proc, x, y,
         checkpoint.files <- sprintf("%s/%s.Rdata",
             .checkpoint.dir, gsub("\\W+", "-", names(test.subset)))
     } else {
-        checkpoint.files <- NULL
+        checkpoint.files <- list(NULL)
     }
 
 #------------------------------------------------------------------------------o
@@ -266,7 +266,9 @@ batch.model <- function(proc, x, y,
         }
         if(!is.null(checkpoint.file) && file.exists(checkpoint.file)){
             if(.verbose) cat(" Already completed.\n")
-            return(NULL)
+            en <- new.env()
+            load(checkpoint.file, envir=en)
+            return(en$res)
         } else if(.verbose) cat("\n")
         if(.parallel.cores > 1) .verbose = FALSE
         if(any(do.tuning)){
@@ -322,22 +324,20 @@ batch.model <- function(proc, x, y,
             }
         }
         if(!multi.proc) res <- res[[1]]
-        if(is.null(checkpoint.file)){
-            res
-        } else {
+        if(!is.null(checkpoint.file)){
             save(res, file=checkpoint.file)
-            NULL
         }
+        res
     }, test.subset, names(test.subset), checkpoint.files, SIMPLIFY=FALSE))
-    if(!is.null(.checkpoint.dir)){
-        trace.msg(.verbose, "Assembling checkpoint files.", time=TRUE)
-        ens <- lapply(checkpoint.files, function(cf){
-            en <- new.env()
-            load(cf, envir=en)
-            en
-        })
-        res <- structure(lapply(ens, "[[", "results"), class="modeling.result")
-    }
+   #if(!is.null(.checkpoint.dir)){
+   #    trace.msg(.verbose, "Assembling checkpoint files.", time=TRUE)
+   #    ens <- lapply(checkpoint.files, function(cf){
+   #        en <- new.env()
+   #        load(cf, envir=en)
+   #        en
+   #    })
+   #    res <- structure(lapply(ens, "[[", "res"), class="modeling.result")
+   #}
     if(multi.fold) res else res[[1]]
 }
 

@@ -38,7 +38,6 @@ outcome <- function(time, event, levels, censor){
 
 ##' Convert outcome vector to data frame
 ##' 
-# @method as.data.frame outcome
 ##' @param x Outcome vector.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return The data frame underlying the outcome vector.
@@ -52,7 +51,6 @@ as.data.frame.outcome <- function(x, ...){
 
 ##' Convert outcome vector to matrix
 ##'
-# @method as.matrix outcome
 ##' @param x Outcome vector.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return The data frame underlying the outcome vector converted to a matrix.
@@ -80,7 +78,6 @@ as.outcome <- function(x, ...) UseMethod("as.outcome")
 
 ##' Convert Surv vector to outcome vector
 ##'
-# @method as.outcome Surv
 ##' @param x Surv vector.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return A vector of class \code{\link{outcome}}.
@@ -108,7 +105,6 @@ as.Surv <- function(x, ...) UseMethod("as.Surv")
 ##' Defined in case \code{\link{as.Surv}} is called on a \code{\link{Surv}}
 ##' object. 
 ##'
-# @method as.Surv Surv
 ##' @param x Object.
 ##' @param ... Ignored.
 ##' @return A vector of class \code{\link{Surv}}.
@@ -119,7 +115,6 @@ as.Surv.Surv <- function(x, ...) identity(x)
 
 ##' Convert outcome vector to Surv vector
 ##'
-# @method as.Surv outcome
 ##' @param x Outcome vector.
 ##' @param main Surv only supports one event type. This argument controls
 ##'   which type that will be kept, all others are discarded as censorings.
@@ -144,7 +139,6 @@ as.Surv.outcome <- function(x, main=1, censor=NA, ...){
 
 ##' Convert outcome vector to character vector
 ##'
-# @method as.character outcome
 ##' @param x Outcome vector.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return A character vector.
@@ -210,7 +204,6 @@ integer.events <- function(x, ...){
 
 ##' Print outcome vector
 ##'
-# @method print outcome
 ##' @param x Outcome vector.
 ##' @param quote Logical, whether to print quotation marks.
 ##' @param ... Ignored, kept for S3 consistency.
@@ -218,19 +211,12 @@ integer.events <- function(x, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 print.outcome <- function(x, quote=FALSE, ...) {
-#     if(!quote && "package:xtermStyle" %in% search()){
-#         print(style(x$time,
-#             fg=c(15, unlist(xterm.pal("Set3")))[1+na.fill(as.integer(x$event), 0)]),
-#             quote=F)
-#     } else {
-        print(as.character(x), quote=quote, ...)
-#     }
+    print(as.character(x), quote=quote, ...)
 }
 
 
 ##' Extract
 ##' 
-# @method [ outcome
 ##' @param x Outcome vector.
 ##' @param i Index.
 ##' @param j Column index, if given \code{x} is treated as a data frame.
@@ -263,7 +249,6 @@ print.outcome <- function(x, quote=FALSE, ...) {
 
 ##' Check for missing values
 ##' 
-# @method is.na outcome
 ##' @param x Outcome vector.
 ##' @return A logical vector with \code{TRUE} where an outcome is missing.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
@@ -285,7 +270,6 @@ is.outcome <- function(x) inherits(x, 'outcome')
 
 ##' Dimension of an outcome vector
 ##' 
-# @method dim outcome
 ##' @param x Outcome vector.
 ##' @return A vector with number of observations and number of variables, of
 ##'   which there is always two, time and event.
@@ -295,7 +279,6 @@ dim.outcome <- function(x) dim(as.data.frame(x))
 
 ##' Length of an outcome vector
 ##'
-# @method length outcome
 ##' @param x Outcome vector.
 ##' @return Length.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
@@ -305,7 +288,6 @@ length.outcome <- nrow
 
 ##' Plot outcome vector
 ##' 
-# @method plot outcome
 ##' @param x outcome vector.
 ##' @param y Y-values.
 ##' @param segments Whether to draw horizontal segments.

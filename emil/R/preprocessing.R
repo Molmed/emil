@@ -176,7 +176,7 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     NN <- apply(distmat, 1, function(z)
         setdiff(order(z), which(na.fill(fold, TRUE))))
     fills <- apply(na.ind, 1, function(i){
-        mean(na.exclude(x[NN[-1, i[1]], i[2]])[1:k])
+        mean(setdiff(x[NN[,i[1]], i[2]], NA)[1:k])
     })
     x[na.ind] <- fills
     list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
