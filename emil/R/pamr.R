@@ -24,7 +24,7 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
     }
     c(list(fit = structure(list(
                 x = if(ncol(x) == 1) rbind(t(sets$fit), dummy=0) else t(sets$fit),
-                y = y[na.fill(!fold, FALSE)]),
+                y = y[index.fit(fold)]),
                 class = "pamr.data"),
            test = if(ncol(x) == 1) rbind(t(sets$test), dummy=0) else t(sets$test)),
       sets[setdiff(names(sets), c("fit", "test"))])
@@ -104,7 +104,7 @@ fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
                 if(nrow(cv) != length(x$y))
                     stop("Resampling set for shrinkage selection does not match dataset in size.")
                 fit.cv <- pamr::pamr.cv(fit, x,
-                    folds=lapply(as.data.frame(cv), which))
+                    folds=lapply(cv, function(x) which(x == 0)))
                 #options(warn = warn.status)
                 if(slim.fit){
                     fit.cv$cv.objects <- NULL

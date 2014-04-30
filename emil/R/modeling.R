@@ -144,7 +144,7 @@ print.modeling.procedure <- function(x, ...){
 ##'   produced by \code{\link{modeling.procedure}}.
 ##' @param x Dataset, observations as rows and descriptors as columns.
 ##' @param y Response vector.
-##' @param test.subset The test subsets used for parameter tuning. Leave blank to
+##' @param resample The test subsets used for parameter tuning. Leave blank to
 ##'   randomly generate a resampling scheme of the same kind as is used by
 ##'   \code{\link{batch.model}} to assess the performance of the whole
 ##'   modeling procedure.
@@ -174,7 +174,7 @@ print.modeling.procedure <- function(x, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 batch.model <- function(proc, x, y,
-    test.subset=resample.crossval(y, nfold=2, nrep=2), pre.process=pre.split,
+    resample=resample.crossval(y, nfold=2, nrep=2), pre.process=pre.split,
     .save=list(fit=FALSE, pred=FALSE, vimp=FALSE, tuning=FALSE),
     .parallel.cores=1, .checkpoint.dir=NULL, .verbose=FALSE){
 
@@ -185,10 +185,10 @@ batch.model <- function(proc, x, y,
         multi.proc <- TRUE
     }
     debug.flags <- get.debug.flags(proc)
-    if(is.logical(test.subset)){
+    if(is.logical(resample)){
         multi.fold <- FALSE
-        test.subset <- structure(list(test.subset),
-            class=c(setdiff(class(test.subset), "fold"), "list"))
+        resample <- structure(list(resample),
+            class=c(setdiff(class(resample), "fold"), "list"))
     } else {
         multi.fold <- TRUE
     }
@@ -245,7 +245,7 @@ batch.model <- function(proc, x, y,
         if(!file.exists(.checkpoint.dir))
             dir.create(.checkpoint.dir)
         checkpoint.files <- sprintf("%s/%s.Rdata",
-            .checkpoint.dir, gsub("\\W+", "-", names(test.subset)))
+            .checkpoint.dir, gsub("\\W+", "-", names(resample)))
     } else {
         checkpoint.files <- list(NULL)
     }
@@ -255,10 +255,10 @@ batch.model <- function(proc, x, y,
 
     counter <- 0
     res <- structure(class="modeling.result", .Data=mapply.FUN(function(fold, fold.name, checkpoint.file){
-        if(inherits(test.subset, "crossval")){
+        if(inherits(resample, "crossval")){
             trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", fold.name),
                       time=.parallel.cores > 1, linebreak=FALSE)
-        } else if(inherits(test.subset, "holdout")){
+        } else if(inherits(resample, "holdout")){
             trace.msg(.verbose, sub("^fold(\\d+)$", "Fold \\1:", fold.name),
                       time=.parallel.cores > 1, linebreak=FALSE)
         } else {
@@ -273,7 +273,7 @@ batch.model <- function(proc, x, y,
         if(.parallel.cores > 1) .verbose = FALSE
         if(any(do.tuning)){
             tune.subset <- resample.subset(y, fold)
-            fold.proc <- tune(proc, x, y, test.subset=tune.subset,
+            fold.proc <- tune(proc, x, y, resample=tune.subset,
                 pre.process=pre.process, .save=NULL, .verbose=increase(.verbose))
         } else {
             fold.proc <- proc
@@ -283,10 +283,10 @@ batch.model <- function(proc, x, y,
         trace.msg(increase(.verbose, 1), "Fitting models.")
         res <- lapply(fold.proc, function(p){
             model <- do.call(function(...)
-                    p$fit.fun(sets$fit, y[na.fill(!fold, FALSE)], ...), p$param)
+                    p$fit.fun(sets$fit, y[index.fit(fold)], ...), p$param)
             predictions <- p$predict.fun(model, sets$test)
             c(
-                list(error = p$error.fun(y[na.fill(fold, FALSE)], predictions)),
+                list(error = p$error.fun(y[index.test(fold)], predictions)),
                 if(.save$fit) list(fit = model) else NULL,
                 if(.save$pred) list(pred = predictions) else NULL,
                 if(.save$vimp) list(vimp = fixvimp(p$vimp.fun(model), sets$features)) else NULL,
@@ -297,8 +297,8 @@ batch.model <- function(proc, x, y,
         if(.parallel.cores == 1 && is.null(checkpoint.file)){
             counter <<- counter + 1
             if(counter == 1) t1 <- Sys.time()
-            if(.verbose && counter == 1 && is.data.frame(test.subset) && ncol(test.subset) > 1){
-                t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(test.subset)
+            if(.verbose && counter == 1 && is.data.frame(resample) && ncol(resample) > 1){
+                t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(resample)
                 fmt <- if(difftime(t2, t1, units="days") < 1){
                     "%H:%M"
                 } else if(difftime(t2, t1, units="days") < 2 &&
@@ -311,7 +311,10 @@ batch.model <- function(proc, x, y,
                     "%H:%M, %b %d, %Y"
                 }
                 trace.msg(increase(.verbose, 1),
-                          "Estimated completion time is %s.", strftime(t2, fmt), time=FALSE)
+                          "Estimated completion time %sis %s.",
+                          if("tune" %in% sapply(sys.calls(), function(x) as.character(x)[1]))
+                              "of tuning " else "",
+                          strftime(t2, fmt), time=FALSE)
                 os <- object.size(res)
                 os.i <- trunc(log(os)/log(1024))
                 if(os.i == 0){
@@ -328,16 +331,7 @@ batch.model <- function(proc, x, y,
             save(res, file=checkpoint.file)
         }
         res
-    }, test.subset, names(test.subset), checkpoint.files, SIMPLIFY=FALSE))
-   #if(!is.null(.checkpoint.dir)){
-   #    trace.msg(.verbose, "Assembling checkpoint files.", time=TRUE)
-   #    ens <- lapply(checkpoint.files, function(cf){
-   #        en <- new.env()
-   #        load(cf, envir=en)
-   #        en
-   #    })
-   #    res <- structure(lapply(ens, "[[", "res"), class="modeling.result")
-   #}
+    }, resample, names(resample), checkpoint.files, SIMPLIFY=FALSE))
     if(multi.fold) res else res[[1]]
 }
 
@@ -538,6 +532,9 @@ evaluate.modeling <- function(proc, x, y, ...,
 
 ##' Preserve debugging flags when manipulating lists
 ##'
+##' \emph{In R version >= 3.1.0 these functions are no longer needed due to
+##' changed behavior of the debugging facilities.}
+##'
 ##' These functions are designed to copy and reset debugging flags when
 ##' manipulating modeling procedures or lists of such. See the code of
 ##' \code{\link{tune}}, e.g. by calling \code{page(tune)} for an example
@@ -569,9 +566,11 @@ get.debug.flags <- function(proc.list){
 # @rdname listify
 ##' @noRd
 set.debug.flags <- function(proc.list, debug.flags){
-    for(i in seq_along(debug.flags)){
-        for(j in seq_along(debug.flags[[i]])){
-            if(debug.flags[[i]][j]) debug(proc.list[[i]][[j]])
+    if(as.integer(R.Version()$major) < 3 || as.numeric(R.Version()$minor) < 1){
+        for(i in seq_along(debug.flags)){
+            for(j in seq_along(debug.flags[[i]])){
+                if(debug.flags[[i]][j]) debug(proc.list[[i]][[j]])
+            }
         }
     }
     proc.list

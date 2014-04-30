@@ -21,12 +21,35 @@
 ##'   If \code{subset} is a resampling scheme, a list of inner
 ##'   cross validation schemes will be returned.
 ##' @return A data frame defining a resampling scheme, or a list of data frames
-##'   defining multiple resampling schemes. \code{FALSE} codes for training set
-##'   and \code{TRUE} codes for test set. \code{NA} codes for neither and is
+##'   defining multiple resampling schemes. \code{TRUE} or a positive integer
+##'   codes for training set and \code{FALSE} or \code{0} codes for test set.
+##'   Positive integers > 1 code for multiple copies of an observation in the
+##'   training set. \code{NA} codes for neither training nor test set and is
 ##'   used to exclude observations from the analysis altogether.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @name resample
 {}
+
+
+##' Convert a fold to row indexes of training or test set
+##'
+##' Get training set indexes.
+##'
+##' @param fold A fold of a resampling scheme.
+##' @return An integer vector of row indexes.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+##' @rnname index
+index.fit <- function(fold){
+    rep(seq_along(fold), na.fill(fold, 0))
+}
+##' Get test set indexes.
+##' 
+##' @rdname index
+##' @export
+index.test <- function(fold){
+    which(fold %in% 0)
+}
 
 ##' Generate a cross validation scheme
 ##'
@@ -50,7 +73,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
     
     folds <- as.data.frame(replicate(nrep, {
         idx <- if(!balanced){
-            sample((1:n)[subset])
+            sample(which(subset))
         } else {
             levs <- if(is.factor(y)) levels(y) else unique(y)
             unlist(lapply(levs[order(table(y[subset]))], function(lev){
@@ -61,7 +84,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
         }
         idx <- matrix(c(idx, rep(NA, ceiling(length(idx)/nfold)*nfold-length(idx))),
                       ncol=nfold, byrow=TRUE)
-        apply(idx, 2, function(i) 1:n %in% i)
+        apply(idx, 2, function(i) !1:n %in% i)
     }))
     folds[!subset,] <- NA
 
@@ -70,7 +93,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
     folds[T] <- lapply(folds, structure, class=c("crossval", "fold"),
         nfold = nfold, nrep = nrep, balanced = balanced)
     structure(folds,
-        class = c("crossval", "data.frame"),
+        class = c("crossval", "resample", "data.frame"),
         names = sprintf("fold%i:%i", rep(1:nrep, each=nfold), rep(1:nfold, nrep))
     )
 }
@@ -94,14 +117,14 @@ resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), su
     class.ho <- round(frac*sapply(class.idx, length))
     ho <- as.data.frame(replicate(nfold, {
         idx <- rep(NA, n)
-        idx[subset] <- FALSE
+        idx[subset] <- TRUE
         for(i in seq_along(class.idx))
-            idx[sample(class.idx[[i]], class.ho[[i]])] <- TRUE
+            idx[sample(class.idx[[i]], class.ho[[i]])] <- FALSE
         idx
     }))
     ho[T] <- lapply(ho, structure, class=c("holdout", "logical"),
         frac = frac, nfold=nfold, balanced = balanced)
-    structure(ho, class = c("holdout", "data.frame"),
+    structure(ho, class = c("holdout", "resample", "data.frame"),
         names = sprintf("fold%i", 1:nfold)
     )
 }
@@ -130,10 +153,10 @@ resample.subset <- function(y, fold){
     } else if(inherits(fold, "crossval")){
         resample.crossval(y, nfold=attr(fold, "nfold"),
             nrep=attr(fold, "nrep"), balanced=attr(fold, "balanced"),
-            subset=na.fill(!fold, FALSE))
+            subset=index.fit(fold))
     } else if(inherits(fold, "holdout")){
         resample.holdout(y, frac=attr(fold, "frac"), nfold=attr(fold, "nfold"),
-            balanced=attr(fold, "balanced"), subset=na.fill(!fold, FALSE))
+            balanced=attr(fold, "balanced"), subset=index.fit(fold))
     } else {
         stop("Unknown type of resampling scheme.")
     }
@@ -152,34 +175,40 @@ resample.subset <- function(y, fold){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 image.crossval <- function(x, col, ...){
-    if(!missing(col)){
-        if(inherits(col, "Surv")) col <- as.outcome(col)
-        if(inherits(col, "outcome")) col <- col$event
-        if(is.factor(col)){
-            y <- col
-            nice.require("RColorBrewer")
-            nice.require("colorspace")
-            col <- brewer.pal(max(3, min(12, length(levels(y)))), "Set3")
-            if(length(col) < length(levels(y))){
-                warning("Too few colors to assign unique ones to each class.")
-                col <- rep(col, ceiling(length(levels(y))/12))[seq_along(levels(y))]
-            }
-            col <- hex2RGB(col)
-            col@coords <- rbind(.7*col@coords, col@coords)
-            col <- hex(col)
-            mat <- sweep(as.matrix(x)*length(levels(y)), 1, as.integer(y), "+")
-        }
-    }
-    if(missing(col) || !is.character(col)){
-        col <- c("#0091cd", "#54cdff", "#e0a70e", "#fff000")
-        mat <- 1 + as.matrix(x) + 2*(as.integer(gl(2, nrow(x)*attr(x[[1]], "nfold"), prod(dim(x))))-1)
+    nrep <- attr(x[[1]], "nrep")
+    nfold <- attr(x[[1]], "nfold")
+    x <- as.matrix(x)
+
+    if(missing(col)) col <- gl(1, nrow(x))
+    if(inherits(col, "Surv")) col <- as.outcome(col)
+    if(inherits(col, "outcome")) col <- col$event
+    if(is.factor(col)){
+        y <- col
+        nice.require("RColorBrewer")
+        nice.require("colorspace")
+        if(length(levels(y)) > 12)
+            warning("Too few colors to assign unique ones to each class.")
+        col <- rep(brewer.pal(12, "Set3"),
+                   ceiling(length(levels(y))/12))[seq_along(levels(y))]
+        col <- hex2RGB(col)
+        col@coords <- do.call(rbind, lapply(
+            seq(.7, 1, length.out=max(x, na.rm=TRUE)+1),
+            "*", col@coords))
+        col <- hex(col)
+        mat <- sweep(x*length(levels(y)), 1, as.integer(y), "+")
+    } else {
+        mat <- 1 + x
     }
     mat <- matrix(col[mat], nrow(mat))
-    mat[is.na(as.matrix(x))] <- "transparent"
+    mat[is.na(x)] <- "transparent"
     plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
          xlab=sprintf("Folds (%i sets of %i folds)", attr(x[[1]], "nrep"), attr(x[[1]], "nfold")),
          ylab="Observations")
     rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
+    if(nrep > 1){
+        l <- 1:(nrep-1)*nfold + .5
+        segments(l, par("usr")[3], l, par("usr")[4])
+    }
 }
 
 
@@ -187,7 +216,8 @@ image.crossval <- function(x, col, ...){
 ##' Visualize repeated holdout scheme
 ##' 
 ##' @param x Repeated holdout scheme, as returned by \code{\link{resample.holdout}}.
-##' @param col Color palette. Can also be the response vector used to create the
+##' @param col Color palette matching the values of \code{x}.
+##'   Can also be the response vector used to create the
 ##'   scheme for automatic coloring.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return Nothing, produces a plot.
@@ -196,30 +226,29 @@ image.crossval <- function(x, col, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 image.holdout <- function(x, col, ...){
-    if(!missing(col)){
-        if(inherits(col, "Surv")) col <- as.outcome(col)
-        if(inherits(col, "outcome")) col <- col$event
-        if(is.factor(col)){
-            y <- col
-            nice.require("RColorBrewer")
-            nice.require("colorspace")
-            col <- brewer.pal(max(3, min(12, length(levels(y)))), "Set3")
-            if(length(col) < length(levels(y))){
-                warning("Too few colors to assign unique ones to each class.")
-                col <- rep(col, ceiling(length(levels(y))/12))[seq_along(levels(y))]
-            }
-            col <- hex2RGB(col)
-            col@coords <- rbind(.7*col@coords, col@coords)
-            col <- hex(col)
-            mat <- sweep(as.matrix(x)*length(levels(y)), 1, as.integer(y), "+")
-        }
-    }
-    if(missing(col) || !is.character(col)){
-        col <- c("#0091cd", "#54cdff")
-        mat <- 1 + as.matrix(x)
+    x <- as.matrix(x)
+    if(missing(col)) col <- gl(1, nrow(x))
+    if(inherits(col, "Surv")) col <- as.outcome(col)
+    if(inherits(col, "outcome")) col <- col$event
+    if(is.factor(col)){
+        y <- col
+        nice.require("RColorBrewer")
+        nice.require("colorspace")
+        if(length(levels(y)) > 12)
+            warning("Too few colors to assign unique ones to each class.")
+        col <- rep(brewer.pal(12, "Set3"),
+                   ceiling(length(levels(y))/12))[seq_along(levels(y))]
+        col <- hex2RGB(col)
+        col@coords <- do.call(rbind, lapply(
+            seq(.7, 1, length.out=max(x, na.rm=TRUE)+1),
+            "*", col@coords))
+        col <- hex(col)
+        mat <- sweep(x*length(levels(y)), 1, as.integer(y), "+")
+    } else {
+        mat <- 1 + x
     }
     mat <- matrix(col[mat], nrow(mat))
-    mat[is.na(as.matrix(x))] <- "transparent"
+    mat[is.na(x)] <- "transparent"
     plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
          xlab="Folds", ylab="Observations")
     rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
@@ -229,7 +258,7 @@ image.holdout <- function(x, col, ...){
 ##' Assemble a list of values calculated with a resampling scheme
 ##' 
 ##' @param x List of values.
-##' @param test.subset Resampling scheme, as returned by
+##' @param resample Resampling scheme, as returned by
 ##'   \code{\link{resample.crossval}} or \code{\link{resample.holdout}}.
 ##' @return If \code{x} contains vectors, a data frame where rows correspond
 ##'   observations and columns correspond resampling replicates. If \code{x}
@@ -239,49 +268,49 @@ image.holdout <- function(x, col, ...){
 ##' @examples
 ##' \dontrun{
 ##' cv <- ...
-##' pred <- evaluate.modeling(..., test.subset=cv)
+##' pred <- evaluate.modeling(..., resample=cv)
 ##' assemble(subtree(pred, T, T, "pred", "prob"), cv)
 ##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-assemble <- function(x, test.subset){
+assemble <- function(x, resample){
     if(is.matrix(x[[1]]) || is.data.frame(x[[1]])){
         # Matrix assembly
-        m <- matrix(NA, nrow(test.subset), ncol(x[[1]]))
+        m <- matrix(NA, nrow(resample), ncol(x[[1]]))
         if(is.data.frame(x[[1]])){
             m <- as.data.frame(m)
             names(m) <- names(x[[1]])
         }
-        values <- rep(list(m), attr(test.subset, "nrep"))
-        if(inherits(test.subset, "crossval")){
-            for(i in 1:attr(test.subset, "nrep")){
-                for(j in 1:attr(test.subset, "nfold")){
-                    k <- j+(i-1)*attr(test.subset, "nfold")
-                    values[[i]][test.subset[, k], ] <- x[[k]]
+        values <- rep(list(m), attr(resample, "nrep"))
+        if(inherits(resample, "crossval")){
+            for(i in 1:attr(resample, "nrep")){
+                for(j in 1:attr(resample, "nfold")){
+                    k <- j+(i-1)*attr(resample, "nfold")
+                    values[[i]][resample[, k], ] <- x[[k]]
                 }
             }
         } else {
-            for(i in 1:attr(test.subset, "nrep")){
-                values[[i]][test.subset[,i], ] <- x[[i]]
+            for(i in 1:attr(resample, "nrep")){
+                values[[i]][resample[,i], ] <- x[[i]]
             }
         }
-        if(attr(test.subset, "nrep") == 1) values <- values[[1]]
+        if(attr(resample, "nrep") == 1) values <- values[[1]]
     } else {
         # Vector assembly
-        if(inherits(test.subset, "crossval")){
-            values <- matrix(NA, nrow(test.subset), attr(test.subset, "nrep"))
-            for(i in 1:attr(test.subset, "nrep")){
-                for(j in 1:attr(test.subset, "nfold")){
-                    k <- j+(i-1)*attr(test.subset, "nfold")
-                    values[test.subset[, k], i] <- x[[k]]
+        if(inherits(resample, "crossval")){
+            values <- matrix(NA, nrow(resample), attr(resample, "nrep"))
+            for(i in 1:attr(resample, "nrep")){
+                for(j in 1:attr(resample, "nfold")){
+                    k <- j+(i-1)*attr(resample, "nfold")
+                    values[resample[, k], i] <- x[[k]]
                 }
             }
-        } else if(inherits(test.subset, "holdout")) {
+        } else if(inherits(resample, "holdout")) {
             values <- mapply(function(y, i){
-                z <- rep(NA, nrow(test.subset))
+                z <- rep(NA, nrow(resample))
                 z[i] <- y
                 return(z)
-            }, x, as.data.frame(test.subset))
+            }, x, as.data.frame(resample))
         }
         if(is.factor(x[[1]])){
             values <- as.data.frame(lapply(as.data.frame(values), function(v){

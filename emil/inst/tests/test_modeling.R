@@ -5,7 +5,7 @@ test_that("Standard usage", {
     y <- iris$Species
     cv <- resample.crossval(y, nfold=3, nrep=2)
     proc <- modeling.procedure("lda")
-    perf <- evaluate.modeling(proc, x, y, test.subset=cv,
+    perf <- evaluate.modeling(proc, x, y, resample=cv,
                               .save=list(fit=TRUE, pred=TRUE, vimp=FALSE),
                               .verbose=FALSE)
 
@@ -16,7 +16,7 @@ test_that("Standard usage", {
     expect_true(all(sapply(perf, function(p) all(c("fit", "pred") %in% names(p)))))
 
     # Parallelization
-    par.perf <- evaluate.modeling(proc, x, y, test.subset=cv,
+    par.perf <- evaluate.modeling(proc, x, y, resample=cv,
                                   .save=list(fit=TRUE, pred=TRUE, vimp=FALSE),
                                   .verbose=FALSE, .parallel.cores=2)
     expect_that(par.perf, is_identical_to(perf))
@@ -26,7 +26,7 @@ test_that("Standard usage", {
         file.remove(dir("tmp", full.names=TRUE))
         file.remove("tmp")
     }
-    check.perf <- evaluate.modeling(proc, x, y, test.subset=cv,
+    check.perf <- evaluate.modeling(proc, x, y, resample=cv,
                                     .save=list(fit=TRUE, pred=TRUE, vimp=FALSE),
                                     .verbose=FALSE, .checkpoint.dir="tmp")
     expect_that(check.perf, is_identical_to(perf))

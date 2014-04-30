@@ -24,6 +24,10 @@
 ##' @seealso fit
 ##' @export
 fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
+    if(is.data.frame(x)){
+        warn.once("glmnet x is not matrix", "glmnet only takes data sets in matrix form. The conversion in the fitting function introduces an extra copy of the data set in the memory.")
+        x <- as.matrix(x)
+    }
     if(!is.factor(y))
         stop("The glmnet wrapper is only implemented for classification (factor response) so far.")
     nice.require("glmnet", "is required to fit elastic net models")
@@ -43,7 +47,7 @@ fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
             nfolds <- if(missing(foldid)) 10 else max(foldid)
         }
         if(missing(foldid)){
-            foldid <- apply(resample.crossval(y, nfold=nfolds, nrep=1), 1, which)
+            foldid <- apply(resample.crossval(y, nfold=nfolds, nrep=1) == 0, 1, which)
         }
     }
 

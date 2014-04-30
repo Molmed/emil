@@ -40,8 +40,8 @@
 ##' # A splitter that only keeps variables with a classwise mean difference > `d`
 ##' \dontrun{
 ##' my.split <- function(x, y, fold, d=2){
-##'     fit.idx <- na.fill(!fold, FALSE)
-##'     test.idx <- na.fill(fold, FALSE)
+##'     fit.idx <- index.fit(fold)
+##'     test.idx <- index.test(fold)
 ##'     class.means <- sapply(
 ##'         split(as.data.frame(x[fit.idx,,drop=FALSE]), y[fit.idx]),
 ##'         sapply, mean, na.rm=TRUE)
@@ -74,8 +74,8 @@
 ##' @rdname pre.process
 ##' @export
 pre.split <- function(x, y, fold){
-    list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
-         test=x[na.fill(fold, FALSE),,drop=FALSE])
+    list(fit=x[index.fit(fold),,drop=FALSE],
+         test=x[index.test(fold),,drop=FALSE])
 }
 
 ##' @rdname pre.process
@@ -88,15 +88,15 @@ pre.center <- function(x, y, fold){
 ##' @rdname pre.process
 ##' @export
 pre.scale <- function(x, y, fold, scale=TRUE){
-    m <- apply(x[na.fill(!fold, FALSE),,drop=FALSE], 2, mean, na.rm=TRUE)
+    m <- apply(x[index.fit(fold),,drop=FALSE], 2, mean, na.rm=TRUE)
     if(scale){
-        s <- apply(x[na.fill(!fold, FALSE),,drop=FALSE], 2, sd, na.rm=TRUE)
+        s <- apply(x[index.fit(fold),,drop=FALSE], 2, sd, na.rm=TRUE)
         fun <- function(z) sweep(sweep(z, 2, m, "-"), 2, s, "/")
     } else {
         fun <- function(z) sweep(z, 2, m, "-")
     }
-    list(fit=fun(x[na.fill(!fold, FALSE),,drop=FALSE]),
-         test=fun(x[na.fill(fold, FALSE),,drop=FALSE]))
+    list(fit=fun(x[index.fit(fold),,drop=FALSE]),
+         test=fun(x[index.test(fold),,drop=FALSE]))
 }
 
 ##' @author Christofer \enc{Bäcklin}{Backlin}
@@ -107,10 +107,10 @@ pre.impute.median <- function(x, y, fold){
         # Duplicate names may cause problems otherwise
     na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
     na.feats <- unique(na.ind[,"col"])
-    fills <- apply(x[na.fill(!fold, FALSE), na.feats, drop=FALSE], 2, median, na.rm=TRUE)
+    fills <- apply(x[index.fit(fold), na.feats, drop=FALSE], 2, median, na.rm=TRUE)
     x[na.ind] <- fills[match(na.ind[,"col"], na.feats)]
-    list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
-         test=x[na.fill(fold, FALSE),,drop=FALSE])
+    list(fit=x[index.fit(fold),,drop=FALSE],
+         test=x[index.test(fold),,drop=FALSE])
 }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname impute
@@ -155,14 +155,17 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
         stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
 
     if(k < 1) k <- max(1, round(.05*nrow(x)))
-    if(k > sum(!fold, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
+    if(k > sum(fold > 0, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
 
     if(missing(distmat))
         stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
     if(is.character(distmat) && distmat == "auto"){
-        distmat <- matrix(NA, nrow(x), nrow(x))
         idx <- !is.na(fold)
-        distmat[idx, idx] <- as.matrix(dist(x[idx,]))
+        d <- as.matrix(dist(x[idx,]))
+        if(any(is.na(d)))
+            stop("Could not calculate distance matrix, check data set for observations with all values missing.")
+        distmat <- matrix(NA, nrow(x), nrow(x))
+        distmat[idx, idx] <- d
     } else if(!is.matrix(distmat)){
         distmat <- as.matrix(distmat)
     }
@@ -174,13 +177,15 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
 
     NN <- apply(distmat, 1, function(z)
-        setdiff(order(z), which(na.fill(fold, TRUE))))
+        intersect(order(z), index.fit(fold)))
     fills <- apply(na.ind, 1, function(i){
         mean(setdiff(x[NN[,i[1]], i[2]], NA)[1:k])
     })
+    if(any(is.na(fills)))
+        stop("Could not impute all missing values, too few non-missing values for some features.")
     x[na.ind] <- fills
-    list(fit=x[na.fill(!fold, FALSE),,drop=FALSE],
-         test=x[na.fill(fold, FALSE),,drop=FALSE])
+    list(fit=x[index.fit(fold),,drop=FALSE],
+         test=x[index.test(fold),,drop=FALSE])
 }
 
 ##' Regular imputation

@@ -64,7 +64,7 @@ na.fill <- function(x, replacement){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 nice.require <- function(pkg, reason="is required"){
-    if(!eval(substitute(require(pkg), list(pkg=pkg))) && interactive()){
+    if(!eval(substitute(require(pkg, quietly=TRUE), list(pkg=pkg))) && interactive()){
         cat(sprintf("Package `%s` %s. Install now? (Y/n) ", pkg, reason))
         if(grepl("^(y(es)?)?$", tolower(readline()))){
             install.packages(pkg)
@@ -135,18 +135,18 @@ subtree <- function(x, i, ..., simplify=TRUE){
 ##' 
 ##' @param x Performance evaluation results.
 ##' @param ... Indices specify what to extract, sent to \code{\link{subtree}}.
-##' @param test.subset Resampling scheme used to carry out a peformance
+##' @param resample Resampling scheme used to carry out a peformance
 ##'   evaluation.
 ##' @examples
 ##' \dontrun{
 ##' cv <- resample.crossval(y, nfold=5, nrep=3)
-##' perf <- evaluate.modeling(proc, x, y, test.subset=cv)
-##' subframe(perf, TRUE, "pred", "prob", 1, test.subset=cv)
+##' perf <- evaluate.modeling(proc, x, y, resample=cv)
+##' subframe(perf, TRUE, "pred", "prob", 1, resample=cv)
 ##' }
 ##' @seealso subtree
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-subframe <- function(x, ..., test.subset){
+subframe <- function(x, ..., resample){
     flatten <- function(x){
         if(is.list(x)){
             x <- lapply(x, flatten)
@@ -156,12 +156,12 @@ subframe <- function(x, ..., test.subset){
         x
     }
     st <- flatten(subtree(x, ..., simplify=FALSE))
-    if(any(sapply(st, length) != sapply(test.subset, sum, na.rm=TRUE)))
-        stop("Data and test.subset does not match.")
+    if(any(sapply(st, length) != sapply(resample, sum, na.rm=TRUE)))
+        stop("Data and resample does not match.")
 
     as.data.frame(mapply(
         function(x, fold) x[ave(fold, fold, FUN=seq_along)*fill(fold, FALSE, NA)],
-        st, test.subset, SIMPLIFY=FALSE))
+        st, resample, SIMPLIFY=FALSE))
 }
 
 
