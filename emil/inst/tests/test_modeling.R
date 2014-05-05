@@ -3,7 +3,7 @@ context("Modeling framework")
 test_that("Standard usage", {
     x <- iris[-5]
     y <- iris$Species
-    cv <- resample.crossval(y, nfold=3, nrep=2)
+    cv <- resample("crossval", y, nfold=3, nrep=2)
     proc <- modeling.procedure("lda")
     perf <- evaluate.modeling(proc, x, y, resample=cv,
                               .save=list(fit=TRUE, pred=TRUE, vimp=FALSE),

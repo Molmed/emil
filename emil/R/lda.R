@@ -12,7 +12,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso fit
 ##' @export
-fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
+emil.fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
     s <- matrix(0, ncol(x), ncol(x))
     for(lev in levels(y))
         s <- s + cov(x[y==lev,, drop=F], use=use) * (sum(y==lev)-1)
@@ -38,7 +38,7 @@ fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.lda <- function(object, x, ...){
+emil.predict.lda <- function(object, x, ...){
     log.disc.func <- sapply(object$responses, function(lev){
         -log( (2*pi)^(.5*nrow(object$S))*det(object$S)^.5 ) +
         -.5*apply(sweep(as.matrix(x), 2, object$mu[,lev])^2 %*% solve(object$S), 1, sum)

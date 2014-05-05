@@ -63,7 +63,7 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso fit
 ##' @export
-fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
+emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
     nice.require("pamr")
     if(!(is.list(x) && all(c("x", "y") %in% names(x)) && ncol(x$x) == length(x$y))){
         warn.once("pamr_preprocess", "Please use the `pre.pamr` function for pre-processing data for pamr.")
@@ -100,7 +100,7 @@ fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
                 fit.cv <- NULL
             } else {
                 if(!inherits(cv, c("crossval", "holdout")))
-                    cv <- resample.crossval(x$y, nrep=cv$nrep, nfold=cv$nfold)
+                    cv <- resample("crossval", x$y, nrep=cv$nrep, nfold=cv$nfold)
                 if(nrow(cv) != length(x$y))
                     stop("Resampling set for shrinkage selection does not match dataset in size.")
                 fit.cv <- pamr::pamr.cv(fit, x,
@@ -132,7 +132,7 @@ fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
 ##'   in the following ways:
 ##'   \describe{
 ##'     \item{Numeric scalar}{A predefined value. In this case you also want to
-##'       run \code{\link{fit.pamr}} with \code{cv=FALSE} to not do any
+##'       run \code{\link{emil.fit.pamr}} with \code{cv=FALSE} to not do any
 ##'       unnecessary tuning.}
 ##'     \item{unset}{Uses the threshold that got the best tuning performance. In
 ##'       case of ties, the largest threshold is used, i.e. resulting in the
@@ -148,7 +148,7 @@ fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.pamr <- function(object, x, threshold, ...){
+emil.predict.pamr <- function(object, x, threshold, ...){
     nice.require("pamr")
     if(nrow(x) != nrow(object$fit$centroids)){
         if(ncol(x) != nrow(object$fit$centroids))
@@ -189,7 +189,7 @@ predict.pamr <- function(object, x, threshold, ...){
 ##' @return An importance vector with elements corresponding to variables.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-vimp.pamr <- function(object, ..., threshold){
+emil.vimp.pamr <- function(object, ..., threshold){
     nice.require("pamr")
     if(missing(threshold)){
         if(is.null(object$cv)){

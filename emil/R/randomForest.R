@@ -15,12 +15,8 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso fit
 ##' @export
-fit.randomForest <- function(x, y, importance=FALSE, ...){
+emil.fit.randomForest <- function(x, y, importance=FALSE, ...){
     nice.require("randomForest")
-    #idx <- apply(x, 1, function(xx) !any(is.na(xx))) & !is.na(y)
-    #x <- x[idx,, drop=FALSE]
-    #y <- y[idx]
-    #randomForest::randomForest(x, y, ..., importance=importance)
     tryCatch(randomForest::randomForest(x, y, ..., importance=importance),
              error=function(e){
                  if(any(is.na(x))){
@@ -43,14 +39,13 @@ fit.randomForest <- function(x, y, importance=FALSE, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.randomForest <- function(object, x, ...){
+emil.predict.randomForest <- function(object, x, ...){
     nice.require("randomForest")
-    p <- randomForest:::predict.randomForest
     if(is.factor(object$y)){
-        list(pred = p(object, newdata=x, type="response"),
-             prob = p(object, newdata=x, type="prob"))
+        list(pred = predict(object, newdata=x, type="response"),
+             prob = predict(object, newdata=x, type="prob"))
     } else {
-        list(pred = p(object, newdata=x, type="response"))
+        list(pred = predict(object, newdata=x, type="response"))
     }
 }
 
@@ -70,21 +65,9 @@ predict.randomForest <- function(object, x, ...){
 ##' @seealso vimp
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-vimp.randomForest <- function(object, type=1, ...){
+emil.vimp.randomForest <- function(object, type=1, ...){
     if(is.blank(object$importance))
-        stop("To calculate variable importance of random forsests you must set the fitting parameter `importance=TRUE`, see `?fit.randomForest`.")
+        stop("To calculate variable importance of random forsests you must set the fitting parameter `importance=TRUE`, see `?emil.fit.randomForest`.")
     object$importance
-    #if(is.factor(object$y)){
-    #    perm.oob <- "MeanDecreaseAccuracy" %in% colnames(object$importance)
-    #    if(missing(type) && !perm.oob){
-    #        type <- 2
-    #        warning("Permutation test was not performed during classifier fitting. Using node impurity as importance measure. If this is really what you want you should specify it explicitly.")
-    #    }
-    #    imp <- object$importance[, switch(type, "MeanDecreaseAccuracy", "MeanDecreaseGini")]
-    #} else {
-    #    # TODO: Replace this dirty hack with something nicer
-    #    imp <- object$importance[,2]
-    #}
-    #return(imp)
 }
 

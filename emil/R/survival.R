@@ -97,27 +97,3 @@ p.value.survdiff <- function(x, log.p=FALSE, ...){
     pchisq(x$chisq, length(x$n) - 1, lower.tail=FALSE, log.p=log.p)
 }
 
-
-# ##' Fit competing risk regression model
-# ##' 
-# ##' @param x Dataset.
-# ##' @param y Response vector of class \code{\link{outcome}}.
-# ##' @param ... Sent to \code{\link[cmprsk]{crr}}
-# ##' @author Christofer \enc{Bäcklin}{Backlin}
-# ##' @export
-# fit.crr <- function(x, y, ...){
-#     cmprsk::crr(y$time, integer.events(y)+1, x, ...)
-# }
-# 
-# 
-# ##' Predictions using competing risk regression model
-# ##' 
-# ##' Not implemented yet.
-# ##' 
-# ##' @param ... Ignored.
-# ##' @author Christofer \enc{Bäcklin}{Backlin}
-# ##' @export
-# predict.crr <- function(...){
-#     stop("predict.crr is not implemented yet.")
-# }
- 

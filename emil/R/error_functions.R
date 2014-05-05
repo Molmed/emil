@@ -9,24 +9,6 @@
 ##' optimization criteria), which is why functions that are to be maximized must
 ##' have their sign changed, like \code{\link{neg.auc}}.
 ##' 
-##' For classification problems:
-##' \describe{
-##'   \item{\code{error.rate}}{Fraction of predictions that were incorrect.}
-##'   \item{\code{weighted.error.rate}}{See its own documentation.}
-##'   \item{\code{neg.auc}}{Negative area under ROC curve.}
-##'   \item{\code{\link{neg.gmpa}}}{Negative geometric mean of class-specific
-##'     prediction accuracy. Good for problems with imbalanced class sizes.}
-##' }
-##' For regression problems:
-##' \describe{
-##'     \item{\code{mse}}{Mean square error.}
-##'     \item{\code{rmse}}{Root mean square error.}
-##' }
-##'
-##' For survival analysis problem:
-##' \describe{
-##'     \item{\code{neg.harrell.C}}{Negative Harrell's concordance index.}
-##' }
 ##'
 ##' @param true The true response values, be it class labels, numeric values or
 ##'   survival outcomes.

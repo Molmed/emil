@@ -19,7 +19,7 @@
 ##' @return A fitted \code{\link[party]{cforest}} model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-fit.cforest <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
+emil.fit.cforest <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
     nice.require("party")
     nice.require("survival")
     if(!is.outcome(y) && !is.Surv(y))
@@ -36,10 +36,10 @@ fit.cforest <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...
 
 ##' Predict with conditional inference forest
 ##' 
-##' Prediction function for models fitted with \code{\link{fit.cforest}}.
+##' Prediction function for models fitted with \code{\link{emil.fit.cforest}}.
 ##' 
 ##' @param object Fitted \code{cforest} classifier, as returned by
-##'   \code{\link{fit.cforest}}.
+##'   \code{\link{emil.fit.cforest}}.
 ##' @param x New data to be used for predictions.
 ##' @param at Time point to evaluate survival curves at. If omitted it is set
 ##'   to the last observed time point.
@@ -47,7 +47,7 @@ fit.cforest <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...
 ##' @return The predicted chance of survival.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-predict.cforest <- function(object, x, at, ...){
+emil.predict.cforest <- function(object, x, at, ...){
     nice.require("party")
     list(pred = predict(object, OOB=FALSE, as.data.frame(x)))
 }

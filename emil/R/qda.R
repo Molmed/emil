@@ -11,7 +11,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso fit
 ##' @export
-fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
+emil.fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
     fit <- list(responses=levels(y),
                 pi = pi,
                 mu = matrix(sapply(levels(y), function(lev)
@@ -35,7 +35,7 @@ fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.qda <- function(object, x, ...){
+emil.predict.qda <- function(object, x, ...){
     log.disc.func <- sapply(object$responses, function(lev){
         -log( (2*pi)^(.5*length(object$S))*det(object$S[[lev]])^.5 ) +
         -.5*apply(sweep(as.matrix(x), 2, object$mu[,lev])^2 %*% solve(object$S[[lev]]), 1, sum)

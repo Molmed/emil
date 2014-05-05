@@ -9,7 +9,7 @@
 ##' @return Fitted linear model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-fit.lm <- function(x, y, formula=y~., ...){
+emil.fit.lm <- function(x, y, formula=y~., ...){
     df <- data.frame(y, x)
     rm(y,x)
     vars.missing <- all.vars(formula)[!all.vars(formula) %in% names(df)]
@@ -30,14 +30,14 @@ fit.lm <- function(x, y, formula=y~., ...){
 
 ##' Prediction using linear model
 ##' 
-##' @param object Fitted classifier produced by \code{\link{fit.lm}}.
+##' @param object Fitted classifier produced by \code{\link{emil.fit.lm}}.
 ##' @param x Dataset to be predicted upon.
 ##' @param ... Sent to \code{\link{predict.lm}}
 ##' @return A prediction list.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.lm <- function(object, x, ...){
+emil.predict.lm <- function(object, x, ...){
     list(pred = predict.lm(object, data.frame(y=NA, x), ...))
 }
 

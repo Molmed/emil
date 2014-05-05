@@ -7,7 +7,7 @@
 ##' an intermediate for a combination. This is typically the variable to tune
 ##' on. The shrinkage, controlled by the \code{lambda} parameter, can be left
 ##' unspecified for internal tuning (works the same way as
-##' \code{\link{fit.glmnet}}).
+##' \code{\link{emil.fit.glmnet}}).
 ##' 
 ##' @param x Dataset.
 ##' @param y Response vector. Can be of many different types for solving
@@ -23,7 +23,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso fit
 ##' @export
-fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
+emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     if(is.data.frame(x)){
         warn.once("glmnet x is not matrix", "glmnet only takes data sets in matrix form. The conversion in the fitting function introduces an extra copy of the data set in the memory.")
         x <- as.matrix(x)
@@ -47,7 +47,7 @@ fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
             nfolds <- if(missing(foldid)) 10 else max(foldid)
         }
         if(missing(foldid)){
-            foldid <- apply(resample.crossval(y, nfold=nfolds, nrep=1) == 0, 1, which)
+            foldid <- apply(resample("crossval", y, nfold=nfolds, nrep=1) == 0, 1, which)
         }
     }
 
@@ -96,12 +96,7 @@ fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso predict
 ##' @export
-predict.glmnet <- function(object, x, s, ...){
-    # In case the glmnet package accidentally fetches this function when calling
-    # `predict`, just pass it along to the correct method.
-    if(inherits(object, "glmnet"))
-        return(glmnet:::predict.glmnet(object, newx=x, s=s, ...))
-
+emil.predict.glmnet <- function(object, x, s, ...){
     nice.require("glmnet", "is required to make precdictions with an elastic net model")
     if(missing(s)){
         if("lambda.min" %in% names(object)){

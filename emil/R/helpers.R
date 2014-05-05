@@ -139,7 +139,7 @@ subtree <- function(x, i, ..., simplify=TRUE){
 ##'   evaluation.
 ##' @examples
 ##' \dontrun{
-##' cv <- resample.crossval(y, nfold=5, nrep=3)
+##' cv <- resample("crossval", y, nfold=5, nrep=3)
 ##' perf <- evaluate.modeling(proc, x, y, resample=cv)
 ##' subframe(perf, TRUE, "pred", "prob", 1, resample=cv)
 ##' }

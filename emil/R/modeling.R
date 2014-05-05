@@ -5,11 +5,12 @@
 ##' \code{\link{fit}}, \code{\link{tune}}, or \code{\link{evaluate.modeling}}.
 ##' 
 ##' To use an out-of-the box algorithm with default values, only the
-##' \code{method} argument needs to be set. To deviate from the defaults, e.g.
-##' by using a custom function for model fitting, or an alternative tuning
-##' grid, set the appropriate parameter with the desired value. See
-##' \code{\link{emil.extensions}} for a guide on how these functions should be
-##' written.
+##' \code{method} argument needs to be set. See \code{\link{emil.methods}} for a
+##' list of available methods. To deviate from the defaults, e.g. by tuning
+##' variables or using a custom function for model fitting, set the appropriate
+##' parameters as described below.
+##' For a guide on how to implement a custom method see the documenations page
+##' \code{\link{emil.extensions}}.
 ##' 
 ##' @param method The name of the modeling method. Only needed to identify
 ##'   plug-in functions, i.e. if you supply them yourself there is no need to
@@ -25,7 +26,7 @@
 ##'   
 ##'   Parameters that should have vectors or lists as values, e.g. \code{trControl}
 ##'   when using
-##'   \code{\link{fit.caret}} to train caret models, must be wrapped in an
+##'   \code{\link{emil.fit.caret}} to train caret models, must be wrapped in an
 ##'   additional list. That is, to set a parameter value to a list, but not tune it,
 ##'   make it a list of length 1 containing the list to be used (see example 6).
 ##' @param fit.fun The function to be used for model fitting.
@@ -84,15 +85,15 @@ modeling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, pr
         tuning = if(length(param) < 2) NULL else list(param = param, error = NULL),
         fit.fun =
             if(missing(fit.fun)){
-                tryCatch(get(sprintf("fit.%s", method)), error=function(err) err)
+                tryCatch(get(sprintf("emil.fit.%s", method)), error=function(err) err)
             } else fit.fun,
         predict.fun =
             if(missing(predict.fun)){
-                tryCatch(get(sprintf("predict.%s", method)), error=function(err) err)
+                tryCatch(get(sprintf("emil.predict.%s", method)), error=function(err) err)
             } else predict.fun,
         vimp.fun =
             if(missing(vimp.fun)){
-                tryCatch(get(sprintf("vimp.%s", method)), error=function(err) err)
+                tryCatch(get(sprintf("emil.vimp.%s", method)), error=function(err) err)
             } else vimp.fun,
         error.fun = NULL
     ))
@@ -174,7 +175,7 @@ print.modeling.procedure <- function(x, ...){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 batch.model <- function(proc, x, y,
-    resample=resample.crossval(y, nfold=2, nrep=2), pre.process=pre.split,
+    resample=emil::resample("crossval", y, nfold=2, nrep=2), pre.process=pre.split,
     .save=list(fit=FALSE, pred=FALSE, vimp=FALSE, tuning=FALSE),
     .parallel.cores=1, .checkpoint.dir=NULL, .verbose=FALSE){
 
@@ -272,7 +273,7 @@ batch.model <- function(proc, x, y,
         } else if(.verbose) cat("\n")
         if(.parallel.cores > 1) .verbose = FALSE
         if(any(do.tuning)){
-            tune.subset <- resample.subset(y, fold)
+            tune.subset <- subresample(fold, y)
             fold.proc <- tune(proc, x, y, resample=tune.subset,
                 pre.process=pre.process, .save=NULL, .verbose=increase(.verbose))
         } else {

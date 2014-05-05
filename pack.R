@@ -3,8 +3,10 @@
 library("roxygen2")
 
 roxygen.update.description()
-file.remove(c(dir("emil/man", full.names=TRUE), "emil/man",
-              "emil/NAMESPACE", "emil/emil-Ex.R"))
+doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/man",
+                       "emil/NAMESPACE", "emil/emil-Ex.R"),
+                     sprintf("emil/man/%s.Rd", c("emil", "emil.extensions")))
+file.remove(doc.files)
 roxygenize("emil")
 system("R CMD check emil")
 

@@ -10,10 +10,10 @@
 ##' @return Variable importance vector.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-vimp <- function(object, ...){
+emil.vimp <- function(object, ...){
     # if(!any(sapply(sprintf("vimp.%s", class(object)), exists)))
     #     stop(sprintf("No variable importance measure is implemented for classifier type \"%s\".", class(object$fit)[1]))
-    UseMethod("vimp", object)
+    UseMethod("emil.vimp", object)
 }
 
 

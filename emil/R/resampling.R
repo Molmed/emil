@@ -4,15 +4,35 @@
 ##' estimate the performance of models. These are defined by resampling
 ##' schemes, which are data frames where each column corresponds to a
 ##' division of the data set into mutually exclusive training and test sets.
-##' Cross validation and repeated hold out are two methods to create such
+##' Repeated hold out and cross validation are two methods to create such
 ##' schemes.
+##'
+##' Note that when setting up analyses, the user should not call
+##' \code{resmaple.holdout} or \code{resameple.crossval} directly, as
+##' \code{resample} performs additional necessary processing of the scheme.
 ##'
 ##' Resampling scheme can be visualized in a human digestable form with the
 ##' \code{\link{image}} function.
 ##' 
+##' To implement a custom resampling scheme create a function called
+##' \code{resample.myMethod} and it will be callable by
+##' \code{resample("myMethod", ...)}. The return value of the function must
+##' be a list of two elements:
+##' \describe{
+##'     \item{\code{folds}}{A data frame with the folds of the scheme that
+##'         conforms to the description in the 'Value' section below.}
+##'     \item{\code{param}}{A list with the parameters necessary to generate
+##'         such a resampling scheme. These are needed when creating subschemes
+##'         needed for parameter tuning.}
+##' }
+##' 
+##' @param method The resampling method to use, e.g. \code{"holdout"} or
+##'   \code{"crossval"}.
 ##' @param y Observations to be divided. Can either be supplied as the response
 ##'   of the observations themselves, or as a scalar which is interpreted as the
 ##'   number of objects.
+##' @param ... Sent to the method specific function, e.g.
+##'   \code{"resample.holdout"}.
 ##' @param nfold Number of folds.
 ##' @param balanced Whether the sets should be balanced or not, i.e. if the
 ##'   class ratio over the sets should be kept constant (as far as possible).
@@ -20,15 +40,54 @@
 ##'   that are not to be part of neither set.
 ##'   If \code{subset} is a resampling scheme, a list of inner
 ##'   cross validation schemes will be returned.
-##' @return A data frame defining a resampling scheme, or a list of data frames
-##'   defining multiple resampling schemes. \code{TRUE} or a positive integer
+##' @return A data frame defining a resampling scheme. \code{TRUE} or a positive integer
 ##'   codes for training set and \code{FALSE} or \code{0} codes for test set.
 ##'   Positive integers > 1 code for multiple copies of an observation in the
 ##'   training set. \code{NA} codes for neither training nor test set and is
 ##'   used to exclude observations from the analysis altogether.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @name resample
-{}
+##' @seealso subresample, image.resample
+##' @export
+resample <- function(method, ...){
+    x <- get(sprintf("resample.%s", method))(...)
+    class(x$folds) <- c(method, "resample", "data.frame")
+    if(all(grepl("^V\\d+$", names(x$folds))))
+        names(x$folds) <- sprintf("fold%i", seq_along(x$folds))
+    x$folds[T] <- mapply(function(f, n) structure(f, class=c(method, "fold", class(f)),
+                        param=x$param, fold.name=n), x$folds, names(x$folds),
+                    SIMPLIFY=FALSE)
+    x$folds
+}
+
+
+##' Generate resampling subschemes
+##'
+##' A subscheme is a resampling scheme that only includes observations in the
+##' training set of an original scheme, called prototype. This function
+##' automatically fetches the type and parameters of the prototype and use them
+##' to generate the subscheme.
+##'
+##' @param fold A resampling scheme or fold to use to define the sub scheme(s).
+##' @param y The obseravations used to create the resampling scheme. See
+##'   \code{\link{resample}} for details.
+##' @return A resampling scheme.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @examples
+##' cv <- resample("holdout", y=12, frac=1/4, nfold=3)
+##' inner.cv <- subresample(cv, y=12)
+##' @seealso resample
+##' @export
+subresample <- function(fold, y){
+    if(is.data.frame(fold)){
+        # The user inputted a full scheme
+        lapply(fold, subresample, y)
+    } else {
+        do.call(resample,
+            c(list(method = class(fold)[1], y = y),
+              attr(fold, "param"),
+              list(subset = as.logical(fold))))
+    }
+}
 
 
 ##' Convert a fold to row indexes of training or test set
@@ -39,7 +98,7 @@
 ##' @return An integer vector of row indexes.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-##' @rnname index
+##' @rdname index
 index.fit <- function(fold){
     rep(seq_along(fold), na.fill(fold, 0))
 }
@@ -51,12 +110,35 @@ index.test <- function(fold){
     which(fold %in% 0)
 }
 
-##' Generate a cross validation scheme
-##'
+
+##' @param frac Fraction of objects to hold out (0 < frac < 1).
+##' @examples
+##' resample("holdout", 50, frac=1/3)
+##' resample("holdout", factor(runif(60) >= .5))
+##' @rdname resample
+##' @export
+resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), subset=TRUE){
+    n <- if(length(y) == 1) y else length(y)
+    class.idx <- if(balanced){
+        lapply(levels(y), function(lev) intersect(which(y == lev), (1:n)[subset]))
+    } else {
+        list((1:n)[subset])
+    }
+    class.ho <- round(frac*sapply(class.idx, length))
+    ho <- as.data.frame(replicate(nfold, {
+        idx <- rep(NA, n)
+        idx[subset] <- TRUE
+        for(i in seq_along(class.idx))
+            idx[sample(class.idx[[i]], class.ho[[i]])] <- FALSE
+        idx
+    }))
+    list(folds=ho, param=list(frac=frac, nfold=nfold, balanced=balanced))
+}
+
 ##' @param nrep Number of fold sets to generate.
 ##' @examples
 ##' y <- factor(runif(60) >= .5)
-##' cv <- resample.crossval(y)
+##' cv <- resample("crossval", y)
 ##' image(cv, main="Cross validation scheme")
 ##' @rdname resample
 ##' @export
@@ -87,145 +169,24 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
         apply(idx, 2, function(i) !1:n %in% i)
     }))
     folds[!subset,] <- NA
-
-    # Put information of the whole scheme into every fold,
-    # for `resample.subset` to work.
-    folds[T] <- lapply(folds, structure, class=c("crossval", "fold"),
-        nfold = nfold, nrep = nrep, balanced = balanced)
-    structure(folds,
-        class = c("crossval", "resample", "data.frame"),
-        names = sprintf("fold%i:%i", rep(1:nrep, each=nfold), rep(1:nfold, nrep))
-    )
+    names(folds) <- sprintf("fold%i:%i", rep(1:nrep, each=nfold), rep(1:nfold, nrep))
+    list(folds=folds, param=list(nfold=nfold, nrep=nrep, balanced=balanced))
 }
 
 
-##' Generate a repeated holdout scheme
-##'
-##' @param frac Fraction of objects to hold out (0 < frac < 1).
-##' @examples
-##' resample.holdout(50, 1/3)
-##' resample.holdout(factor(runif(60) >= .5))
-##' @rdname resample
-##' @export
-resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), subset=TRUE){
-    n <- if(length(y) == 1) y else length(y)
-    class.idx <- if(balanced){
-        lapply(levels(y), function(lev) intersect(which(y == lev), (1:n)[subset]))
-    } else {
-        list((1:n)[subset])
-    }
-    class.ho <- round(frac*sapply(class.idx, length))
-    ho <- as.data.frame(replicate(nfold, {
-        idx <- rep(NA, n)
-        idx[subset] <- TRUE
-        for(i in seq_along(class.idx))
-            idx[sample(class.idx[[i]], class.ho[[i]])] <- FALSE
-        idx
-    }))
-    ho[T] <- lapply(ho, structure, class=c("holdout", "logical"),
-        frac = frac, nfold=nfold, balanced = balanced)
-    structure(ho, class = c("holdout", "resample", "data.frame"),
-        names = sprintf("fold%i", 1:nfold)
-    )
-}
-
-
-##' Generate a resampling subscheme
-##'
-##' A subscheme is a resampling scheme that only includes observations in the
-##' training set of an original scheme, called prototype. This function
-##' automatically fetches the type and parameters of the prototype and use them
-##' to generate the subscheme.
-##'
-##' @param fold A resampling fold to use to define the sub scheme. If missing,
-##'   the subschemes of all folds of the prototype are returned.
-##' @return A resampling scheme.
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @examples
-##' cv <- resample.crossval(100)
-##' inner.cv <- resample.subset(100, cv)
-##' @rdname resample
-##' @export resample.subset
-resample.subset <- function(y, fold){
-    if(is.list(fold)){
-        # The user inputted a full scheme
-        lapply(fold, function(f) resample.subset(y, f))
-    } else if(inherits(fold, "crossval")){
-        resample.crossval(y, nfold=attr(fold, "nfold"),
-            nrep=attr(fold, "nrep"), balanced=attr(fold, "balanced"),
-            subset=index.fit(fold))
-    } else if(inherits(fold, "holdout")){
-        resample.holdout(y, frac=attr(fold, "frac"), nfold=attr(fold, "nfold"),
-            balanced=attr(fold, "balanced"), subset=index.fit(fold))
-    } else {
-        stop("Unknown type of resampling scheme.")
-    }
-}
-
-
-##' Visualize cross validation scheme
+##' Visualize resampling scheme
 ##' 
-##' @param x Cross validation scheme, as returned by \code{\link{resample.crossval}}.
-##' @param col Color palette. Can also be the response vector used to create the
-##'   scheme for automatic coloring.
-##' @param ... Ignored, kept for S3 consistency.
-##' @return Nothing, produces a plot.
-##' @examples
-##' image(resample.crossval(60, nfold=3, nrep=8))
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @export
-image.crossval <- function(x, col, ...){
-    nrep <- attr(x[[1]], "nrep")
-    nfold <- attr(x[[1]], "nfold")
-    x <- as.matrix(x)
-
-    if(missing(col)) col <- gl(1, nrow(x))
-    if(inherits(col, "Surv")) col <- as.outcome(col)
-    if(inherits(col, "outcome")) col <- col$event
-    if(is.factor(col)){
-        y <- col
-        nice.require("RColorBrewer")
-        nice.require("colorspace")
-        if(length(levels(y)) > 12)
-            warning("Too few colors to assign unique ones to each class.")
-        col <- rep(brewer.pal(12, "Set3"),
-                   ceiling(length(levels(y))/12))[seq_along(levels(y))]
-        col <- hex2RGB(col)
-        col@coords <- do.call(rbind, lapply(
-            seq(.7, 1, length.out=max(x, na.rm=TRUE)+1),
-            "*", col@coords))
-        col <- hex(col)
-        mat <- sweep(x*length(levels(y)), 1, as.integer(y), "+")
-    } else {
-        mat <- 1 + x
-    }
-    mat <- matrix(col[mat], nrow(mat))
-    mat[is.na(x)] <- "transparent"
-    plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
-         xlab=sprintf("Folds (%i sets of %i folds)", attr(x[[1]], "nrep"), attr(x[[1]], "nfold")),
-         ylab="Observations")
-    rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
-    if(nrep > 1){
-        l <- 1:(nrep-1)*nfold + .5
-        segments(l, par("usr")[3], l, par("usr")[4])
-    }
-}
-
-
-
-##' Visualize repeated holdout scheme
-##' 
-##' @param x Repeated holdout scheme, as returned by \code{\link{resample.holdout}}.
+##' @param x Resampling scheme, as returned by \code{\link{resample}}.
 ##' @param col Color palette matching the values of \code{x}.
 ##'   Can also be the response vector used to create the
 ##'   scheme for automatic coloring.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return Nothing, produces a plot.
 ##' @examples
-##' image(resample.holdout(60, frac=1/3, nfold=20))
+##' image(resample("holdout", 60, frac=1/3, nfold=20))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-image.holdout <- function(x, col, ...){
+image.resample <- function(x, col, ...){
     x <- as.matrix(x)
     if(missing(col)) col <- gl(1, nrow(x))
     if(inherits(col, "Surv")) col <- as.outcome(col)
@@ -255,69 +216,51 @@ image.holdout <- function(x, col, ...){
 }
 
 
-##' Assemble a list of values calculated with a resampling scheme
+##' Visualize cross validation scheme
 ##' 
-##' @param x List of values.
-##' @param resample Resampling scheme, as returned by
-##'   \code{\link{resample.crossval}} or \code{\link{resample.holdout}}.
-##' @return If \code{x} contains vectors, a data frame where rows correspond
-##'   observations and columns correspond resampling replicates. If \code{x}
-##'   contains matrices or data frames, a list of matrices or data frames whose
-##'   rows correspond to observations, and elements of the list correspond to
-##'   resampling replicates.
+##' @param x Cross validation scheme, as returned by \code{\link{resample.crossval}}.
+##' @param col Color palette. Can also be the response vector used to create the
+##'   scheme for automatic coloring.
+##' @param ... Ignored, kept for S3 consistency.
+##' @return Nothing, produces a plot.
 ##' @examples
-##' \dontrun{
-##' cv <- ...
-##' pred <- evaluate.modeling(..., resample=cv)
-##' assemble(subtree(pred, T, T, "pred", "prob"), cv)
-##' }
+##' y <- gl(2, 30)
+##' image(resample("crossval", y, nfold=3, nrep=8), col=y)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-assemble <- function(x, resample){
-    if(is.matrix(x[[1]]) || is.data.frame(x[[1]])){
-        # Matrix assembly
-        m <- matrix(NA, nrow(resample), ncol(x[[1]]))
-        if(is.data.frame(x[[1]])){
-            m <- as.data.frame(m)
-            names(m) <- names(x[[1]])
-        }
-        values <- rep(list(m), attr(resample, "nrep"))
-        if(inherits(resample, "crossval")){
-            for(i in 1:attr(resample, "nrep")){
-                for(j in 1:attr(resample, "nfold")){
-                    k <- j+(i-1)*attr(resample, "nfold")
-                    values[[i]][resample[, k], ] <- x[[k]]
-                }
-            }
-        } else {
-            for(i in 1:attr(resample, "nrep")){
-                values[[i]][resample[,i], ] <- x[[i]]
-            }
-        }
-        if(attr(resample, "nrep") == 1) values <- values[[1]]
+image.crossval <- function(x, col, ...){
+    param <- attr(x[[1]], "param")
+    x <- as.matrix(x)
+
+    if(missing(col)) col <- gl(1, nrow(x))
+    if(inherits(col, "Surv")) col <- as.outcome(col)
+    if(inherits(col, "outcome")) col <- col$event
+    if(is.factor(col)){
+        y <- col
+        nice.require("RColorBrewer")
+        nice.require("colorspace")
+        if(length(levels(y)) > 12)
+            warning("Too few colors to assign unique ones to each class.")
+        col <- rep(brewer.pal(12, "Set3"),
+                   ceiling(length(levels(y))/12))[seq_along(levels(y))]
+        col <- hex2RGB(col)
+        col@coords <- do.call(rbind, lapply(
+            seq(.7, 1, length.out=max(x, na.rm=TRUE)+1),
+            "*", col@coords))
+        col <- hex(col)
+        mat <- sweep(x*length(levels(y)), 1, as.integer(y), "+")
     } else {
-        # Vector assembly
-        if(inherits(resample, "crossval")){
-            values <- matrix(NA, nrow(resample), attr(resample, "nrep"))
-            for(i in 1:attr(resample, "nrep")){
-                for(j in 1:attr(resample, "nfold")){
-                    k <- j+(i-1)*attr(resample, "nfold")
-                    values[resample[, k], i] <- x[[k]]
-                }
-            }
-        } else if(inherits(resample, "holdout")) {
-            values <- mapply(function(y, i){
-                z <- rep(NA, nrow(resample))
-                z[i] <- y
-                return(z)
-            }, x, as.data.frame(resample))
-        }
-        if(is.factor(x[[1]])){
-            values <- as.data.frame(lapply(as.data.frame(values), function(v){
-                return(factor(v, levels=1:length(levels(x[[1]])), labels=levels(x[[1]])))
-            }))
-        }
+        mat <- 1 + x
     }
-    return(values)
+    mat <- matrix(col[mat], nrow(mat))
+    mat[is.na(x)] <- "transparent"
+    plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
+         xlab=sprintf("Folds (%i sets of %i folds)", param$nrep, param$nfold),
+         ylab="Observations")
+    rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
+    if(param$nrep > 1){
+        l <- 1:(param$nrep-1)*param$nfold + .5
+        segments(l, par("usr")[3], l, par("usr")[4])
+    }
 }
 

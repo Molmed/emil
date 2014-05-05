@@ -5,7 +5,7 @@
 ##' @param ... Sent to \code{\link[caret]{train}}.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-fit.caret <- function(x, y, ...){
+emil.fit.caret <- function(x, y, ...){
     nice.require("caret")
     train(x, y, ...)
 }
@@ -19,7 +19,7 @@ fit.caret <- function(x, y, ...){
 ##'   appropriate predict function in the caret package.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-predict.caret <- function(...){
+emil.predict.caret <- function(...){
     nice.require("caret")
     tryCatch(
         list(pred = predict(...)),

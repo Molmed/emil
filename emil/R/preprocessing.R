@@ -10,22 +10,14 @@
 ##'
 ##' They can also be used to modify the form of the data, if required by the
 ##' fitting function, e.g. \code{\link{pre.pamr}} that transposes the dataset
-##' to make it compatible with the \code{pamr} and \code{glmnet} processes.
-##' 
-##' The following functions are provided in this package:
-##' \describe{
-##'     \item{\code{\link{pre.split}}}{Only split, no transformation.}
-##'     \item{\code{\link{pre.center}}}{Center data to have mean 0 of each feature.}
-##'     \item{\code{\link{pre.scale}}}{Center and scale data to have mean 0 and standard deviation 1. }
-##'     \item{\code{\link{pre.impute.median}}}{Impute missing values with feature medians.}
-##'     \item{\code{\link{pre.impute.knn}}}{Impute missing values with k-NN, see
-##'         \code{\link{pre.impute.knn}} for details on how to set parameters.}
-##' }
+##' to make it compatible with the \code{pamr} classification method.
 ##' 
 ##' Note that all transformations are defined based on the fitting data only
 ##' and then applied to both fitting set and test set. It is important to not let
 ##' the test data in any way be part of the model fitting, including the
 ##' preprocessing, to not risk information leakage and biased results!
+##'
+##' The imputation functions can also be used outside of the resampling scheme,
 ##' 
 ##' @return A list with the following components
 ##' \describe{
@@ -35,32 +27,33 @@
 ##'         (TRUE) and discarded (FALSE). This is only set in case of variable
 ##'         selection.}
 ##' }
+##' see \code{\link{impute}}.
 ##'
 ##' @examples
 ##' # A splitter that only keeps variables with a classwise mean difference > `d`
-##' \dontrun{
 ##' my.split <- function(x, y, fold, d=2){
 ##'     fit.idx <- index.fit(fold)
 ##'     test.idx <- index.test(fold)
 ##'     class.means <- sapply(
-##'         split(as.data.frame(x[fit.idx,,drop=FALSE]), y[fit.idx]),
+##'         split(x[fit.idx,, drop=FALSE], y[fit.idx]),
 ##'         sapply, mean, na.rm=TRUE)
-##'     diff.feats <- apply(class.means, 1, range) > d
+##'     diff.feats <- apply(class.means, 1, function(x) diff(range(x))) > d
 ##'     return(list(
 ##'         fit = x[fit.idx, diff.feats, drop=FALSE],
 ##'         test = x[test.idx, diff.feats, drop=FALSE],
 ##'         features = diff.feats))
 ##' }
-##'
+##' 
 ##' # Use it during modeling
-##' proc <- modeling.procedure("rf")
-##' perf <- evaluate.modeling(proc, x, y, pre.process=my.split)
-##'
+##' proc <- modeling.procedure("lda")
+##' perf <- evaluate.modeling(proc, x = iris[-5], y = iris$Species,
+##'                           pre.process = my.split)
+##' 
 ##' # Example of how the end user can change the `d` parameter,
 ##' # without redefining the function
-##' perf <- evaluate.modeling(proc, x, y,
-##'                            pre.process=function(...) my.split(..., d=4))
-##' }
+##' perf <- evaluate.modeling(proc, x = iris[-5], y = iris$Species,
+##'                           pre.process = function(...) my.split(..., d = 1.3))
+##' @seealso pre.impute.knn
 ##' @name pre.process
 {}
 
