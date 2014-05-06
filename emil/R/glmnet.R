@@ -1,8 +1,9 @@
 ##' Fit GLM with LASSO, Ridge or elastic net regularization.
 ##' 
-##' Calling the \code{glmnet} package implementation.
+##' Fits generalized linear models with regularization using the \code{glmnet}
+##' package implementation.
 ##' 
-##' The \code{alhpa} parameter of \code{\link[glmnet]{glmnet}} controls the type of
+##' The \code{alpha} parameter of \code{\link[glmnet]{glmnet}} controls the type of
 ##' penalty. Use \code{0} (default) for lasso only, \code{1} for ridge only, or
 ##' an intermediate for a combination. This is typically the variable to tune
 ##' on. The shrinkage, controlled by the \code{lambda} parameter, can be left
@@ -21,7 +22,8 @@
 ##' @param ... Sent to \code{\link[glmnet]{cv.glmnet}}.
 ##' @return Fitted GLM.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso fit
+##' @seealso \code{\link{emil}}, \code{\link{emil.predict.glmnet}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     if(is.data.frame(x)){
@@ -84,7 +86,7 @@ emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, 
 }
 
 
-##' Predict using GLM with LASSO or elastic net regularization
+##' Predict using generalized linear model with elastic net regularization
 ##'
 ##' Due to the way \code{\link[glmnet]{glmnet}} is implemented, the regularization alpha
 ##' can not be modified after the model is fitted.
@@ -93,8 +95,14 @@ emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, 
 ##' @param x New data to be predicted.
 ##' @param s Regularization parameter lambda.
 ##' @param ... Sent to \code{\link[glmnet]{predict.glmnet}}.
+##' @return A list with elements:
+##' \itemize{
+##'     \item{\code{pred}: Factor of predicted class memberships.}
+##'     \item{\code{prob}: Data frame of predicted class probabilities.}
+##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso predict
+##' @seealso \code{\link{emil}}, \code{\link{emil.fit.glmnet}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.predict.glmnet <- function(object, x, s, ...){
     nice.require("glmnet", "is required to make precdictions with an elastic net model")

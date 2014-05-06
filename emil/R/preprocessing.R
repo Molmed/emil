@@ -1,5 +1,3 @@
-#TODO: Make sure all functions can handle both matrices and data.frames
-
 ##' Data preprocessing
 ##' 
 ##' These functions are run in \code{\link{batch.model}} just prior to model
@@ -7,7 +5,6 @@
 ##' the entire dataset and 2) they can at the same time apply a transformation
 ##' to pre-process the data for handling missing values, scaling, compression
 ##' etc.
-##'
 ##' They can also be used to modify the form of the data, if required by the
 ##' fitting function, e.g. \code{\link{pre.pamr}} that transposes the dataset
 ##' to make it compatible with the \code{pamr} classification method.
@@ -18,6 +15,7 @@
 ##' preprocessing, to not risk information leakage and biased results!
 ##'
 ##' The imputation functions can also be used outside of the resampling scheme,
+##' see \code{\link{impute}}.
 ##' 
 ##' @return A list with the following components
 ##' \describe{
@@ -27,10 +25,9 @@
 ##'         (TRUE) and discarded (FALSE). This is only set in case of variable
 ##'         selection.}
 ##' }
-##' see \code{\link{impute}}.
 ##'
 ##' @examples
-##' # A splitter that only keeps variables with a classwise mean difference > `d`
+##' # A splitter that only keeps variables with a class-wise mean difference > `d`
 ##' my.split <- function(x, y, fold, d=2){
 ##'     fit.idx <- index.fit(fold)
 ##'     test.idx <- index.test(fold)
@@ -53,7 +50,8 @@
 ##' # without redefining the function
 ##' perf <- evaluate.modeling(proc, x = iris[-5], y = iris$Species,
 ##'                           pre.process = function(...) my.split(..., d = 1.3))
-##' @seealso pre.impute.knn
+##' @seealso \code{\link{emil}}, \code{\link{pre.impute.knn}}
+##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @name pre.process
 {}
 
@@ -63,7 +61,6 @@
 ##' @param fold A logical vector with \code{FALSE} for fitting observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
-##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname pre.process
 ##' @export
 pre.split <- function(x, y, fold){
@@ -77,7 +74,7 @@ pre.center <- function(x, y, fold){
     pre.scale(x, fold, scale=FALSE)
 }
 
-##' @param scale Wether to scale each feature to have standard deviation = 1.
+##' @param scale Whether to scale each feature to have standard deviation = 1.
 ##' @rdname pre.process
 ##' @export
 pre.scale <- function(x, y, fold, scale=TRUE){
@@ -92,7 +89,6 @@ pre.scale <- function(x, y, fold, scale=TRUE){
          test=fun(x[index.test(fold),,drop=FALSE]))
 }
 
-##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @rdname pre.process
 ##' @export
 pre.impute.median <- function(x, y, fold){
@@ -105,16 +101,10 @@ pre.impute.median <- function(x, y, fold){
     list(fit=x[index.fit(fold),,drop=FALSE],
          test=x[index.test(fold),,drop=FALSE])
 }
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @rdname impute
-##' @export
-impute.median <- function(x){
-    pre.impute.median(x, , rep(FALSE, nrow(x)))$fit
-}
 
-##' Foldwise kNN imputation
+##' kNN imputation
 ##' 
-##' Any k-NN method needs to have a distance matrix of the dataset it works on.
+##' Nearest neighbor methods needs to have a distance matrix of the dataset it works on.
 ##' When doing repeated model fittings on subsets of the entire dataset it is
 ##' unnecessary to recalculate it every time, therefore this function requires
 ##' the user to manually calculate it prior to resampling and supply it in a
@@ -125,7 +115,7 @@ impute.median <- function(x){
 ##' @param fold A logical vector with \code{FALSE} for fitting observations,
 ##'   \code{TRUE} for test observations and \code{NA} for observations not 
 ##'   to be included.
-##' @param k Number of nearest neightbors to calculate mean from. Set to < 1 to
+##' @param k Number of nearest neighbors to calculate mean from. Set to < 1 to
 ##'   specify a fraction.
 ##' @param distmat Distance matrix. A matrix, \code{\link{dist}} object or
 ##'   \code{"auto"}. Notice that \code{"auto"} will recalculate the distance
@@ -133,25 +123,19 @@ impute.median <- function(x){
 ##'   \code{x} vary between folds. Otherwise you are just wasting time.
 ##'   
 ##' @examples
-##' \dontrun{
-##' x <- sweep(matrix(rnorm(60*10), 60), 1, rep(0:1/3, each=30))
-##' x[sample(length(x), 10)] <- NA
-##' y <- gl(2,30)
+##' x <- iris[-5]
+##' x[sample(nrow(x), 30), 3] <- NA
 ##' my.dist <- dist(x)
-##' evaluate.modeling(modeling.procedure("lda"), x, y,
+##' evaluate.modeling(modeling.procedure("lda"), x=x, y=iris$Species,
 ##'     pre.process=function(...) pre.impute.knn(..., k=4, my.dist))
-##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 pre.impute.knn <- function(x, y, fold, k=.05, distmat){
-    if(!is.matrix(x))
-        stop("kNN does not work on data with mixed featured types. Therefore as a precausion kNN imputation only accept data in matrix form.")
-
     if(k < 1) k <- max(1, round(.05*nrow(x)))
     if(k > sum(fold > 0, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
 
     if(missing(distmat))
-        stop("You must supply a diastance matrix, see `?pre.impute.knn` for details.")
+        stop("You must supply a distance matrix, see `?pre.impute.knn` for details.")
     if(is.character(distmat) && distmat == "auto"){
         idx <- !is.na(fold)
         d <- as.matrix(dist(x[idx,]))
@@ -181,23 +165,35 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
          test=x[index.test(fold),,drop=FALSE])
 }
 
+
+
 ##' Regular imputation
 ##'
 ##' If you want to impute, build model and predict you should use
 ##' \code{\link{pre.impute.median}} or \code{\link{pre.impute.knn}}.
 ##' This function imputes using all observations
-##' without caring about crossvalidation folds.
+##' without caring about cross-validation folds.
 ##'
-##' For additional information on the parameters see \code{\link{pre.impute.knn}}.
+##' For additional information on the parameters see \code{\link{pre.impute.knn}}
+##' and \code{\link{pre.impute.median}}.
 ##' 
 ##' @param x Dataset.
 ##' @param k Number of nearest neighbors to use.
 ##' @param distmat Distance matrix.
 ##' @return An imputed matrix.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @name impute
+##' @seealso \code{\link{emil}}, \code{\link{pre.process}},
+##'   \code{\link{pre.impute.knn}}, \code{\link{pre.impute.median}}
+{}
 ##' @rdname impute
 ##' @export
 impute.knn <- function(x, k=.05, distmat){
     pre.impute.knn(x, fold=rep(FALSE, nrow(x)), k=k, distmat=distmat)$fit
+}
+##' @rdname impute
+##' @export
+impute.median <- function(x){
+    pre.impute.median(x, , rep(FALSE, nrow(x)))$fit
 }
 

@@ -1,19 +1,22 @@
-##' Variable importance of a fitted classifier.
+##' Variable importance of a fitted model
 ##'
-##' \code{vimp} is a generic function for extracting variable importance from
-##' fitted prediction models. The function invokes particular _methods_ which depend
-##' on the 'class' of the first argument. Note that different _method_ calculates
-##' variable importance in different ways and that they are not directly comparable.
+##' Note that different methods calculates variable importance in different
+##' ways and that they are not directly comparable.
 ##'
-##' @param object Fitted model.
-##' @param ... Sent on to class method.
-##' @return Variable importance vector.
+##' @param object Modeling procedure.
+##' @param model Fitted model.
+##' @param ... Sent on to the procedure's variable importance scoring function.
+##' @return A vector of length p or an p-x-c matrix of variable importance
+##'   scores where p is the number of descriptors and c is the number of classes.
+##' @examples
+##' proc <- modeling.procedure("randomForest")
+##' mod <- fit(proc, x=iris[-5], y=iris$Species)
+##' vimp(proc, mod)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}
 ##' @export
-emil.vimp <- function(object, ...){
-    # if(!any(sapply(sprintf("vimp.%s", class(object)), exists)))
-    #     stop(sprintf("No variable importance measure is implemented for classifier type \"%s\".", class(object$fit)[1]))
-    UseMethod("emil.vimp", object)
+vimp <- function(object, model, ...){
+    object$vimp.fun(model, ...)
 }
 
 

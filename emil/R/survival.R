@@ -8,7 +8,8 @@
 ##' @param ... Sent to class method.
 ##' @return p-value.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso p.value.crr, p.value.survdiff, p.value.cuminc
+##' @seealso \code{\link{p.value.crr}}, \code{\link{p.value.survdiff}},
+##'   \code{\link{p.value.cuminc}}
 ##' @export
 p.value <- function(x, log.p=FALSE, ...) UseMethod("p.value")
 
@@ -23,7 +24,7 @@ p.value <- function(x, log.p=FALSE, ...) UseMethod("p.value")
 ##'   likelihood ratio test.
 ##' @param ... Ignored. Kept for S3 consistency.
 ##' @return p-value.
-##' @seealso p.value
+##' @seealso \code{\link{p.value}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 p.value.coxph <- function(x, log.p=FALSE, test=c("logrank", "wald", "likelihood"), ...){
@@ -44,7 +45,7 @@ p.value.coxph <- function(x, log.p=FALSE, test=c("logrank", "wald", "likelihood"
 ##' @param log.p Whether to return the logarithm of the p-value.
 ##' @param ... Ignored. Kept for S3 consistency.
 ##' @return p-value.
-##' @seealso p.value
+##' @seealso \code{\link{p.value}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 p.value.cuminc <- function(x, log.p=FALSE, ...){
@@ -68,7 +69,7 @@ p.value.cuminc <- function(x, log.p=FALSE, ...){
 ##' # Compare p-values of implementations
 ##' print(x)
 ##' p.value(x)
-##' @seealso p.value
+##' @seealso \code{\link{p.value}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 p.value.crr <- function(x, log.p=FALSE, ...){
@@ -90,7 +91,7 @@ p.value.crr <- function(x, log.p=FALSE, ...){
 ##' # Compare p-values of implementations
 ##' print(x)
 ##' p.value(x)
-##' @seealso p.value
+##' @seealso \code{\link{p.value}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 p.value.survdiff <- function(x, log.p=FALSE, ...){

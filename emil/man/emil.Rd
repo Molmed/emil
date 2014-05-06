@@ -1,18 +1,19 @@
 \name{emil}
 \alias{emil}
-\title{Introduction to the emil package}
+\title{Introduction  to the emil package}
 \description{
 The emil package implements a framework for working with
 predictive modeling problems without information leakage.
 For an overview of its functionality please read the
-original publication (\enc{Bäcklin}{Backlin} 2014).
+original publication included as the package's vignette (to be added).
 }
 
 \section{Central topics and functions}{
     \subsection{Setting up modeling problems}{
         \describe{
             \item{\code{\link{resample}}}{Functions for generating and
-                implementing resampling schemes.}
+                resampling schemes and information on how to implement custom
+                resampling methods.}
             \item{\code{\link{pre.process}}}{Data pre-processing
                 functions.}
             \item{\code{\link{modeling.procedure}}}{Manages
@@ -25,10 +26,14 @@ original publication (\enc{Bäcklin}{Backlin} 2014).
     }
     \subsection{Solving modeling problems}{
         \describe{
-            \item{\code{\link{fit}}}{Fit a model (according to a procedure).}
-            \item{\code{\link{tune}}}{Tune parameters of a procedure.}
             \item{\code{\link{evaluate.modeling}}}{Evaluate
                 the performance of a procedure using resampling.}
+            \item{\code{\link{fit}}}{Fit a model (according to a procedure).}
+            \item{\code{\link{tune}}}{Tune parameters of a procedure.}
+            \item{\code{\link[=predict.modeling.procedure]{predict}}}{Use a
+                fitted model to predict the response of observations.}
+            \item{\code{\link{vimp}}}{Extract variable importance scores of a
+                fitted model.}
             \item{\code{\link{batch.model}}}{A semi-internal function
                 that carries out most of the work. Parameters passed along
                 from the above functions to this function are documented
@@ -42,12 +47,12 @@ original publication (\enc{Bäcklin}{Backlin} 2014).
                 essentially a recursive version of \code{\link{lapply}} and
                 \code{\link{sapply}}.}
             \item{\code{\link{subframe}}}{Extracts results and organize
-                them per observation. Useful when comparing predcitions and
-                properties of individual observations accross folds of a
+                them per observation. Useful when comparing predictions and
+                properties of individual observations across folds of a
                 resampling scheme.}
         }
         No functions for plotting is included in the current version of the
-        package, except for \code{\link{image.reample}}.
+        package, except for \code{\link{image.resample}}.
     }
 }
 
@@ -97,25 +102,26 @@ original publication (\enc{Bäcklin}{Backlin} 2014).
     }
     \subsection{Performance estimation methods}{
         See \code{\link{error.fun}} for information on usage and implementation
-        of custom methods.
+        of custom methods. Since the framework is designed to minimize the error
+        when tuning variables, some measures are negated, e.g. \code{\link{neg.auc}}.
 
         For classification problems:
             \describe{
-                \item{\code{error.rate}}{Fraction of predictions that were
+                \item{\code{\link{error.rate}}}{Fraction of predictions that were
                     incorrect.}
-            \item{\code{weighted.error.rate}}{See its own documentation.}
-            \item{\code{neg.auc}}{Negative area under ROC curve.}
+            \item{\code{\link{weighted.error.rate}}}{See its own documentation.}
+            \item{\code{\link{neg.auc}}}{Negative area under ROC curve.}
             \item{\code{\link{neg.gmpa}}}{Negative geometric mean of class-specific
                 prediction accuracy. Good for problems with imbalanced class sizes.}
         }
         For regression problems:
         \describe{
-            \item{\code{mse}}{Mean square error.}
-            \item{\code{rmse}}{Root mean square error.}
+            \item{\code{\link{mse}}}{Mean square error.}
+            \item{\code{\link{rmse}}}{Root mean square error.}
         }
         For survival analysis problem:
         \describe{
-            \item{\code{neg.harrell.C}}{Negative Harrell's concordance index.}
+            \item{\code{\link{neg.harrell.C}}}{Negative Harrell's concordance index.}
         }
     }
 }

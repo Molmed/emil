@@ -1,15 +1,14 @@
 ##' Setup a modeling procedure
 ##'
-##' A modeling.procedure is an object containing all information necessary to
-##' carry out and evaluate the performance of a predictive modeling task, with
+##' A modeling procedure is an object containing all information necessary to
+##' carry out and evaluate the performance of a predictive modeling task with
 ##' \code{\link{fit}}, \code{\link{tune}}, or \code{\link{evaluate.modeling}}.
-##' 
 ##' To use an out-of-the box algorithm with default values, only the
-##' \code{method} argument needs to be set. See \code{\link{emil.methods}} for a
+##' \code{method} argument needs to be set. See \code{\link{emil}} for a
 ##' list of available methods. To deviate from the defaults, e.g. by tuning
 ##' variables or using a custom function for model fitting, set the appropriate
 ##' parameters as described below.
-##' For a guide on how to implement a custom method see the documenations page
+##' For a guide on how to implement a custom method see the documentaion page
 ##' \code{\link{emil.extensions}}.
 ##' 
 ##' @param method The name of the modeling method. Only needed to identify
@@ -66,7 +65,9 @@
 ##' library(caret)
 ##' modeling.procedure("caret", list(method = "glmnet",
 ##'     trControl = list(trainControl(verboseIter = TRUE, classProbs = TRUE))))
-##' @seealso fit, tune, evaluate.modeling, batch.model, emil.extensions
+##' @seealso \code{\link{emil}}, \code{\link{evaluate.modeling}},
+##'   \code{\link{fit}}, \code{\link{tune}},
+##'   \code{\link[=predict.modeling.procedure]{predict}}, \code{\link{vimp}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 modeling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, predict.fun, vimp.fun){
@@ -136,7 +137,6 @@ print.modeling.procedure <- function(x, ...){
 ##' This function is the core of the framework, carrying out most of the work.
 ##' It fits and evaluates models according to a resampling scheme, and extracts
 ##' variable importance scores.
-##'
 ##' Note that the typical user does not have to call this function
 ##' directly, but should use \code{\link{fit}}, \code{\link{tune}} or
 ##' \code{\link{evaluate.modeling}} instead.
@@ -171,7 +171,7 @@ print.modeling.procedure <- function(x, ...){
 ##'       \item{\code{tune}}{Results from the parameter tuning. See
 ##'           \code{\link{tune}} for details.}
 ##'   }
-##' @seealso modeling.procedure, fit, tune, evaluate.modeling
+##' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 batch.model <- function(proc, x, y,
@@ -226,7 +226,7 @@ batch.model <- function(proc, x, y,
             } else if(is.numeric(y)){
                 mse
             } else {
-                stop("Unknown type of respone vector, cannot guess performance measure. Please set `error.fun` manually.")
+                stop("Unknown type of response vector, cannot guess performance measure. Please set `error.fun` manually.")
             }
         }
     }
@@ -352,6 +352,10 @@ batch.model <- function(proc, x, y,
 
 
 ##' Fit a model
+##'
+##' Fits a model according to a modeling procedure. If the procedure contains
+##' untuned variables they it will automatically be tuned prior to fitting. Note
+##' however that the tuning statistics will not be return.
 ##' 
 ##' @param proc modeling procedure, or list of modeling procedures, as
 ##'   produced by \code{\link{modeling.procedure}}.
@@ -361,7 +365,12 @@ batch.model <- function(proc, x, y,
 ##'   which will pass them on to \code{\link{batch.model}}.
 ##' @param .verbose Whether to print an activity log.
 ##' @return A list of fitted models.
-##' @seealso modeling.procedure, tune, evaluate.modeling, batch.model
+##' @examples
+##' proc <- modeling.procedure("lda")
+##' mod <- fit(proc, x=iris[-5], y=iris$Species)
+##' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}},
+##'   \code{\link{evaluate.modeling}}, \code{\link{tune}},
+##'   \code{\link[=predict.modeling.procedure]{predict}}, \code{\link{vimp}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 fit <- function(proc, x, y, ..., .verbose){
@@ -407,14 +416,24 @@ fit <- function(proc, x, y, ..., .verbose){
 
 
 ##' Tune parameters of modeling procedures
+##'
+##' These functions are rarely needed to be called manually as they are
+##' automatically called by \code{\link{fit}} and \code{\link{evaluate.modeling}}
+##' when needed.
 ##' 
 ##' @param proc modeling procedure, or list of modeling procedures, as
 ##'   produced by \code{\link{modeling.procedure}}.
 ##' @param ... Sent to \code{\link{batch.model}}.
 ##' @param .retune Whether to retune already tuned processes.
 ##' @param .verbose Whether to print an activity log.
-##' @return A list of tuned modeling procedures.
-##' @seealso modeling.procedure, fit, evaluate.modeling, batch.model
+##' @return A tuned modeling procedures or a list of such.
+##' @examples
+##' proc <- modeling.procedure("randomForest", param=list(mtry=1:4))
+##' tuned.proc <- tune(proc, x=iris[-5], y=iris$Species)
+##' mod <- fit(tuned.proc, x=iris[-5], y=iris$Species)
+##' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}},
+##'   \code{\link{evaluate.modeling}}, \code{\link{fit}},
+##'   \code{\link[=predict.modeling.procedure]{predict}}, \code{\link{vimp}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
@@ -502,7 +521,14 @@ detune <- function(proc){
 ##' @param .save See \code{\link{batch.model}}.
 ##' @param .verbose Whether to print an activity log.
 ##' @return A list of fitted models.
-##' @seealso modeling.procedure, fit, tune, batch.model
+##' @examples
+##' proc <- modeling.procedure("lda")
+##' cv <- resample("crossval", y=iris$Species, nfold=5, nrep=3)
+##' perf <- evaluate.modeling(proc, x=iris[-5], y=iris$Species, resample=cv)
+##' err <- subtree(perf, TRUE, "error")
+##' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}},
+##'   \code{\link{fit}}, \code{\link{tune}}
+##'   \code{\link[=predict.modeling.procedure]{predict}}, \code{\link{vimp}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 evaluate.modeling <- function(proc, x, y, ...,
@@ -528,6 +554,27 @@ evaluate.modeling <- function(proc, x, y, ...,
 
     return(batch.model(if(multi.proc) proc else proc[[1]], x, y, ...,
            .save=.save, .verbose=increase(.verbose)))
+}
+
+
+##' Predict the response of unknown observations
+##'
+##' @param object Modeling procedure.
+##' @param model Fitted model.
+##' @param x Data set with observations whose response is to be predicted.
+##' @param ... Sent to the procedure's prediction function.
+##' @return See the documentation of procedure's method.
+##' @examples
+##' proc <- modeling.procedure("lda")
+##' mod <- fit(proc, x=iris[-5], y=iris$Species)
+##' pred <- predict(proc, mod, iris[-5])
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}},
+##'   \code{\link{evaluate.modeling}},\code{\link{fit}}, \code{\link{tune}},
+##'   \code{\link{vimp}}
+##' @export
+predict.modeling.procedure <- function(object, model, x, ...){
+    object$predict.fun(object = model, x = x, ...)
 }
 
 
@@ -559,12 +606,12 @@ listify <- function(proc){
     lapply(proc[[1]][debug.flags], debug)
     proc
 }
-# @rdname listify
+## @rdname listify
 ##' @noRd
 get.debug.flags <- function(proc.list){
     lapply(proc.list, sapply, function(p) is.function(p) && isdebugged(p))
 }
-# @rdname listify
+## @rdname listify
 ##' @noRd
 set.debug.flags <- function(proc.list, debug.flags){
     if(as.integer(R.Version()$major) < 3 || as.numeric(R.Version()$minor) < 1){

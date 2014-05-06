@@ -3,11 +3,11 @@
 ##' A \code{\link[party]{cforest}} is a random forest based on conditional inference
 ##' trees, using the implementation in the \code{party} package.
 ##' These trees can be used for classification, regression or survival
-##' analysis, but only the survival part has been properly tested.
+##' analysis, but only the survival part has been properly tested so far.
 ##' 
 ##' The parameters to \code{\link[party]{cforest}} are set using a
 ##' \code{\link[party]{cforest_control}} object. You should read the documentation
-##' as the default values are choosen for technical reasons, not predictive
+##' as the default values are chosen for technical reasons, not predictive
 ##' performance!
 ##' Pay special attention to \code{mtry} which is set very low by default.
 ##'
@@ -18,8 +18,10 @@
 ##' @param ... Sent to the function specified by \code{ctrl.fun}.
 ##' @return A fitted \code{\link[party]{cforest}} model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{emil.predict.cforest}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
-emil.fit.cforest <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased, ...){
+emil.fit.cforest <- function(x, y, formula=y~., ctrl.fun=cforest_unbiased, ...){
     nice.require("party")
     nice.require("survival")
     if(!is.outcome(y) && !is.Surv(y))
@@ -46,6 +48,8 @@ emil.fit.cforest <- function(x, y, formula=y~., ctrl.fun=party::cforest_unbiased
 ##' @param ... Sent to \code{\link[party]{treeresponse}}·
 ##' @return The predicted chance of survival.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{emil.fit.cforest}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.predict.cforest <- function(object, x, at, ...){
     nice.require("party")

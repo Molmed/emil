@@ -1,5 +1,7 @@
 ##' Fit linear discriminant
 ##'
+##' This is a standalone implementation not based on external packages.
+##'
 ##' @param x Dataset, numerical matrix with observations as rows.
 ##' @param y Class labels, factor.
 ##' @param pi Class probabilities. Defaults to fraction of objects in each
@@ -7,10 +9,9 @@
 ##'   desirable.
 ##' @param use Sent to \code{\link{cov}}.
 ##' @return Fitted linear discriminant.
-##' @examples
-##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso fit
+##' @seealso \code{\link{emil}}, \code{\link{emil.predict.lda}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
     s <- matrix(0, ncol(x), ncol(x))
@@ -32,11 +33,14 @@ emil.fit.lda <- function(x, y, pi=prop.table(table(y)), use="complete.obs") {
 ##' @param object Fitted classifier as produced by \code{\link{batch.model}}.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored, kept for S3 consistency.
-##' @return TODO
-##' @examples
-##' # TODO
+##' @return A list with elements:
+##' \itemize{
+##'     \item{\code{pred}: Factor of predicted class memberships.}
+##'     \item{\code{prob}: Data frame of predicted class probabilities.}
+##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso predict
+##' @seealso \code{\link{emil}}, \code{\link{emil.fit.lda}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.predict.lda <- function(object, x, ...){
     log.disc.func <- sapply(object$responses, function(lev){
@@ -45,6 +49,6 @@ emil.predict.lda <- function(object, x, ...){
     })
     return(list(pred = factor(object$responses[apply(log.disc.func, 1, function(x) c(which.max(x + log(object$pi)),NA)[1])],
                               levels=object$responses),
-                prob = t(apply(log.disc.func, 1, function(x) exp(x)*object$pi/sum(exp(x)*object$pi)))))
+                prob = as.data.frame(t(apply(log.disc.func, 1, function(x) exp(x)*object$pi/sum(exp(x)*object$pi))))))
 }
 

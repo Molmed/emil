@@ -5,8 +5,8 @@
 ##' Objects of this class are internally stored as data frames but should be
 ##' thought of as vectors and can be treated as such through out.
 ##' 
-##' @param time Time points at which an event ocurred.
-##' @param event The type of event that ocurred. \code{NA} codes for no event.
+##' @param time Time points at which an event occurred.
+##' @param event The type of event that occurred. \code{NA} codes for no event.
 ##' @param levels Which levels of event to keep. Defaults to all unique
 ##'   values of \code{event}.
 ##' @param censor What values of event should be considered censoring.
@@ -15,7 +15,8 @@
 ##' @return A vector of outcomes.
 ##' @examples
 ##' outcome(runif(15), sample(c(NA, "Mechanical failure", "Out of fuel"), 15, TRUE))
-##' @seealso factor.events, integer.events, plot.outcome.
+##' @seealso \code{\link{factor.events}}, \code{\link{integer.events}},
+##'   \code{\link{plot.outcome}}.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 outcome <- function(time, event, levels, censor){
@@ -117,11 +118,11 @@ as.Surv.Surv <- function(x, ...) identity(x)
 ##'
 ##' @param x Outcome vector.
 ##' @param main Surv only supports one event type. This argument controls
-##'   which type that will be kept, all others are discarded as censorings.
-##' @param censor A vector of event types to convert to censorings.
+##'   which type that will be kept, all others are considered censoring.
+##' @param censor A vector of event types to consider censoring.
 ##' @param ... Ignored, kept for S3 consistency.
 ##' @return A vector of class \code{\link{Surv}}. All event types other than
-##'   the main event are discarded as censorings.
+##'   the main event are considered censoring.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 as.Surv.outcome <- function(x, main=1, censor=NA, ...){
@@ -157,13 +158,13 @@ as.character.outcome <- function(x, ...) {
 ##' Get events on factor form
 ##'
 ##' By default all events are returned regardless of when they occurred. By
-##' setting \code{time} only the events that has occured up until then will be
+##' setting \code{time} only the events that has occurred up until then will be
 ##' returned, and cases with shorter follow-up times and no event will be marked
 ##' as censored.
 ##'
 ##' @param x Outcome vector.
 ##' @param time Time point to evaluate at.
-##' @param censor.label What to label the abscense of an event with.
+##' @param censor.label What to label the absence of an event with.
 ##' @param keep Event types to keep, defaults to all.
 ##' @return A factor of events.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
@@ -175,7 +176,7 @@ factor.events <- function(x, time, censor.label="no event", keep){
     } else {
         keep <- c(censor.label, keep)
     }
-    # If a time has been specified clear all events occurng after that time
+    # If a time has been specified clear all events occurring after that time
     if(!missing(time)) events[!is.na(x$event) & x$time > time] <- NA
     # Replace "no event" with the no event level
     events[is.na(events)] <- censor.label
@@ -293,7 +294,7 @@ length.outcome <- nrow
 ##' @param segments Whether to draw horizontal segments.
 ##' @param flip Flip the plot to show time on y.
 ##' @param legendpos Position of legend, see \code{\link{legend}}. Set to NA or
-##'   NULL to supress legend.
+##'   NULL to suppress legend.
 ##' @param ... Sent to \code{\link{plot}}.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export

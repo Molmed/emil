@@ -1,15 +1,16 @@
 ##' Fit quadratic discriminant.
 ##'
+##' This is a standalone implementation not based on external packages.
+##'
 ##' @param x Dataset, numerical matrix with observations as rows.
 ##' @param y Class labels, factor.
 ##' @param pi Class probabilities. Defaults to fraction of objects in each class.
 ##'   In case of heavily unbalanced classes this might not be desirable. 
 ##' @param use "complete.obs" or "everything" 
 ##' @return Fitted QDA.
-##' @examples
-##' # TODO
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso fit
+##' @seealso \code{\link{emil}}, \code{\link{emil.predict.qda}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
     fit <- list(responses=levels(y),
@@ -29,11 +30,14 @@ emil.fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
 ##' @param object Fitted classifier.
 ##' @param x Dataset of observations to be classified.
 ##' @param ... Ignored
-##' @return TODO
-##' @examples
-##' # TODO
+##' @return A list with elements:
+##' \itemize{
+##'     \item{\code{pred}: Factor of predicted class memberships.}
+##'     \item{\code{prob}: Data frame of predicted class probabilities.}
+##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso predict
+##' @seealso \code{\link{emil}}, \code{\link{emil.fit.qda}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.predict.qda <- function(object, x, ...){
     log.disc.func <- sapply(object$responses, function(lev){

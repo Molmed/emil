@@ -16,6 +16,7 @@
 ##' @return A list with fitting and testing sets, formatted the way pamr wants
 ##'   them.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{pre.process}}
 ##' @export
 pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
     sets <- pre.process(x, y, fold, ...)
@@ -33,7 +34,7 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
 ##' Fit nearest shrunken centroids model.
 ##'
 ##' Wrapped version of the \code{pamr} package implementation. Note that
-##' this function uses internal crossvalidation for determining the value
+##' this function uses internal cross-validation for determining the value
 ##' of the shrinkage threshold.
 ##'
 ##' @param x Dataset, numerical matrix with observations as rows.
@@ -42,9 +43,9 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
 ##' @param slim.fit Set to \code{TRUE} if you want to return the fitted
 ##'   classifier but discard pamr's \code{cv.objects}, which can be large.
 ##'   memory efficient. This means that the element \code{cv$cv.objects} 
-##'   containing the cross validated fits will be dropped from the returned
+##'   containing the cross-validated fits will be dropped from the returned
 ##'   classifier.
-##' @param cv Cross validation scheme for shrinkage tuning. It should
+##' @param cv Cross-validation scheme for shrinkage tuning. It should
 ##'   be supplied on one of the following forms:
 ##'   \itemize{
 ##'     \item{Resampling scheme produced with \code{\link{resample.crossval}}
@@ -53,15 +54,14 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
 ##'     \item{\code{NA}, \code{NULL} or \code{FALSE} to suppress shrinkage tuning.}
 ##'   }
 ##' @param threshold Shrinkage thresholds to try (referred to as 'lambda' in the
-##'   litterature). Chosen and tuned automatically by default, but must be given
+##'   literature). Chosen and tuned automatically by default, but must be given
 ##'   by the user if not tuned (see the \code{cv} argument) if you wish to use
 ##'   it with \code{\link{batch.model}}.
 ##' @param ... Sent to \code{\link[pamr]{pamr.train}}.
-##' @return Fitted LDA or QDA.
-##' @examples
-##' # TODO 
+##' @return Fitted pamr classifier.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso fit
+##' @seealso \code{\link{emil}}, \code{\link{emil.predict.pamr}},
+##'   \code{\link{emil.vimp.pamr}}, \code{\link{modeling.procedure}}
 ##' @export
 emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
     nice.require("pamr")
@@ -72,7 +72,6 @@ emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FAL
     rm(y)
     if(missing(error.fun)){
         error.fun.frame <- sapply(sys.frames(), function(env){
-            # Dirty hack! TODO: Make nicer
             tryCatch({
                 ef <- get("error.fun", envir=env)
                 TRUE
@@ -90,30 +89,33 @@ emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FAL
             }
         }
     }
-    #warn.status <- unlist(options("warn"))
     invisible(capture.output(
         tryCatch({
-            fit <- pamr::pamr.train(x, ...)
-            if(missing(cv)){
-                fit.cv <- pamr::pamr.cv(fit, x)
-            } else if(is.null(cv) || (length(cv) == 1 && (is.na(cv) || cv == FALSE))) {
-                fit.cv <- NULL
-            } else {
-                if(!inherits(cv, c("crossval", "holdout")))
-                    cv <- resample("crossval", x$y, nrep=cv$nrep, nfold=cv$nfold)
-                if(nrow(cv) != length(x$y))
-                    stop("Resampling set for shrinkage selection does not match dataset in size.")
-                fit.cv <- pamr::pamr.cv(fit, x,
-                    folds=lapply(cv, function(x) which(x == 0)))
-                #options(warn = warn.status)
-                if(slim.fit){
-                    fit.cv$cv.objects <- NULL
+            fit <- pamr::pamr.train(x, threshold=threshold, ...)
+            if(missing(threshold) || length(threshold) > 1){
+                if(missing(cv)){
+                    fit.cv <- pamr::pamr.cv(fit, x)
+                } else if(is.blank(cv)){
+                    stop("You cannot skip cross-validation when multiple thresholds are given.")
+                } else {
+                    if(!inherits(cv, c("crossval", "holdout")))
+                        cv <- resample("crossval", x$y, nrep=cv$nrep, nfold=cv$nfold)
+                    if(nrow(cv) != length(x$y))
+                        stop("Resampling set for shrinkage selection does not match dataset in size.")
+                    fit.cv <- pamr::pamr.cv(fit, x,
+                        folds=lapply(cv, function(x) which(x == 0)))
+                    if(slim.fit){
+                        fit.cv$cv.objects <- NULL
+                    }
+                    fit.cv$error <- sapply(seq_along(fit.cv$thres), function(i)
+                        error.fun(fit.cv$y, list(pred=fit.cv$yhat[[i]], prob=fit.cv$prob[,,i])))
                 }
-                fit.cv$error <- sapply(seq_along(fit.cv$thres), function(i)
-                    error.fun(fit.cv$y, list(pred=fit.cv$yhat[[i]], prob=fit.cv$prob[,,i])))
+            } else {
+                if(!missing(cv) && !is.blank(cv))
+                    warn_once("pamr_ignoring_cv", "Ignoring threshold tuning since only one threshold value was given.")
+                fit.cv <- NULL
             }
         }, error=function(...){
-            #options(warn = warn.status)
             stop(...)
         })
     ))
@@ -142,11 +144,14 @@ emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FAL
 ##'       performance for example.}
 ##'   }
 ##' @param ... Ignored
-##' @return TODO
-##' @examples
-##' # TODO
+##' @return A list with elements:
+##' \itemize{
+##'     \item{\code{pred}: Factor of predicted class memberships.}
+##'     \item{\code{prob}: Data frame of predicted class probabilities.}
+##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso predict
+##' @seealso \code{\link{emil}}, \code{\link{emil.fit.pamr}},
+##'   \code{\link{emil.vimp.pamr}}, \code{\link{modeling.procedure}}
 ##' @export
 emil.predict.pamr <- function(object, x, threshold, ...){
     nice.require("pamr")
@@ -178,16 +183,19 @@ emil.predict.pamr <- function(object, x, threshold, ...){
 ##' Variable importance of nearest shrunken centroids.
 ##' 
 ##' Calculated as the absolute difference between the overall centroid and a
-##' classwise shrunken centroid (which is the same for both classes except sign).
+##' class-wise shrunken centroid (which is the same for both classes except sign).
 ##'
 ##' In case multiple thresholds give the same error the largest one is chosen
 ##' (i.e. the one keeping the fewest features).
 ##' 
-##' @param object Fitted NSC classifier
+##' @param object Fitted pamr classifier
 ##' @param threshold What threshold to use for classification.
 ##' @param ... Ignored.
-##' @return An importance vector with elements corresponding to variables.
+##' @return A matrix of variable importance scores where the rows represent
+##'   variables and the columns represent classes.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{emil.fit.pamr}},
+##'   \code{\link{emil.predict.pamr}}, \code{\link{modeling.procedure}}
 ##' @export
 emil.vimp.pamr <- function(object, ..., threshold){
     nice.require("pamr")

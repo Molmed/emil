@@ -4,26 +4,33 @@
 ##' estimate the performance of models. These are defined by resampling
 ##' schemes, which are data frames where each column corresponds to a
 ##' division of the data set into mutually exclusive training and test sets.
-##' Repeated hold out and cross validation are two methods to create such
+##' Repeated hold out and cross-validation are two methods to create such
 ##' schemes.
 ##'
-##' Note that when setting up analyses, the user should not call
-##' \code{resmaple.holdout} or \code{resameple.crossval} directly, as
+##' Note that when setting up analyzes, the user should not call
+##' \code{resample.holdout} or \code{resample.crossval} directly, as
 ##' \code{resample} performs additional necessary processing of the scheme.
 ##'
-##' Resampling scheme can be visualized in a human digestable form with the
-##' \code{\link{image}} function.
+##' Resampling scheme can be visualized in a human digestible form with the
+##' \code{\link[=image.resample]{image}} function.
 ##' 
-##' To implement a custom resampling scheme create a function called
-##' \code{resample.myMethod} and it will be callable by
-##' \code{resample("myMethod", ...)}. The return value of the function must
-##' be a list of two elements:
+##' Functions for generating custom resampling schemes should be implemented as
+##' follows and then called by \code{resample("myMethod", ...)}:
+##'
+##' \code{resample.myMethod <- function(y, ..., subset)}
+##' \describe{
+##'     \item{\code{y}}{Response vector.}
+##'     \item{\code{...}}{Method specific attributes.}
+##'     \item{\code{subset}}{Indexes of observations to be excluded for the
+##'         resampling.}
+##' }
+##' The function should return a list of the following elements:
 ##' \describe{
 ##'     \item{\code{folds}}{A data frame with the folds of the scheme that
 ##'         conforms to the description in the 'Value' section below.}
 ##'     \item{\code{param}}{A list with the parameters necessary to generate
 ##'         such a resampling scheme. These are needed when creating subschemes
-##'         needed for parameter tuning.}
+##'         needed for parameter tuning, see \code{\link{subresample}}.}
 ##' }
 ##' 
 ##' @param method The resampling method to use, e.g. \code{"holdout"} or
@@ -39,14 +46,15 @@
 ##' @param subset Which objects in \code{y} that are to be divided and which
 ##'   that are not to be part of neither set.
 ##'   If \code{subset} is a resampling scheme, a list of inner
-##'   cross validation schemes will be returned.
+##'   cross-validation schemes will be returned.
 ##' @return A data frame defining a resampling scheme. \code{TRUE} or a positive integer
 ##'   codes for training set and \code{FALSE} or \code{0} codes for test set.
 ##'   Positive integers > 1 code for multiple copies of an observation in the
 ##'   training set. \code{NA} codes for neither training nor test set and is
 ##'   used to exclude observations from the analysis altogether.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso subresample, image.resample
+##' @seealso \code{\link{emil}}, \code{\link{subresample}},
+##'   \code{\link{image.resample}}, \code{\link{index.fit}}
 ##' @export
 resample <- function(method, ...){
     x <- get(sprintf("resample.%s", method))(...)
@@ -63,19 +71,19 @@ resample <- function(method, ...){
 ##' Generate resampling subschemes
 ##'
 ##' A subscheme is a resampling scheme that only includes observations in the
-##' training set of an original scheme, called prototype. This function
+##' training set of an original scheme. This function
 ##' automatically fetches the type and parameters of the prototype and use them
 ##' to generate the subscheme.
 ##'
 ##' @param fold A resampling scheme or fold to use to define the sub scheme(s).
-##' @param y The obseravations used to create the resampling scheme. See
+##' @param y The observations used to create the resampling scheme. See
 ##'   \code{\link{resample}} for details.
 ##' @return A resampling scheme.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @examples
 ##' cv <- resample("holdout", y=12, frac=1/4, nfold=3)
 ##' inner.cv <- subresample(cv, y=12)
-##' @seealso resample
+##' @seealso \code{\link{emil}}, \code{\link{resample}}
 ##' @export
 subresample <- function(fold, y){
     if(is.data.frame(fold)){
@@ -90,21 +98,18 @@ subresample <- function(fold, y){
 }
 
 
-##' Convert a fold to row indexes of training or test set
-##'
-##' Get training set indexes.
+##' Convert a fold to row indexes of fittdng or test set
 ##'
 ##' @param fold A fold of a resampling scheme.
 ##' @return An integer vector of row indexes.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{resample}}
 ##' @export
-##' @rdname index
 index.fit <- function(fold){
     rep(seq_along(fold), na.fill(fold, 0))
 }
-##' Get test set indexes.
-##' 
-##' @rdname index
+##' @rdname index.fit
+##' @aliases index.test
 ##' @export
 index.test <- function(fold){
     which(fold %in% 0)
@@ -139,7 +144,7 @@ resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), su
 ##' @examples
 ##' y <- factor(runif(60) >= .5)
 ##' cv <- resample("crossval", y)
-##' image(cv, main="Cross validation scheme")
+##' image(cv, main="Cross-validation scheme")
 ##' @rdname resample
 ##' @export
 resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=TRUE){
@@ -175,6 +180,8 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
 
 
 ##' Visualize resampling scheme
+##'
+##' Class specific extension to \code{\link{image}}.
 ##' 
 ##' @param x Resampling scheme, as returned by \code{\link{resample}}.
 ##' @param col Color palette matching the values of \code{x}.
@@ -185,6 +192,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
 ##' @examples
 ##' image(resample("holdout", 60, frac=1/3, nfold=20))
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{resample}}
 ##' @export
 image.resample <- function(x, col, ...){
     x <- as.matrix(x)
@@ -216,9 +224,9 @@ image.resample <- function(x, col, ...){
 }
 
 
-##' Visualize cross validation scheme
+##' Visualize cross-validation scheme
 ##' 
-##' @param x Cross validation scheme, as returned by \code{\link{resample.crossval}}.
+##' @param x cross-validation scheme, as returned by \code{\link{resample.crossval}}.
 ##' @param col Color palette. Can also be the response vector used to create the
 ##'   scheme for automatic coloring.
 ##' @param ... Ignored, kept for S3 consistency.

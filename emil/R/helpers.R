@@ -23,7 +23,7 @@ is.blank <- function(x, false.triggers=FALSE){
 
 ##' Replace values with something else
 ##'
-##' @param x Variable containg NAs.
+##' @param x Variable containing NAs.
 ##' @param pattern The values in \code{x} to be replaced. Can also be a
 ##'   function.
 ##' @param replacement The value which is to replace the values matching
@@ -86,8 +86,8 @@ nice.require <- function(pkg, reason="is required"){
 ##' This function can only be used to extract data, not to assign.
 ##' 
 ##' @param x List of lists.
-##' @param i Indices to extract on the first level of the tree.
-##' @param ... Indices to extract on subsequent levels.
+##' @param i Indexes to extract on the first level of the tree.
+##' @param ... Indexes to extract on subsequent levels.
 ##' @param simplify Whether to collapse lists of length one (\code{TRUE}) or
 ##'   preserve the original tree structure (\code{FALSE}).
 ##' @return A subset of the list tree.
@@ -96,7 +96,7 @@ nice.require <- function(pkg, reason="is required"){
 ##' ll <- list(l, l, l, l)
 ##' lll <- list(cat=ll, mouse=ll, escalator=ll)
 ##' subtree(lll, 1:2, TRUE, "b")
-##' @seealso subframe
+##' @seealso \code{\link{subframe}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 subtree <- function(x, i, ..., simplify=TRUE){
@@ -134,16 +134,15 @@ subtree <- function(x, i, ..., simplify=TRUE){
 ##' the resampling.
 ##' 
 ##' @param x Performance evaluation results.
-##' @param ... Indices specify what to extract, sent to \code{\link{subtree}}.
-##' @param resample Resampling scheme used to carry out a peformance
+##' @param ... Indexes specify what to extract, sent to \code{\link{subtree}}.
+##' @param resample Resampling scheme used to carry out a performance
 ##'   evaluation.
 ##' @examples
-##' \dontrun{
-##' cv <- resample("crossval", y, nfold=5, nrep=3)
-##' perf <- evaluate.modeling(proc, x, y, resample=cv)
+##' proc <- modeling.procedure("lda")
+##' cv <- resample("crossval", y=iris$Species, nfold=5, nrep=3)
+##' perf <- evaluate.modeling(proc, x=iris[-5], y=iris$Species, resample=cv)
 ##' subframe(perf, TRUE, "pred", "prob", 1, resample=cv)
-##' }
-##' @seealso subtree
+##' @seealso \code{\link{subtree}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 subframe <- function(x, ..., resample){
@@ -156,11 +155,11 @@ subframe <- function(x, ..., resample){
         x
     }
     st <- flatten(subtree(x, ..., simplify=FALSE))
-    if(any(sapply(st, length) != sapply(resample, sum, na.rm=TRUE)))
+    if(any(sapply(st, length) != sapply(resample, function(x) sum(x %in% 0))))
         stop("Data and resample does not match.")
 
     as.data.frame(mapply(
-        function(x, fold) x[ave(fold, fold, FUN=seq_along)*fill(fold, FALSE, NA)],
+        function(x, fold) x[ave(fold, fold, FUN=seq_along)*fill(!fold, FALSE, NA)],
         st, resample, SIMPLIFY=FALSE))
 }
 

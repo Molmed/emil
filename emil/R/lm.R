@@ -8,6 +8,8 @@
 ##' @param ... Sent to \code{\link{lm}}.
 ##' @return Fitted linear model.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @seealso \code{\link{emil}}, \code{\link{emil.predict.lm}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.fit.lm <- function(x, y, formula=y~., ...){
     df <- data.frame(y, x)
@@ -33,9 +35,13 @@ emil.fit.lm <- function(x, y, formula=y~., ...){
 ##' @param object Fitted classifier produced by \code{\link{emil.fit.lm}}.
 ##' @param x Dataset to be predicted upon.
 ##' @param ... Sent to \code{\link{predict.lm}}
-##' @return A prediction list.
+##' @return A list with elements:
+##' \itemize{
+##'     \item{\code{pred}: Vector of predicted response.}
+##' }
 ##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso predict
+##' @seealso \code{\link{emil}}, \code{\link{emil.fit.lm}},
+##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.predict.lm <- function(object, x, ...){
     list(pred = predict.lm(object, data.frame(y=NA, x), ...))

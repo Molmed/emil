@@ -11,7 +11,7 @@ test_that("repeated holdout", {
     expect_true(all(sapply(ho.tab[-1], all.equal, ho.tab[[1]])))
 })
 
-test_that("cross validation", {
+test_that("cross-validation", {
     y <- factor(rep(1:2, c(10, 40)))
     cv <- resample("crossval", y, nfold=5, nrep=3)
     expect_that(cv, is_a("crossval"))
