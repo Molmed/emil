@@ -1,0 +1,90 @@
+##' Add vertical or horizontal lines to a plot
+##'
+##' @param x Coordinates of vertical lines.
+##' @param lend Line ending style, see \code{\link{par}}.
+##' @param ... Sent to \code{\link{segments}}.
+##' @examples
+##' plot(0:10, 0:10, type="n")
+##' hlines(0:4*2.5, col="#dddddd")
+##' points(0:10, 0:10)
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+vlines <- function(x, lend=1, ...)
+    segments(x, par("usr")[3], x, par("usr")[4], lend=lend, ...)
+
+##' @param y Coordinates of horizontal lines.
+##' @rdname vlines
+##' @export
+
+hlines <- function(y, lend=1, ...)
+    segments(par("usr")[1], y, par("usr")[2], y, lend=lend, ...)
+
+##' Plots an axis the way an axis should be plotted.
+##'
+##' @param ... Sent to \code{\link{axis}}.
+##' @param las Rotation of axis labels. Always horizontal by default.
+##' @param lwd Width of the line drawn along the plot area. Omitted by default
+##'   since it overlaps with \code{\link{box}} and causes it to look thicker
+##'   where the axis is.
+##' @param lwd.ticks Width of the tick lines. These are kept by default.
+##' @param lend Line endings, see \code{\link{par}}.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+nice.axis <- function(..., las=1, lwd=0, lwd.ticks=par("lwd"), lend=2){
+    axis(..., las=las, lwd=0, lwd.ticks=lwd.ticks, lend=1)
+    if(lwd){
+        # Plot the line along the axis
+        args <- c(list(...), list(lwd=lwd, lwd.ticks=0, lend=lend))
+        args$labels <- FALSE
+        do.call(axis, args)
+    }
+}
+
+##' Plots a box around a plot
+##'
+##' @param lend Line ending style, see \code{\link{par}}. Defaults to square.
+##' @param ljoin Line joint style, see \code{\link{par}}. Defaults to mitre,
+##'   i.e. 90 degree corners in this case.
+##' @param ... Sent to \code{\link{box}}.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+nice.box <- function(lend=2, ljoin=1, ...) box(lend=lend, ljoin=ljoin, ...)
+
+##' Get class specific color palettes
+##' 
+##' @param y Factor of class memberships.
+##' @param s Saturation. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
+##'   increases, and \code{-1 <= s < 0} decreases.
+##' @param v Value. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
+##'   increases, and \code{-1 <= s < 0} decreases.
+##' @param alpha Transparency.
+##' @param levels If \code{TRUE} a palette with one color per level of \code{y}
+##'   is returned. If \code{FALSE} one color per element in \code{y} is returned.
+##' @param col Color palette with one color per class or the name of the color
+##'   brewer palette to use, see \code{name} argument of \code{\link{brewer.pal}}
+##'   for a list of possible values.
+##' @return A character vector of hex colors.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+get.class.colors <- function(y, s, v, alpha, levels=FALSE, col="Set1"){
+    nice.require("RColorBrewer")
+    nice.require("colorspace")
+
+    if(length(col) == 1)
+        suppressWarnings(col <- brewer.pal(1000, pal))
+    if (length(levels(y)) > length(col)) 
+        warning("Too few colors to assign unique ones to each class.")
+    col <- rep(col, ceiling(length(levels(y))/length(col)))[seq_along(levels(y))]
+    col <- data.frame(t(rgb2hsv(t(hex2RGB(col)@coords), maxColorValue=1)))
+    if(!missing(alpha)) col$alpha <- alpha
+
+    if(!missing(s))
+        col$s <- if(s < 0) col$s + s*col$s else col$s + s*(1-col$s)
+    if(!missing(v))
+        col$v <- if(v < 0) col$v + v*col$v else col$v + v*(1-col$v)
+    col[T] <- lapply(col, function(x) pmin(1, pmax(0, x)))
+    
+    col <- do.call(hsv, col)
+    if(levels) col else col[as.integer(y)]
+}
+

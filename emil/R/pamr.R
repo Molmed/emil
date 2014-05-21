@@ -48,7 +48,7 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
 ##' @param cv Cross-validation scheme for shrinkage tuning. It should
 ##'   be supplied on one of the following forms:
 ##'   \itemize{
-##'     \item{Resampling scheme produced with \code{\link{resample.crossval}}
+##'     \item{Resampling scheme produced with \code{\link{resample}}
 ##'       or \code{\link{resample.holdout}}.}
 ##'     \item{List with elements named \code{nrep} and \code{nfold}}
 ##'     \item{\code{NA}, \code{NULL} or \code{FALSE} to suppress shrinkage tuning.}
@@ -58,12 +58,16 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
 ##'   by the user if not tuned (see the \code{cv} argument) if you wish to use
 ##'   it with \code{\link{batch.model}}.
 ##' @param ... Sent to \code{\link[pamr]{pamr.train}}.
+##' @param thres.fun Threshold selection function. Note that it is not uncommon
+##'   that several thresholds will result in the same tuning error.
 ##' @return Fitted pamr classifier.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso \code{\link{emil}}, \code{\link{emil.predict.pamr}},
 ##'   \code{\link{emil.vimp.pamr}}, \code{\link{modeling.procedure}}
 ##' @export
-emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FALSE){
+emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ...,
+                          thres.fun = function(thr, err) median(thr[err == min(err)]),
+                          slim.fit=FALSE){
     nice.require("pamr")
     if(!(is.list(x) && all(c("x", "y") %in% names(x)) && ncol(x$x) == length(x$y))){
         warn.once("pamr_preprocess", "Please use the `pre.pamr` function for pre-processing data for pamr.")
@@ -107,19 +111,19 @@ emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FAL
                     if(slim.fit){
                         fit.cv$cv.objects <- NULL
                     }
-                    fit.cv$error <- sapply(seq_along(fit.cv$thres), function(i)
+                    fit.cv$error <- sapply(seq_along(fit.cv$threshold), function(i)
                         error.fun(fit.cv$y, list(pred=fit.cv$yhat[[i]], prob=fit.cv$prob[,,i])))
                 }
             } else {
                 if(!missing(cv) && !is.blank(cv))
-                    warn_once("pamr_ignoring_cv", "Ignoring threshold tuning since only one threshold value was given.")
+                    warn.once("pamr_ignoring_cv", "Ignoring threshold tuning since only one threshold value was given.")
                 fit.cv <- NULL
             }
         }, error=function(...){
             stop(...)
         })
     ))
-    return(list(fit=fit, cv=fit.cv))
+    return(list(fit=fit, cv=fit.cv, thres.fun=thres.fun))
 }
 
 
@@ -130,20 +134,11 @@ emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FAL
 ##'
 ##' @param object Fitted classifier.
 ##' @param x Dataset of observations to be classified.
-##' @param threshold What threshold to use for classification. Can be supplied
-##'   in the following ways:
-##'   \describe{
-##'     \item{Numeric scalar}{A predefined value. In this case you also want to
-##'       run \code{\link{emil.fit.pamr}} with \code{cv=FALSE} to not do any
-##'       unnecessary tuning.}
-##'     \item{unset}{Uses the threshold that got the best tuning performance. In
-##'       case of ties, the largest threshold is used, i.e. resulting in the
-##'       smallest number of variables.}
-##'     \item{function}{A function for resolving ties in the tuning. Set it to
-##'       \code{\link{min}} to use the smallest threshold that got the best tuning
-##'       performance for example.}
-##'   }
-##' @param ... Ignored
+##' @param threshold Threshold to use for classification. This argument is only
+##'   needed if you want to override the value set during model fitting.
+##' @param thres.fun Threshold selection function. Only needed if you want to
+##'   override the function set during model fitting.
+##' @param ... Sent to \code{\link[pamr]{pamr.predict}}.
 ##' @return A list with elements:
 ##' \itemize{
 ##'     \item{\code{pred}: Factor of predicted class memberships.}
@@ -153,7 +148,7 @@ emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ..., slim.fit=FAL
 ##' @seealso \code{\link{emil}}, \code{\link{emil.fit.pamr}},
 ##'   \code{\link{emil.vimp.pamr}}, \code{\link{modeling.procedure}}
 ##' @export
-emil.predict.pamr <- function(object, x, threshold, ...){
+emil.predict.pamr <- function(object, x, threshold, thres.fun, ...){
     nice.require("pamr")
     if(nrow(x) != nrow(object$fit$centroids)){
         if(ncol(x) != nrow(object$fit$centroids))
@@ -161,22 +156,17 @@ emil.predict.pamr <- function(object, x, threshold, ...){
         x <- t(x)
     }
     if(missing(threshold)){
-        if(is.null(object$cv)){
-            if(length(object$fit$threshold) == 1){
-                thres <- object$fit$threshold
-            } else {
-                stop("The shrinkage parameter `threshold` was neither tuned during the fitting nor given explicitly.")
-            }
+        if(length(object$fit$threshold) == 1){
+            threshold <- object$fit$threshold
         } else {
-            thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+            if(missing(thres.fun)){
+                thres.fun <- object$thres.fun
+            }
+            threshold <- thres.fun(object$cv$threshold, object$cv$error)
         }
-    } else if(is.function(threshold)){
-        thres <- threshold(object$fit$threshold[object$cv$error == min(object$cv$error)])
     }
-
-    rev(object$fit$threshold)[which.min(rev(object$cv$error))]
-    list(pred=pamr::pamr.predict(object$fit, x, type="class", threshold=thres, ...),
-         prob=pamr::pamr.predict(object$fit, x, type="posterior", threshold=thres, ...))
+    list(pred=pamr::pamr.predict(object$fit, x, type="class", threshold=threshold, ...),
+         prob=pamr::pamr.predict(object$fit, x, type="posterior", threshold=threshold, ...))
 }
 
 
@@ -189,28 +179,30 @@ emil.predict.pamr <- function(object, x, threshold, ...){
 ##' (i.e. the one keeping the fewest features).
 ##' 
 ##' @param object Fitted pamr classifier
-##' @param threshold What threshold to use for classification.
-##' @param ... Ignored.
+##' @param threshold Threshold to use for classification. This argument is only
+##'   needed if you want to override the value set during model fitting.
+##' @param thres.fun Threshold selection function. Only needed if you want to
+##'   override the function set during model fitting.
+##' @param ... Sent to \code{\link[pamr]{pamr.predict}}.
 ##' @return A matrix of variable importance scores where the rows represent
 ##'   variables and the columns represent classes.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso \code{\link{emil}}, \code{\link{emil.fit.pamr}},
 ##'   \code{\link{emil.predict.pamr}}, \code{\link{modeling.procedure}}
 ##' @export
-emil.vimp.pamr <- function(object, ..., threshold){
+emil.vimp.pamr <- function(object, threshold, thres.fun, ...){
     nice.require("pamr")
     if(missing(threshold)){
-        if(is.null(object$cv)){
-            if(length(object$fit$threshold) == 1){
-                thres <- object$fit$threshold
-            } else {
-                stop("The shrinkage parameter `threshold` was neither tuned during the fitting nor given explicitly.")
-            }
+        if(length(object$fit$threshold) == 1){
+            threshold <- object$fit$threshold
         } else {
-            thres <- max(object$fit$threshold[object$cv$error == min(object$cv$error)])
+            if(missing(thres.fun)){
+                thres.fun <- object$thres.fun
+            }
+            threshold <- thres.fun(object$cv$threshold, object$cv$error)
         }
     }
-    cen <- (pamr::pamr.predict(object$fit, , thres, type="centroid") -
+    cen <- (pamr::pamr.predict(object$fit, , threshold, type="centroid", ...) -
             object$fit$centroid.overall) / object$fit$sd
     names(cen) <- object$descriptors
     return(cen)

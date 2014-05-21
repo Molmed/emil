@@ -1,35 +1,28 @@
 ##' Fit quadratic discriminant.
 ##'
-##' This is a standalone implementation not based on external packages.
+##' Wrapper for the MASS package implementation.
 ##'
 ##' @param x Dataset, numerical matrix with observations as rows.
 ##' @param y Class labels, factor.
-##' @param pi Class probabilities. Defaults to fraction of objects in each class.
-##'   In case of heavily unbalanced classes this might not be desirable. 
-##' @param use "complete.obs" or "everything" 
+##' @param ... Sent to \code{\link{qda}}.
 ##' @return Fitted QDA.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso \code{\link{emil}}, \code{\link{emil.predict.qda}},
 ##'   \code{\link{modeling.procedure}}
 ##' @export
-emil.fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
-    fit <- list(responses=levels(y),
-                pi = pi,
-                mu = matrix(sapply(levels(y), function(lev)
-                                   apply(x[y==lev,, drop=FALSE], 2, mean)),
-                            ncol(x), length(levels(y)),
-                            dimnames=list(NULL, levels(y))),
-                S = lapply(levels(y), function(lev) cov(x[y==lev,, drop=F], use=use)))
-    names(fit$S) <- names(fit$pi)
-    fit
+emil.fit.qda <- function(x, y, ...){
+    nice.require("MASS")
+    qda(x, y, ...)
 }
 
 
 ##' Prediction using already trained classifier.
 ##'
-##' @param object Fitted classifier.
+##' Wrapper for the MASS package implementation.
+##'
+##' @param object Fitted classifier as produced by \code{\link{batch.model}}.
 ##' @param x Dataset of observations to be classified.
-##' @param ... Ignored
+##' @param ... Sent to \code{\link{predict.qda}}.
 ##' @return A list with elements:
 ##' \itemize{
 ##'     \item{\code{pred}: Factor of predicted class memberships.}
@@ -40,12 +33,9 @@ emil.fit.qda <- function(x, y, pi=table(y)/sum(!is.na(y)), use="complete.obs"){
 ##'   \code{\link{modeling.procedure}}
 ##' @export
 emil.predict.qda <- function(object, x, ...){
-    log.disc.func <- sapply(object$responses, function(lev){
-        -log( (2*pi)^(.5*length(object$S))*det(object$S[[lev]])^.5 ) +
-        -.5*apply(sweep(as.matrix(x), 2, object$mu[,lev])^2 %*% solve(object$S[[lev]]), 1, sum)
-    })
-    return(list(pred = factor(object$responses[apply(log.disc.func, 1, function(x) c(which.max(x + log(object$pi)), NA)[1])],
-                              levels=object$responses),
-                prob = t(apply(log.disc.func, 1, function(x) exp(x)*object$pi/sum(exp(x)*object$pi)))))
+    nice.require("MASS")
+    pred <- predict(object, newdata=x, ...)
+    return(list(pred = pred$class,
+                prob = as.data.frame(pred$posterior)))
 }
 

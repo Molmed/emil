@@ -9,7 +9,6 @@ doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/NAMESPACE",
 file.remove(doc.files)
 roxygenize("emil")
 system("R CMD check emil")
-rm("emil/Rplots.pdf")
 
 # To just check examples
 system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vignettes")

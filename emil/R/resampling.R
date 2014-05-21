@@ -56,8 +56,8 @@
 ##' @seealso \code{\link{emil}}, \code{\link{subresample}},
 ##'   \code{\link{image.resample}}, \code{\link{index.fit}}
 ##' @export
-resample <- function(method, ...){
-    x <- get(sprintf("resample.%s", method))(...)
+resample <- function(method, y, ..., subset){
+    x <- get(sprintf("resample.%s", method))(y, ...)
     class(x$folds) <- c(method, "resample", "data.frame")
     if(all(grepl("^V\\d+$", names(x$folds))))
         names(x$folds) <- sprintf("fold%i", seq_along(x$folds))
@@ -123,7 +123,12 @@ index.test <- function(fold){
 ##' @rdname resample
 ##' @export
 resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), subset=TRUE){
-    n <- if(length(y) == 1) y else length(y)
+    if(length(y) == 1 && is.numeric(y)){
+        n <- y
+    } else{
+        n <- length(y)
+        subset <- seq_along(y)[subset] & !is.na(y)
+    }
     class.idx <- if(balanced){
         lapply(levels(y), function(lev) intersect(which(y == lev), (1:n)[subset]))
     } else {
@@ -201,6 +206,8 @@ image.resample <- function(x, col, ...){
     if(inherits(col, "outcome")) col <- col$event
     if(is.factor(col)){
         y <- col
+        if(length(y) != nrow(x))
+            stop("Color vector does not match resampling scheme.")
         nice.require("RColorBrewer")
         nice.require("colorspace")
         if(length(levels(y)) > 12)

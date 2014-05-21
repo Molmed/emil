@@ -77,6 +77,35 @@ nice.require <- function(pkg, reason="is required"){
 }
 
 
+##' Compare true response to resampled predictions
+##' 
+##' This function can be used to compare a true response vector to predictions
+##' returned from \code{\link{evaluate.modeling}}. For each fold, the correct
+##' subset of the true response vector is extracted and fed to a given function 
+##' together with the matching predictions.
+##' 
+##' @param fun Function to run.
+##' @param resample Resampling scheme (see \code{\link{resample}}).
+##' @param true True response vector.
+##' @param pred Predictions, as returned from \code{\link{evaluate.modeling}}.
+##' @param ... Sent to \code{\link{mapply}}.
+##' @examples
+##' proc <- modeling.procedure("lda")
+##' ho <- resample("holdout", iris$Species, frac=1/3, nfold=4)
+##' perf <- evaluate.modeling(proc, iris[-5], iris$Species, resample=ho)
+##' confusion.tables <- resample.mapply(
+##'     function(truth, prediction) table(truth, prediction$pred$pred),
+##'     ho, iris$Species, pred=perf, SIMPLIFY=FALSE)
+##' Reduce("+", confusion.tables)
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+resample.mapply <- function(fun, resample, true, pred, ...){
+    mapply(fun,
+           lapply(resample, function(fold) true[index.test(fold)]),
+           pred, ...)
+}
+
+
 ##' Extract a subset of a tree of nested lists
 ##' 
 ##' Many functions of the package produce results on the form of nested list,

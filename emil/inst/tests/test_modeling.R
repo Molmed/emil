@@ -1,5 +1,22 @@
 context("Modeling framework")
 
+test_that("modeling procedure", {
+    proc1 <- modeling.procedure("pamr")
+    proc2 <- modeling.procedure(fit.fun=identity, error.fun=rmse)
+
+    expect_that(names(proc1), is_identical_to(names(proc2)))
+
+    expect_that(proc1$fit.fun, is_a("function"))
+    expect_that(proc1$predict.fun, is_a("function"))
+    expect_that(proc1$vimp.fun, is_a("function"))
+    expect_null(proc1$error.fun)
+
+    expect_that(proc2$fit.fun, is_a("function"))
+    expect_that(proc2$predict.fun, is_a("simpleError"))
+    expect_that(proc2$vimp.fun, is_a("simpleError"))
+    expect_that(proc2$error.fun, is_a("function"))
+})
+
 test_that("Standard usage", {
     x <- iris[-5]
     y <- iris$Species

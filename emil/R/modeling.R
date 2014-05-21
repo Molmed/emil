@@ -96,7 +96,7 @@ modeling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, pr
             if(missing(vimp.fun)){
                 tryCatch(get(sprintf("emil.vimp.%s", method)), error=function(err) err)
             } else vimp.fun,
-        error.fun = NULL
+        error.fun = error.fun
     ))
     if(!is.function(proc$fit.fun))
         stop("No fitting function found.")
@@ -113,7 +113,13 @@ modeling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, pr
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 print.modeling.procedure <- function(x, ...){
-    yn <- function(x) if(is.null(x) || inherits(x, "error")) "no" else "yes"
+    yn <- function(x){
+        if(is.null(x) || inherits(x, "error")){
+            "no"
+        } else {
+            if(isdebugged(x)) "yes (debug)" else "yes"
+        }
+    }
     cat(sprintf(
 "%s modeling procedure.
 
@@ -188,11 +194,17 @@ batch.model <- function(proc, x, y,
     debug.flags <- get.debug.flags(proc)
     if(is.logical(resample)){
         multi.fold <- FALSE
-        resample <- structure(list(resample),
-            class=c(setdiff(class(resample), "fold"), "list"))
+        resample <- data.frame(resample)
+        names(resample) <- attr(resample[[1]], "fold.name")
     } else {
         multi.fold <- TRUE
     }
+    make.na <- is.na(y) & !Reduce("&", lapply(resample, is.na))
+    if(any(make.na)){
+        trace.msg(.verbose, "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
+        resample[make.na,] <- NA
+    }
+
     .save <- lapply(c(fit="fit", pred="pred", vimp="vimp", tuning="tuning"), function(lab){
         if(!is.blank(.save[[lab]]) && .save[[lab]]) TRUE else FALSE
     })
@@ -465,11 +477,12 @@ tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
     tune.proc <- unlist(lapply(proc[do.tuning], function(p){
         lapply(p$tuning$param, function(pp){
             p$param <- pp
-            p$tuning <- NULL
+            p["tuning"] <- list(NULL)
             p
         })
     }), recursive=FALSE)
-    proc <- set.debug.flags(proc, debug.flags)
+    tune.proc <- set.debug.flags(tune.proc, rep(debug.flags,
+        each=sapply(proc, function(p) length(p$tuning$param) )))
     tuning <- batch.model(tune.proc, ..., .verbose=increase(.verbose))
     proc.id <- rep(which(do.tuning),
                    sapply(proc[do.tuning], function(p) length(p$tuning$param)))
