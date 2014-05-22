@@ -1,6 +1,5 @@
-*.roxygen
-*.roxygen.Rcheck
-predict*_*.tar.gz
+*.Rcheck
+*.tar.gz
 builds
 *.Rapp.history
 *~
@@ -9,6 +8,5 @@ builds
 old
 *.Rd
 demo/
-emil.Rcheck/
-emil/NAMESPACE
-emil/emil-Ex.R
+NAMESPACE
+*-Ex.R

@@ -2,7 +2,10 @@
 #if(!exists("roxygen.update.description")) source("update_description.R")
 library("roxygen2")
 
-roxygen.update.description()
+
+#-----------------------------------------------------------------------[ emil ]
+
+roxygen.update.description("emil")
 doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/NAMESPACE",
                        "emil/emil-Ex.R"),
                      sprintf("emil/man/%s.Rd", c("emil", "emil.extensions")))
@@ -14,12 +17,29 @@ system("R CMD check emil")
 system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vignettes")
 
 system("R CMD INSTALL emil")
-system("R CMD build emil") # Build package
-system(sprintf("scp %s chrba104@tank:~/R_packages/src/contrib",
-               rev(dir(, "emil_.*\\.tar\\.gz"))[1]))
+system("R CMD build emil")
+
+
+#------------------------------------------------------------------[ emilPlots ]
+
+library("roxygen2")
+roxygen.update.description("emilPlots")
+file.remove(dir("emilPlots/man", full.names=TRUE))
+roxygenize("emilPlots")
+system("R CMD check emilPlots")
+
+system("R CMD INSTALL emilPlots")
+system("R CMD build emilPlots")
+
+
+#-----------------------------------------------------------------[ Distribute ]
+
+system("~/bin/tank0.sh")
+system(sprintf("scp %s tank:~/R_packages/src/contrib",
+               rev(dir(, "emil.*\\.tar\\.gz"))[1]))
 system(sprintf("cp %s ~/R_packages/src/contrib",
-               rev(dir(, "emil_.*\\.tar\\.gz"))[1]))
-system("mv emil_*.tar.gz builds")
+               rev(dir(, "emil.*\\.tar\\.gz"))[1]))
+system("mv emil*.tar.gz builds")
 
 
 #---------------------------------------------------------------------[ Commit ]

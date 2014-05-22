@@ -50,32 +50,28 @@ nice.axis <- function(..., las=1, lwd=0, lwd.ticks=par("lwd"), lend=2){
 ##' @export
 nice.box <- function(lend=2, ljoin=1, ...) box(lend=lend, ljoin=ljoin, ...)
 
-##' Get class specific color palettes
-##' 
-##' @param y Factor of class memberships.
+##' Get color palettes
+##'
+##' Can be used to modify an existing palette, e.g. change brightness,
+##' or to generate a palette for a response vector.
+##'
+##' @param x Character vector of colors or factor of class memberships to
+##'   generate colors for.
+##' @return A character vector of hex colors.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+get.colors <- function(x, ...){
+    UseMethod("get.colors")
+}
 ##' @param s Saturation. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
 ##'   increases, and \code{-1 <= s < 0} decreases.
 ##' @param v Value. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
 ##'   increases, and \code{-1 <= s < 0} decreases.
 ##' @param alpha Transparency.
-##' @param levels If \code{TRUE} a palette with one color per level of \code{y}
-##'   is returned. If \code{FALSE} one color per element in \code{y} is returned.
-##' @param col Color palette with one color per class or the name of the color
-##'   brewer palette to use, see \code{name} argument of \code{\link{brewer.pal}}
-##'   for a list of possible values.
-##' @return A character vector of hex colors.
-##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname get.colors
 ##' @export
-get.class.colors <- function(y, s, v, alpha, levels=FALSE, col="Set1"){
-    nice.require("RColorBrewer")
-    nice.require("colorspace")
-
-    if(length(col) == 1)
-        suppressWarnings(col <- brewer.pal(1000, pal))
-    if (length(levels(y)) > length(col)) 
-        warning("Too few colors to assign unique ones to each class.")
-    col <- rep(col, ceiling(length(levels(y))/length(col)))[seq_along(levels(y))]
-    col <- data.frame(t(rgb2hsv(t(hex2RGB(col)@coords), maxColorValue=1)))
+get.colors.default <- function(x, s, v, alpha, ...){
+    col <- data.frame(t(rgb2hsv(col2rgb(x))))
     if(!missing(alpha)) col$alpha <- alpha
 
     if(!missing(s))
@@ -84,7 +80,25 @@ get.class.colors <- function(y, s, v, alpha, levels=FALSE, col="Set1"){
         col$v <- if(v < 0) col$v + v*col$v else col$v + v*(1-col$v)
     col[T] <- lapply(col, function(x) pmin(1, pmax(0, x)))
     
-    col <- do.call(hsv, col)
-    if(levels) col else col[as.integer(y)]
+    do.call(hsv, col)
 }
+##' @param levels If \code{TRUE} a palette with one color per level of \code{x}
+##'   is returned. If \code{FALSE} one color per element in \code{x} is returned.
+##' @param col Color palette with one color per class or the name of the color
+##'   brewer palette to use, see \code{name} argument of \code{\link[RColorBrewer]{brewer.pal}}
+##'   for a list of possible values.
+##' @param ... Sent to \code{\link{get.colors.default}}.
+##' @rdname get.colors
+##' @export
+get.colors.factor <- function(x, levels=FALSE, col="Set1", ...){
+    if(length(col) == 1){
+        nice.require("RColorBrewer")
+        suppressWarnings(col <- brewer.pal(1000, col))
+    }
+    if (length(levels(x)) > length(col)) 
+        warning("Too few colors to assign unique ones to each class.")
+    col <- rep(col, ceiling(length(levels(x))/length(col)))[seq_along(levels(x))]
 
+    col <- get.colors(col, ...)
+    if(levels) col else col[as.integer(x)]
+}
