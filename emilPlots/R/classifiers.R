@@ -14,7 +14,7 @@
 ##' @param ... Sent to \code{\link{contour}}.
 ##' @return Nothing, produces a plot.
 ##' @examples
-##' contour(modeling.procedure("qda"), iris[c(1,3)], iris$Species)
+##' contour(modeling.procedure("qda"), iris[c(3,4)], iris$Species)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @import emil
 ##' @export
@@ -41,15 +41,24 @@ contour.modeling.procedure <- function(x, dx, dy, model, n=c(100,100), plot.data
     pred <- predict(x, model, grid)
 
     if(plot.data){
-        image(gx, gy, matrix(apply(pred$prob, 1, which.max), n[1]), useRaster=TRUE,
-              col = get.colors(pred$pred, levels=TRUE, s=-.83, v=1), add=TRUE)
+        col <- get.colors(pred$pred, levels=TRUE, col=col)
+        rgb2hsv(col2rgb(col))
+        grid.class <- apply(pred$prob, 1, which.max)
+        i <- cbind(1:nrow(grid), grid.class)
+        tmp.prob <- pred$prob
+        tmp.prob[i] <- NA
+        grid.intensity <- pred$prob[i] - apply(tmp.prob, 1, max, na.rm=TRUE)
+
+        #grid.intensity <- matrix(apply(pred$prob, 1, function(x) diff(tail(sort(x), 2))), n[1])
+        image(gx, gy, matrix(1:nrow(grid), n[1]), useRaster=TRUE,
+              col = get.colors(col[grid.class], s=.3*grid.intensity-1, v=1),
+              add=TRUE)
         if(missing(pch)) pch <- as.integer(dy)
-        points(dx[,1], dx[,2], col=get.colors(dy), pch=pch)
+        points(dx[,1], dx[,2], col=get.colors(dy, col=col), pch=pch)
     }
-    class.col <- get.colors(pred$pred, levels=TRUE)
     for(i in seq_along(levels(pred$pred))){
         z <- matrix(pred$prob[,i]-apply(pred$prob[,-i, drop=FALSE], 1, max), n[1])
-        contour(gx, gy, z, levels=0, add=TRUE, drawlabels=FALSE, lty=2, col=class.col[i], ...)
+        contour(gx, gy, z, levels=0, add=TRUE, drawlabels=FALSE, lty=2, col=col[i], ...)
     }
     nice.axis(1)
     nice.axis(2)

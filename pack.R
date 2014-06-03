@@ -34,12 +34,15 @@ system("R CMD build emilPlots")
 
 #-----------------------------------------------------------------[ Distribute ]
 
+new.build <- tail(dir(, "emil.*\\.tar\\.gz"), 1)
 system("~/bin/tank0.sh")
-system(sprintf("scp %s tank:~/R_packages/src/contrib",
-               rev(dir(, "emil.*\\.tar\\.gz"))[1]))
-system(sprintf("cp %s ~/R_packages/src/contrib",
-               rev(dir(, "emil.*\\.tar\\.gz"))[1]))
+system(paste("scp", new.build, "tank:~/R_packages/src/contrib"))
+system(paste("cp", new.build, "~/R-repos/b2010028/src/contrib"))
+tools::write_PACKAGES("~/R-repos/b2010028/src/contrib")
+system(paste("cp", new.build, "~/R-repos/p2010042/src/contrib"))
+tools::write_PACKAGES("~/R-repos/p2010042/src/contrib")
 system("mv emil*.tar.gz builds")
+
 
 
 #---------------------------------------------------------------------[ Commit ]

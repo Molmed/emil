@@ -71,16 +71,26 @@ get.colors <- function(x, ...){
 ##' @rdname get.colors
 ##' @export
 get.colors.default <- function(x, s, v, alpha, ...){
-    col <- data.frame(t(rgb2hsv(col2rgb(x))))
+    col <- as.data.frame(t(rgb2hsv(col2rgb(x))))
     if(!missing(alpha)) col$alpha <- alpha
 
-    if(!missing(s))
-        col$s <- if(s < 0) col$s + s*col$s else col$s + s*(1-col$s)
-    if(!missing(v))
-        col$v <- if(v < 0) col$v + v*col$v else col$v + v*(1-col$v)
+    if(!missing(s)){
+        if(length(s) != length(x) && length(s) != 1){
+            warning("The length of `x` and `s` do not match, only using the first element.")
+            s <- rep(s[1], length(x))
+        }
+        col$s <- ifelse(s < 0, col$s + s*col$s, col$s + s*(1-col$s))
+    }
+    if(!missing(v)){
+        if(length(v) != length(x) && length(v) != 1){
+            warning("The length of `x` and `v` do not match, only using the first element.")
+            v <- rep(v[1], length(x))
+        }
+        col$v <- ifelse(v < 0, col$v + v*col$v, col$v + v*(1-col$v))
+    }
     col[T] <- lapply(col, function(x) pmin(1, pmax(0, x)))
     
-    do.call(hsv, col)
+    structure(do.call(hsv, col), names=names(x))
 }
 ##' @param levels If \code{TRUE} a palette with one color per level of \code{x}
 ##'   is returned. If \code{FALSE} one color per element in \code{x} is returned.
@@ -100,5 +110,9 @@ get.colors.factor <- function(x, levels=FALSE, col="Set1", ...){
     col <- rep(col, ceiling(length(levels(x))/length(col)))[seq_along(levels(x))]
 
     col <- get.colors(col, ...)
-    if(levels) col else col[as.integer(x)]
+    if(levels){
+        structure(col, names=levels(x))
+    } else {
+        structure(col[as.integer(x)], names=names(x))
+    }
 }

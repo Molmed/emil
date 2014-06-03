@@ -115,43 +115,65 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 ##' This function can only be used to extract data, not to assign.
 ##' 
 ##' @param x List of lists.
-##' @param i Indexes to extract on the first level of the tree.
+##' @param i Indexes to extract on the first level of the tree. Can also be a
+##'   function that will be applied to the downstream result of the function.
 ##' @param ... Indexes to extract on subsequent levels.
+##' @param error A function to be called if there is an error when parsing
+##'   \code{x}, or a value to replace erroneous elements with, see the examples.
 ##' @param simplify Whether to collapse lists of length one (\code{TRUE}) or
 ##'   preserve the original tree structure (\code{FALSE}).
 ##' @return A subset of the list tree.
 ##' @examples
-##' l <- list(a=1:3, b=4, c=5)
-##' ll <- list(l, l, l, l)
-##' lll <- list(cat=ll, mouse=ll, escalator=ll)
-##' subtree(lll, 1:2, TRUE, "b")
+##' l <- list(A=list(a=0:2, b=3:4, c=023-22030),
+##'           B=list(a=5:7, b=8:9))
+##' subtree(l, 1:2, "b")
+##' subtree(l, TRUE, mean, "a")
+##'
+##' subtree(l, TRUE, exp, "c", error=browser)
+##' subtree(l, TRUE, exp, "c", error=NA)
 ##' @seealso \code{\link{subframe}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-subtree <- function(x, i, ..., simplify=TRUE){
-    if(missing(i)){
-        ret <- x
-    } else if(missing(...)){
-        ret <- x[i]
+subtree <- function(x, i, ..., error=NULL, simplify=TRUE){
+    get.value <- expression({
+        if(missing(i)){
+            x
+        } else if(is.function(i)){
+            i(subtree(x, ..., error=error, simplify=simplify))
+        } else if(missing(...)){
+            x[i]
+        } else {
+            lapply(x[i], subtree, ..., error=error, simplify=simplify)
+        }
+    })
+    ret <- if(is.null(error)){
+        # Leave error handling to whatever function will produce the error
+        eval(get.value)
     } else {
-        ret <- lapply(x[i], subtree, ..., simplify=simplify)
+        # Handle errors within this function 
+        tryCatch(eval(get.value), 
+                 error = if(is.function(error)) error else function(...) error)
     }
     if(simplify){
         if(length(ret) == 1){
-            ret[[1]]
+            ret <- ret[[1]]
         } else if(all(sapply(ret, length) == 1)){
-            unlist(ret, recursive=FALSE)
-        } else if((is.numeric(ret[[1]]) || is.character(ret[[1]]) || is.logical(ret[[1]])) &&
-                  all(sapply(lapply(ret, dim), is.null)) &&
-                  all(sapply(ret, class) == class(ret[[1]])) &&
+            ret <- unlist(ret, recursive=FALSE)
+        } else if(all(sapply(lapply(ret, dim), is.null)) &&
                   all(sapply(ret, length) == length(ret[[1]]))){
-            do.call(cbind, ret)
-        } else {
-            ret
+            ret.class <- sapply(ret, class)
+            ret.na <- sapply(ret, function(x) all(is.na(x)))
+            i <- head(which(ret.class & !ret.na), 1)
+            if((is.numeric(ret[[i]]) || is.character(ret[[i]]) || is.logical(ret[[i]])) &&
+                    length(unique(ret.class[!ret.na])) == 1){
+                ret <- do.call(cbind, ret)
+            }
         }
-    } else {
-        ret
+        if(is.null(dim(ret)) && !is.null(dim(x)) && length(ret) == length(x)){
+            ret <- array(ret, dim=dim(x), dimnames=dimnames(x))
+        }
     }
+    ret
 }
 
 
