@@ -250,9 +250,20 @@ batch.model <- function(proc, x, y,
     if(.parallel.cores > 1){
         nice.require("parallel")
         options(mc.cores = .parallel.cores)
-        mapply.FUN <- parallel::mcmapply
+        # Oh mah gawd what a dirty workaround for a bug in mcmapply!
+        # Track it at https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15817
+        Map.FUN <- function(FUN, ...){
+            args <- list(...)
+            arg.names <- names(args[[1]])
+            args <- lapply(seq_along(args[[1]]),
+                function(i) lapply(args, function(a) if(length(a) > 1) a[[i]] else a[[1]]))
+                # To be 100% proper you should implement element recyling in case
+                # one argument is shorter, but it is not needed here.
+            names(args) <- arg.names
+            parallel::mclapply(args, function(p) do.call(FUN, p))
+        }
     } else {
-        mapply.FUN <- mapply
+        Map.FUN <- Map
     }
     if(!is.null(.checkpoint.dir)){
         if(!file.exists(.checkpoint.dir))
@@ -267,7 +278,7 @@ batch.model <- function(proc, x, y,
 #   Build and test models
 
     counter <- 0
-    res <- structure(class="modeling.result", .Data=mapply.FUN(function(fold, fold.name, checkpoint.file){
+    res <- structure(class="modeling.result", .Data=Map.FUN(function(fold, fold.name, checkpoint.file){
         if(inherits(resample, "crossval")){
             trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", fold.name),
                       time=.parallel.cores > 1, linebreak=FALSE)
@@ -344,7 +355,7 @@ batch.model <- function(proc, x, y,
             save(res, file=checkpoint.file)
         }
         res
-    }, resample, names(resample), checkpoint.files, SIMPLIFY=FALSE))
+    }, resample, names(resample), checkpoint.files))
     if(multi.fold) res else res[[1]]
 }
 

@@ -163,7 +163,7 @@ subtree <- function(x, i, ..., error=NULL, simplify=TRUE){
                   all(sapply(ret, length) == length(ret[[1]]))){
             ret.class <- sapply(ret, class)
             ret.na <- sapply(ret, function(x) all(is.na(x)))
-            i <- head(which(ret.class & !ret.na), 1)
+            i <- head(which(!ret.na), 1)
             if((is.numeric(ret[[i]]) || is.character(ret[[i]]) || is.logical(ret[[i]])) &&
                     length(unique(ret.class[!ret.na])) == 1){
                 ret <- do.call(cbind, ret)

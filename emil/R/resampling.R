@@ -101,12 +101,19 @@ subresample <- function(fold, y){
 ##' Convert a fold to row indexes of fittdng or test set
 ##'
 ##' @param fold A fold of a resampling scheme.
+##' @param allow.oversample Whether or not to allow individual observation to
+##'   exist in multiple copies in the training set. This is typically not the
+##'   case, but can be used when a class is underrepresented in the data set.
 ##' @return An integer vector of row indexes.
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso \code{\link{emil}}, \code{\link{resample}}
 ##' @export
-index.fit <- function(fold){
-    rep(seq_along(fold), na.fill(fold, 0))
+index.fit <- function(fold, allow.oversample=TRUE){
+    if(allow.oversample){
+        rep(seq_along(fold), na.fill(fold, 0))
+    } else {
+        which(!fold %in% c(0, NA))
+    }
 }
 ##' @rdname index.fit
 ##' @aliases index.test

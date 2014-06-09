@@ -44,7 +44,6 @@ tools::write_PACKAGES("~/R-repos/p2010042/src/contrib")
 system("mv emil*.tar.gz builds")
 
 
-
 #---------------------------------------------------------------------[ Commit ]
 
 # Big change? Remember to put it in the git repo!

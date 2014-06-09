@@ -131,8 +131,22 @@ pre.impute.median <- function(x, y, fold){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 pre.impute.knn <- function(x, y, fold, k=.05, distmat){
+    na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
+        # Duplicate names may cause problems otherwise
+    na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
+
+    if(length(na.ind) == 0){
+        return(pre.split(x, y, fold))
+    }
+
+
     if(k < 1) k <- max(1, round(.05*nrow(x)))
     if(k > sum(fold > 0, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
+
+    # If a feature has fewer non-NAs than k exclude it
+    non.na.count <- apply(!is.na(x[index.fit(fold, allow.oversample=FALSE),]), 2, sum)
+    features <- non.na.count >= k
+    na.ind <- na.ind[na.ind[,"col"] %in% which(features),]
 
     if(missing(distmat))
         stop("You must supply a distance matrix, see `?pre.impute.knn` for details.")
@@ -149,10 +163,6 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     if(any(nrow(x) != dim(distmat)))
         stop("Distance matrix does not match dataset.")
 
-    na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
-        # Duplicate names may cause problems otherwise
-    na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
-
     NN <- apply(distmat, 1, function(z)
         intersect(order(z), index.fit(fold)))
     fills <- apply(na.ind, 1, function(i){
@@ -161,8 +171,11 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     if(any(is.na(fills)))
         stop("Could not impute all missing values, too few non-missing values for some features.")
     x[na.ind] <- fills
-    list(fit=x[index.fit(fold),,drop=FALSE],
-         test=x[index.test(fold),,drop=FALSE])
+    c(
+        list(fit=x[index.fit(fold), features, drop=FALSE],
+             test=x[index.test(fold), features, drop=FALSE]),
+        if(all(features)) NULL else list(features = features)
+    )
 }
 
 
@@ -188,12 +201,12 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 {}
 ##' @rdname impute
 ##' @export
-impute.knn <- function(x, k=.05, distmat){
-    pre.impute.knn(x, fold=rep(FALSE, nrow(x)), k=k, distmat=distmat)$fit
+impute.knn <- function(x, k=.05, distmat="auto"){
+    pre.impute.knn(x, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$fit
 }
 ##' @rdname impute
 ##' @export
 impute.median <- function(x){
-    pre.impute.median(x, , rep(FALSE, nrow(x)))$fit
+    pre.impute.median(x, , rep(TRUE, nrow(x)))$fit
 }
 
