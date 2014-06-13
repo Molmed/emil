@@ -37,6 +37,7 @@ system("R CMD build emilPlots")
 new.build <- tail(dir(, "emil.*\\.tar\\.gz"), 1)
 system("~/bin/tank0.sh")
 system(paste("scp", new.build, "tank:~/R_packages/src/contrib"))
+tools::write_PACKAGES("~/R_packages/src/contrib") # On tank
 system(paste("cp", new.build, "~/R-repos/b2010028/src/contrib"))
 tools::write_PACKAGES("~/R-repos/b2010028/src/contrib")
 system(paste("cp", new.build, "~/R-repos/p2010042/src/contrib"))

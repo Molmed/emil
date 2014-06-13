@@ -61,9 +61,8 @@ resample <- function(method, y, ..., subset){
     class(x$folds) <- c(method, "resample", "data.frame")
     if(all(grepl("^V\\d+$", names(x$folds))))
         names(x$folds) <- sprintf("fold%i", seq_along(x$folds))
-    x$folds[T] <- mapply(function(f, n) structure(f, class=c(method, "fold", class(f)),
-                        param=x$param, fold.name=n), x$folds, names(x$folds),
-                    SIMPLIFY=FALSE)
+    x$folds[T] <- Map(function(f, n) structure(f, class=c(method, "fold", class(f)),
+                        param=x$param, fold.name=n), x$folds, names(x$folds))
     x$folds
 }
 

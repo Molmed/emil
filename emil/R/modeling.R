@@ -77,7 +77,7 @@ modeling.procedure <- function(method, param=list(), error.fun=NULL, fit.fun, pr
     }
     if(!is.null(names(param))){
         param <- apply(do.call(expand.grid, lapply(param, seq_along)), 1, function(i){
-            mapply("[[", param, i, SIMPLIFY=FALSE)
+            Map("[[", param, i)
         })
     }
     proc <- structure(class = "modeling.procedure", .Data = list(
@@ -162,6 +162,9 @@ print.modeling.procedure <- function(x, ...){
 ##' @param .parallel.cores Number of CPU-cores to use for parallel computation.
 ##' @param .checkpoint.dir Directory to save intermediate results to. If set
 ##'   the computation can be restarted with minimal loss of results.
+##' @param .stop.on.error If \code{TRUE} the entire modeling is aborted upon an
+##'   error. If \code{FALSE} the modeling of the particular fold is aborted and
+##'   the error message is returned instead of its results.
 ##' @param .verbose Whether to print an activity log.
 ##' @return A list tree where the top level corresponds to folds (in case of
 ##'   multiple folds), the next level corresponds to the modeling procedures
@@ -183,7 +186,7 @@ print.modeling.procedure <- function(x, ...){
 batch.model <- function(proc, x, y,
     resample=emil::resample("crossval", y, nfold=2, nrep=2), pre.process=pre.split,
     .save=list(fit=FALSE, pred=FALSE, vimp=FALSE, tuning=FALSE),
-    .parallel.cores=1, .checkpoint.dir=NULL, .verbose=FALSE){
+    .parallel.cores=1, .checkpoint.dir=NULL, .stop.on.error=TRUE, .verbose=FALSE){
 
     if(inherits(proc, "modeling.procedure")){
         multi.proc <- FALSE
@@ -213,7 +216,7 @@ batch.model <- function(proc, x, y,
 #   Make sure all plug-ins exist before we start crunching
 
     do.tuning <- !sapply(proc, is.tuned)
-    missing.fun <- unlist(mapply(function(p, to.be.tuned) c(
+    missing.fun <- unlist(Map(function(p, to.be.tuned) c(
         if(!is.function(p$fit.fun))
             sprintf("fit.%s", p$method)
         else NULL,
@@ -223,7 +226,7 @@ batch.model <- function(proc, x, y,
         if(!is.function(p$vimp.fun) && .save$vimp)
             sprintf("vimp.%s", p$method)
         else NULL
-    ), proc, do.tuning, SIMPLIFY=FALSE))
+    ), proc, do.tuning))
     if(!is.null(missing.fun))
         stop(sprintf("Plug-in%s function %s not found.",
             if(length(missing.fun) > 1) "s" else "",
@@ -245,25 +248,26 @@ batch.model <- function(proc, x, y,
     proc <- set.debug.flags(proc, debug.flags)
 
 #------------------------------------------------------------------------------o
-#   Set up parallelization and checkpointing
+#   Set up parallelization, error handling and checkpointing
 
     if(.parallel.cores > 1){
         nice.require("parallel")
         options(mc.cores = .parallel.cores)
-        # Oh mah gawd what a dirty workaround for a bug in mcmapply!
-        # Track it at https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15817
-        Map.FUN <- function(FUN, ...){
-            args <- list(...)
-            arg.names <- names(args[[1]])
-            args <- lapply(seq_along(args[[1]]),
-                function(i) lapply(args, function(a) if(length(a) > 1) a[[i]] else a[[1]]))
-                # To be 100% proper you should implement element recyling in case
-                # one argument is shorter, but it is not needed here.
-            names(args) <- arg.names
-            parallel::mclapply(args, function(p) do.call(FUN, p))
-        }
+        Map.FUN <- parallel::mcMap
     } else {
         Map.FUN <- Map
+    }
+    if(.stop.on.error){
+        Modeling.FUN <- Map.FUN
+    } else {
+        Modeling.FUN <- function(f, ...){
+            Map.FUN(function(...){
+                tryCatch(f(...), error = function(err){
+                    trace.msg(increase(.verbose, 1), "An error occurred, skipping fold.")
+                    err
+                })
+            }, ...)
+        }
     }
     if(!is.null(.checkpoint.dir)){
         if(!file.exists(.checkpoint.dir))
@@ -278,7 +282,7 @@ batch.model <- function(proc, x, y,
 #   Build and test models
 
     counter <- 0
-    res <- structure(class="modeling.result", .Data=Map.FUN(function(fold, fold.name, checkpoint.file){
+    res <- structure(class="modeling.result", .Data=Modeling.FUN(function(fold, fold.name, checkpoint.file){
         if(inherits(resample, "crossval")){
             trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", fold.name),
                       time=.parallel.cores > 1, linebreak=FALSE)
@@ -310,8 +314,8 @@ batch.model <- function(proc, x, y,
                     p$fit.fun(sets$fit, y[index.fit(fold)], ...), p$param)
             predictions <- p$predict.fun(model, sets$test)
             c(
-                list(error = p$error.fun(y[index.test(fold)], predictions)),
                 if(.save$fit) list(fit = model) else NULL,
+                list(error = p$error.fun(y[index.test(fold)], predictions)),
                 if(.save$pred) list(pred = predictions) else NULL,
                 if(.save$vimp) list(vimp = fixvimp(p$vimp.fun(model), sets$features)) else NULL,
                 if(.save$tuning && is.tunable(p))

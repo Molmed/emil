@@ -209,9 +209,9 @@ subframe <- function(x, ..., resample){
     if(any(sapply(st, length) != sapply(resample, function(x) sum(x %in% 0))))
         stop("Data and resample does not match.")
 
-    as.data.frame(mapply(
+    as.data.frame(Map(
         function(x, fold) x[ave(fold, fold, FUN=seq_along)*fill(!fold, FALSE, NA)],
-        st, resample, SIMPLIFY=FALSE))
+        st, resample))
 }
 
 

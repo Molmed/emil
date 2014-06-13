@@ -17,37 +17,61 @@ test_that("modeling procedure", {
     expect_that(proc2$error.fun, is_a("function"))
 })
 
+x <- iris[-5]
+y <- iris$Species
+cv <- resample("crossval", y, nfold=3, nrep=2)
+proc <- modeling.procedure("lda")
+modeling.FUN <- function(..., xx=x)
+    evaluate.modeling(proc, xx, y, resample=cv, ..., .verbose=FALSE)
+
 test_that("Standard usage", {
-    x <- iris[-5]
-    y <- iris$Species
-    cv <- resample("crossval", y, nfold=3, nrep=2)
-    proc <- modeling.procedure("lda")
-    perf <- evaluate.modeling(proc, x, y, resample=cv,
-                              .save=list(fit=TRUE, pred=TRUE, vimp=FALSE),
-                              .verbose=FALSE)
+    perf <- modeling.FUN(.save=list(fit=TRUE, pred=TRUE, vimp=FALSE))
 
     expect_that(perf, is_a("modeling.result"))
     expect_that(length(perf), is_equivalent_to(length(cv)))
     expect_that(names(perf), is_equivalent_to(names(cv)))
     expect_that(subtree(perf, TRUE, "error"), is_a("numeric"))
     expect_true(all(sapply(perf, function(p) all(c("fit", "pred") %in% names(p)))))
+})
 
-    # Parallelization
-    par.perf <- evaluate.modeling(proc, x, y, resample=cv,
-                                  .save=list(fit=TRUE, pred=TRUE, vimp=FALSE),
-                                  .verbose=FALSE, .parallel.cores=2)
-    expect_that(par.perf, is_identical_to(perf))
+test_that("Parallelization", {
+    proc <- modeling.procedure("lda", error.fun = function(...){
+        Sys.sleep(0.5)
+        list(pid=Sys.getpid(), time=Sys.time())
+    })
+    modeling.FUN <- function(...) batch.model(proc, x, y, cv[1:4], ...)
 
-    # Checkpointing
+    seq.time <- system.time( seq.perf <- modeling.FUN() )
+    par.time <- system.time( par.perf <- modeling.FUN(.parallel.cores=2) )
+
+    expect_more_than(seq.time["elapsed"], par.time["elapsed"])
+    expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1)
+    expect_equal(length(unique(subtree(par.perf, TRUE, "error", "pid"))), 2)
+    expect_more_than(
+        diff(range(subtree(seq.perf, T, "error", "time"))),
+        diff(range(subtree(par.perf, T, "error", "time")))
+    )
+})
+
+test_that("Checkpointing", {
     if(file.exists("tmp")){
         file.remove(dir("tmp", full.names=TRUE))
         file.remove("tmp")
     }
-    check.perf <- evaluate.modeling(proc, x, y, resample=cv,
-                                    .save=list(fit=TRUE, pred=TRUE, vimp=FALSE),
-                                    .verbose=FALSE, .checkpoint.dir="tmp")
+    perf <- modeling.FUN()
+    check.perf <- modeling.FUN(.checkpoint.dir="tmp")
+
     expect_that(check.perf, is_identical_to(perf))
     expect_true(file.exists("tmp"))
+
     file.remove(dir("tmp", full.names=TRUE))
     file.remove("tmp")
 })
+
+test_that("Error handling", {
+    x[1] <- NA
+    expect_error(modeling.FUN(xx=x, .stop.on.error=TRUE))
+    perf <- modeling.FUN(xx=x, .stop.on.error=FALSE)
+    expect_true(all(sapply(perf, inherits, "error")))
+})
+
