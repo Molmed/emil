@@ -6,12 +6,12 @@ library("roxygen2")
 #-----------------------------------------------------------------------[ emil ]
 
 roxygen.update.description("emil")
-doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/NAMESPACE",
-                       "emil/emil-Ex.R"),
+doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/NAMESPACE"),
                      sprintf("emil/man/%s.Rd", c("emil", "emil.extensions")))
 file.remove(doc.files)
 roxygenize("emil")
 system("R CMD check emil")
+file.remove("emil/emil-Ex.R")
 
 # To just check examples
 system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vignettes")

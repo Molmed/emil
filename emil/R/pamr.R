@@ -23,12 +23,11 @@ pre.pamr <- function(x, y, fold, pre.process=pre.split, ...){
     if(ncol(x) == 1){
         warn.once("pamr_univariate", "PAMR not designed to handle univariate data. An all-zero dummy variable added as a workaround.")
     }
-    c(list(fit = structure(list(
-                x = if(ncol(x) == 1) rbind(t(sets$fit), dummy=0) else t(sets$fit),
-                y = y[index.fit(fold)]),
-                class = "pamr.data"),
-           test = if(ncol(x) == 1) rbind(t(sets$test), dummy=0) else t(sets$test)),
-      sets[setdiff(names(sets), c("fit", "test"))])
+    sets$fit$x <- structure(class = "pamr.data", .Data = list(
+        x = if(ncol(x) == 1) rbind(t(sets$fit$x), dummy=0) else t(sets$fit$x),
+        y = sets$fit$y))
+    sets$test$x <- if(ncol(x) == 1) rbind(t(sets$test$x), dummy=0) else t(sets$test$x)
+    sets
 }
 
 ##' Fit nearest shrunken centroids model.

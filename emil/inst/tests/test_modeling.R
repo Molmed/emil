@@ -35,43 +35,48 @@ test_that("Standard usage", {
 })
 
 test_that("Parallelization", {
-    proc <- modeling.procedure("lda", error.fun = function(...){
-        Sys.sleep(0.5)
-        list(pid=Sys.getpid(), time=Sys.time())
-    })
-    modeling.FUN <- function(...) batch.model(proc, x, y, cv[1:4], ...)
+    require(parallel)
+    if(detectCores() > 1){
+        proc <- modeling.procedure("lda", error.fun = function(...){
+            Sys.sleep(0.5)
+            list(pid=Sys.getpid(), time=Sys.time())
+        })
+        modeling.FUN <- function(...) batch.model(proc, x, y, cv[1:4], ...)
 
-    seq.time <- system.time( seq.perf <- modeling.FUN() )
-    par.time <- system.time( par.perf <- modeling.FUN(.parallel.cores=2) )
+        seq.time <- system.time( seq.perf <- modeling.FUN() )
+        par.time <- system.time( par.perf <- modeling.FUN(.parallel.cores=2) )
 
-    expect_more_than(seq.time["elapsed"], par.time["elapsed"])
-    expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1)
-    expect_equal(length(unique(subtree(par.perf, TRUE, "error", "pid"))), 2)
-    expect_more_than(
-        diff(range(subtree(seq.perf, T, "error", "time"))),
-        diff(range(subtree(par.perf, T, "error", "time")))
-    )
+        expect_more_than(seq.time["elapsed"], par.time["elapsed"])
+        expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1)
+        expect_equal(length(unique(subtree(par.perf, TRUE, "error", "pid"))), 2)
+        expect_more_than(
+            diff(range(subtree(seq.perf, T, "error", "time"))),
+            diff(range(subtree(par.perf, T, "error", "time")))
+        )
+    }
 })
 
 test_that("Checkpointing", {
-    if(file.exists("tmp")){
+    if(is.writable(".")){
+        if(file.exists("tmp")){
+            file.remove(dir("tmp", full.names=TRUE))
+            file.remove("tmp")
+        }
+        perf <- modeling.FUN()
+        check.perf <- modeling.FUN(.checkpoint.dir="tmp")
+
+        expect_that(check.perf, is_identical_to(perf))
+        expect_true(file.exists("tmp"))
+
         file.remove(dir("tmp", full.names=TRUE))
         file.remove("tmp")
     }
-    perf <- modeling.FUN()
-    check.perf <- modeling.FUN(.checkpoint.dir="tmp")
-
-    expect_that(check.perf, is_identical_to(perf))
-    expect_true(file.exists("tmp"))
-
-    file.remove(dir("tmp", full.names=TRUE))
-    file.remove("tmp")
 })
 
 test_that("Error handling", {
     x[1] <- NA
-    expect_error(modeling.FUN(xx=x, .stop.on.error=TRUE))
-    perf <- modeling.FUN(xx=x, .stop.on.error=FALSE)
+    expect_error(modeling.FUN(xx=x, .return.errors=FALSE))
+    perf <- modeling.FUN(xx=x, .return.errors=TRUE)
     expect_true(all(sapply(perf, inherits, "error")))
 })
 

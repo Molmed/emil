@@ -162,10 +162,11 @@ print.modeling.procedure <- function(x, ...){
 ##' @param .parallel.cores Number of CPU-cores to use for parallel computation.
 ##' @param .checkpoint.dir Directory to save intermediate results to. If set
 ##'   the computation can be restarted with minimal loss of results.
-##' @param .stop.on.error If \code{TRUE} the entire modeling is aborted upon an
-##'   error. If \code{FALSE} the modeling of the particular fold is aborted and
+##' @param .return.errors If \code{FALSE} the entire modeling is aborted upon an
+##'   error. If \code{TRUE} the modeling of the particular fold is aborted and
 ##'   the error message is returned instead of its results.
-##' @param .verbose Whether to print an activity log.
+##' @param .verbose Whether to print an activity log. Set to \code{-1} to
+##'   also suppress output generated from the procedure's functions.
 ##' @return A list tree where the top level corresponds to folds (in case of
 ##'   multiple folds), the next level corresponds to the modeling procedures
 ##'   (in case of multiple procedures), and the final level is specified by the
@@ -186,54 +187,55 @@ print.modeling.procedure <- function(x, ...){
 batch.model <- function(proc, x, y,
     resample=emil::resample("crossval", y, nfold=2, nrep=2), pre.process=pre.split,
     .save=list(fit=FALSE, pred=FALSE, vimp=FALSE, tuning=FALSE),
-    .parallel.cores=1, .checkpoint.dir=NULL, .stop.on.error=TRUE, .verbose=FALSE){
+    .parallel.cores=1, .checkpoint.dir=NULL, .return.errors=.parallel.cores > 1,
+        .verbose=FALSE){
 
-    if(inherits(proc, "modeling.procedure")){
-        multi.proc <- FALSE
-        proc <- listify(proc)
-    } else {
-        multi.proc <- TRUE
-    }
-    debug.flags <- get.debug.flags(proc)
-    if(is.logical(resample)){
-        multi.fold <- FALSE
-        resample <- data.frame(resample)
-        names(resample) <- attr(resample[[1]], "fold.name")
-    } else {
-        multi.fold <- TRUE
-    }
-    make.na <- is.na(y) & !Reduce("&", lapply(resample, is.na))
-    if(any(make.na)){
-        trace.msg(.verbose, "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
-        resample[make.na,] <- NA
-    }
+        if(inherits(proc, "modeling.procedure")){
+            multi.proc <- FALSE
+            proc <- listify(proc)
+        } else {
+            multi.proc <- TRUE
+        }
+        debug.flags <- get.debug.flags(proc)
+        if(is.logical(resample)){
+            multi.fold <- FALSE
+            resample <- data.frame(resample)
+            names(resample) <- attr(resample[[1]], "fold.name")
+        } else {
+            multi.fold <- TRUE
+        }
+        make.na <- is.na(y) & !Reduce("&", lapply(resample, is.na))
+        if(any(make.na)){
+            trace.msg(.verbose, "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
+            resample[make.na,] <- NA
+        }
 
-    .save <- lapply(c(fit="fit", pred="pred", vimp="vimp", tuning="tuning"), function(lab){
-        if(!is.blank(.save[[lab]]) && .save[[lab]]) TRUE else FALSE
-    })
+        .save <- lapply(c(fit="fit", pred="pred", vimp="vimp", tuning="tuning"), function(lab){
+            if(!is.blank(.save[[lab]]) && .save[[lab]]) TRUE else FALSE
+        })
 
-#------------------------------------------------------------------------------o
-#   Make sure all plug-ins exist before we start crunching
+    #------------------------------------------------------------------------------o
+    #   Make sure all plug-ins exist before we start crunching
 
-    do.tuning <- !sapply(proc, is.tuned)
-    missing.fun <- unlist(Map(function(p, to.be.tuned) c(
-        if(!is.function(p$fit.fun))
-            sprintf("fit.%s", p$method)
-        else NULL,
-        if(!is.function(p$predict.fun) && (.save$pred || to.be.tuned))
-            sprintf("predict.%s", p$method)
-        else NULL,
-        if(!is.function(p$vimp.fun) && .save$vimp)
-            sprintf("vimp.%s", p$method)
-        else NULL
-    ), proc, do.tuning))
-    if(!is.null(missing.fun))
-        stop(sprintf("Plug-in%s function %s not found.",
-            if(length(missing.fun) > 1) "s" else "",
-            paste("`", missing.fun, "`", sep="", collapse=", ")))
+        do.tuning <- !sapply(proc, is.tuned)
+        missing.fun <- unlist(Map(function(p, to.be.tuned) c(
+            if(!is.function(p$fit.fun))
+                sprintf("fit.%s", p$method)
+            else NULL,
+            if(!is.function(p$predict.fun) && (.save$pred || to.be.tuned))
+                sprintf("predict.%s", p$method)
+            else NULL,
+            if(!is.function(p$vimp.fun) && .save$vimp)
+                sprintf("vimp.%s", p$method)
+            else NULL
+        ), proc, do.tuning))
+        if(!is.null(missing.fun))
+            stop(sprintf("Plug-in%s function %s not found.",
+                if(length(missing.fun) > 1) "s" else "",
+                paste("`", missing.fun, "`", sep="", collapse=", ")))
 
-    for(i in seq_along(proc)){
-        if(is.null(proc[[i]]$error.fun)){
+        for(i in seq_along(proc)){
+            if(is.null(proc[[i]]$error.fun)){
             proc[[i]]$error.fun <- if(class(y) == "factor"){
                 error.rate
             } else if(inherits(y, c("outcome", "Surv"))){
@@ -257,9 +259,7 @@ batch.model <- function(proc, x, y,
     } else {
         Map.FUN <- Map
     }
-    if(.stop.on.error){
-        Modeling.FUN <- Map.FUN
-    } else {
+    if(.return.errors){
         Modeling.FUN <- function(f, ...){
             Map.FUN(function(...){
                 tryCatch(f(...), error = function(err){
@@ -268,6 +268,8 @@ batch.model <- function(proc, x, y,
                 })
             }, ...)
         }
+    } else {
+        Modeling.FUN <- Map.FUN
     }
     if(!is.null(.checkpoint.dir)){
         if(!file.exists(.checkpoint.dir))
@@ -310,12 +312,19 @@ batch.model <- function(proc, x, y,
         sets <- pre.process(x, y, fold)
         trace.msg(increase(.verbose, 1), "Fitting models.")
         res <- lapply(fold.proc, function(p){
-            model <- do.call(function(...)
-                    p$fit.fun(sets$fit, y[index.fit(fold)], ...), p$param)
-            predictions <- p$predict.fun(model, sets$test)
+            work.expr <- expression({
+                model <- do.call(function(...)
+                    p$fit.fun(sets$fit$x, sets$fit$y, ...), p$param)
+                predictions <- p$predict.fun(model, sets$test$x)
+            })
+            if(.verbose < 0){
+                invisible(capture.output(eval(work.expr)))
+            } else {
+                eval(work.expr)
+            }
             c(
                 if(.save$fit) list(fit = model) else NULL,
-                list(error = p$error.fun(y[index.test(fold)], predictions)),
+                list(error = p$error.fun(sets$test$y, predictions)),
                 if(.save$pred) list(pred = predictions) else NULL,
                 if(.save$vimp) list(vimp = fixvimp(p$vimp.fun(model), sets$features)) else NULL,
                 if(.save$tuning && is.tunable(p))

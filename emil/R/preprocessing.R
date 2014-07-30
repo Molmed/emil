@@ -36,8 +36,10 @@
 ##'         sapply, mean, na.rm=TRUE)
 ##'     diff.feats <- apply(class.means, 1, function(x) diff(range(x))) > d
 ##'     return(list(
-##'         fit = x[fit.idx, diff.feats, drop=FALSE],
-##'         test = x[test.idx, diff.feats, drop=FALSE],
+##'         fit = list(x = x[fit.idx, diff.feats, drop=FALSE],
+##'                    y = y[fit.idx]),
+##'         test = list(x = x[test.idx, diff.feats, drop=FALSE],
+##'                     y = y[test.idx]),
 ##'         features = diff.feats))
 ##' }
 ##' 
@@ -64,8 +66,10 @@
 ##' @rdname pre.process
 ##' @export
 pre.split <- function(x, y, fold){
-    list(fit=x[index.fit(fold),,drop=FALSE],
-         test=x[index.test(fold),,drop=FALSE])
+    list(fit = list(x = x[index.fit(fold),,drop=FALSE],
+                  y = y[index.fit(fold)]),
+         test = list(x = x[index.test(fold),,drop=FALSE],
+                     y = y[index.test(fold)]))
 }
 
 ##' @rdname pre.process
@@ -85,8 +89,10 @@ pre.scale <- function(x, y, fold, scale=TRUE){
     } else {
         fun <- function(z) sweep(z, 2, m, "-")
     }
-    list(fit=fun(x[index.fit(fold),,drop=FALSE]),
-         test=fun(x[index.test(fold),,drop=FALSE]))
+    list(fit = list(x = fun(x[index.fit(fold),,drop=FALSE]),
+                    y = y[index.fit(fold)]),
+         test = list(x = fun(x[index.test(fold),,drop=FALSE]),
+                     y = y[index.test(fold)]))
 }
 
 ##' @rdname pre.process
@@ -98,8 +104,10 @@ pre.impute.median <- function(x, y, fold){
     na.feats <- unique(na.ind[,"col"])
     fills <- apply(x[index.fit(fold), na.feats, drop=FALSE], 2, median, na.rm=TRUE)
     x[na.ind] <- fills[match(na.ind[,"col"], na.feats)]
-    list(fit=x[index.fit(fold),,drop=FALSE],
-         test=x[index.test(fold),,drop=FALSE])
+    list(fit = list(x = x[index.fit(fold),,drop=FALSE],
+                    y = y[index.fit(fold)]),
+         test = list(x = x[index.test(fold),,drop=FALSE],
+                     y = y[index.test(fold)]))
 }
 
 ##' kNN imputation
@@ -172,8 +180,10 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
         stop("Could not impute all missing values, too few non-missing values for some features.")
     x[na.ind] <- fills
     c(
-        list(fit=x[index.fit(fold), features, drop=FALSE],
-             test=x[index.test(fold), features, drop=FALSE]),
+        list(fit = list(x = x[index.fit(fold), features, drop=FALSE],
+                        y = y[index.fit(fold)]),
+             test = list(x = x[index.test(fold), features, drop=FALSE],
+                         y = y[index.test(fold)])),
         if(all(features)) NULL else list(features = features)
     )
 }
@@ -202,11 +212,11 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 ##' @rdname impute
 ##' @export
 impute.knn <- function(x, k=.05, distmat="auto"){
-    pre.impute.knn(x, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$fit
+    pre.impute.knn(x, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$fit$x
 }
 ##' @rdname impute
 ##' @export
 impute.median <- function(x){
-    pre.impute.median(x, , rep(TRUE, nrow(x)))$fit
+    pre.impute.median(x, , rep(TRUE, nrow(x)))$fit$x
 }
 
