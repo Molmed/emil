@@ -253,7 +253,7 @@ batch.model <- function(proc, x, y,
 #   Set up parallelization, error handling and checkpointing
 
     if(.parallel.cores > 1){
-        nice.require("parallel")
+        require("parallel")
         options(mc.cores = .parallel.cores)
         Map.FUN <- parallel::mcMap
     } else {
@@ -312,15 +312,16 @@ batch.model <- function(proc, x, y,
         sets <- pre.process(x, y, fold)
         trace.msg(increase(.verbose, 1), "Fitting models.")
         res <- lapply(fold.proc, function(p){
-            work.expr <- expression({
+            if(.verbose < 0){
+                invisible(capture.output({
+                    model <- do.call(function(...)
+                        p$fit.fun(sets$fit$x, sets$fit$y, ...), p$param)
+                    predictions <- p$predict.fun(model, sets$test$x)
+                }))
+            } else {
                 model <- do.call(function(...)
                     p$fit.fun(sets$fit$x, sets$fit$y, ...), p$param)
                 predictions <- p$predict.fun(model, sets$test$x)
-            })
-            if(.verbose < 0){
-                invisible(capture.output(eval(work.expr)))
-            } else {
-                eval(work.expr)
             }
             c(
                 if(.save$fit) list(fit = model) else NULL,

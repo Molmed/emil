@@ -15,12 +15,16 @@ Description: A toolbox for designing and evaluating predictive models with
 Suggests:
     caret,
     cmprsk,
+    colorspace,
     glmnet,
     Hmisc,
+    MASS,
     party,
     pamr,
     randomForest,
-    testthat
+    RColorBrewer,
+    survival,
+    testthat (>= 0.8.1)
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes
