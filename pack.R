@@ -15,6 +15,7 @@ file.remove("emil/emil-Ex.R")
 
 # To just check examples
 system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vignettes")
+file.remove("emil/emil-Ex.R")
 
 system("R CMD INSTALL emil")
 system("R CMD build emil")

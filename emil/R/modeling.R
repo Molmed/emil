@@ -285,6 +285,14 @@ batch.model <- function(proc, x, y,
 
     counter <- 0
     res <- structure(class="modeling.result", .Data=Modeling.FUN(function(fold, fold.name, checkpoint.file){
+
+        # Setup run time estimation
+        if(.parallel.cores == 1 && is.null(checkpoint.file)){
+            counter <<- counter + 1
+            if(counter == 1) t1 <- Sys.time()
+        }
+
+        # Print status message
         if(inherits(resample, "crossval")){
             trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", fold.name),
                       time=.parallel.cores > 1, linebreak=FALSE)
@@ -294,13 +302,19 @@ batch.model <- function(proc, x, y,
         } else {
             trace.msg(.verbose, fold.name, time=.parallel.cores > 1, linebreak=FALSE)
         }
+
+        # Check for checkpoint files
         if(!is.null(checkpoint.file) && file.exists(checkpoint.file)){
             if(.verbose) cat(" Already completed.\n")
             en <- new.env()
             load(checkpoint.file, envir=en)
             return(en$res)
         } else if(.verbose) cat("\n")
-        if(.parallel.cores > 1) .verbose = FALSE
+
+        # Disable further messages if run in parallel
+        if(.parallel.cores > 1) .verbose <- FALSE
+
+        # Do the work
         if(any(do.tuning)){
             tune.subset <- subresample(fold, y)
             fold.proc <- tune(proc, x, y, resample=tune.subset,
@@ -332,9 +346,9 @@ batch.model <- function(proc, x, y,
                     list(param=p$param, tuning = p$tuning) else NULL
             )
         })
+
+        # Estimate run time
         if(.parallel.cores == 1 && is.null(checkpoint.file)){
-            counter <<- counter + 1
-            if(counter == 1) t1 <- Sys.time()
             if(.verbose && counter == 1 && is.data.frame(resample) && ncol(resample) > 1){
                 t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(resample)
                 fmt <- if(difftime(t2, t1, units="days") < 1){
@@ -364,10 +378,13 @@ batch.model <- function(proc, x, y,
                 }
             }
         }
+
+        # Save checkpoint file
         if(!multi.proc) res <- res[[1]]
         if(!is.null(checkpoint.file)){
             save(res, file=checkpoint.file)
         }
+
         res
     }, resample, names(resample), checkpoint.files))
     if(multi.fold) res else res[[1]]

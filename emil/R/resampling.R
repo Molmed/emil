@@ -198,10 +198,13 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=
 ##' @param col Color palette matching the values of \code{x}.
 ##'   Can also be the response vector used to create the
 ##'   scheme for automatic coloring.
-##' @param ... Ignored, kept for S3 consistency.
+##' @param ... Sent to \code{\link{plot}}.
 ##' @return Nothing, produces a plot.
 ##' @examples
 ##' image(resample("holdout", 60, frac=1/3, nfold=20))
+##'
+##' y <- gl(2, 30)
+##' image(resample("crossval", y, nfold=3, nrep=8), col=y)
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso \code{\link{emil}}, \code{\link{resample}}
 ##' @export
@@ -215,70 +218,31 @@ image.resample <- function(x, col, ...){
         if(length(y) != nrow(x))
             stop("Color vector does not match resampling scheme.")
         nice.require("RColorBrewer")
-        nice.require("colorspace")
         if(length(levels(y)) > 12)
             warning("Too few colors to assign unique ones to each class.")
         col <- rep(brewer.pal(12, "Set3"),
                    ceiling(length(levels(y))/12))[seq_along(levels(y))]
-        col <- hex2RGB(col)
-        col@coords <- do.call(rbind, lapply(
-            seq(.7, 1, length.out=max(x, na.rm=TRUE)+1),
-            "*", col@coords))
-        col <- hex(col)
-        mat <- sweep(x*length(levels(y)), 1, as.integer(y), "+")
+        col <- apply(col2rgb(col), 2, function(cl){
+              apply(cl %o% seq(.7, 1, length.out=max(x)+1), 2,
+                    function(cc) do.call(rgb, as.list(cc/255)))
+        })
+        mat <- matrix(col[cbind(as.vector(x)+1, as.integer(y))], nrow(x), ncol(x))
     } else {
         mat <- 1 + x
+        mat <- matrix(col[mat], nrow(mat))
     }
-    mat <- matrix(col[mat], nrow(mat))
     mat[is.na(x)] <- "transparent"
     plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
-         xlab="Folds", ylab="Observations")
+         xlab="Folds", ylab="Observations", ...)
     rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
 }
 
 
-##' Visualize cross-validation scheme
-##' 
-##' @param x cross-validation scheme, as returned by \code{\link{resample.crossval}}.
-##' @param col Color palette. Can also be the response vector used to create the
-##'   scheme for automatic coloring.
-##' @param ... Ignored, kept for S3 consistency.
-##' @return Nothing, produces a plot.
-##' @examples
-##' y <- gl(2, 30)
-##' image(resample("crossval", y, nfold=3, nrep=8), col=y)
-##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @rdname image.resample
 ##' @export
 image.crossval <- function(x, col, ...){
+    image.resample(x, col, ...)
     param <- attr(x[[1]], "param")
-    x <- as.matrix(x)
-
-    if(missing(col)) col <- gl(1, nrow(x))
-    if(inherits(col, "Surv")) col <- as.outcome(col)
-    if(inherits(col, "outcome")) col <- col$event
-    if(is.factor(col)){
-        y <- col
-        nice.require("RColorBrewer")
-        nice.require("colorspace")
-        if(length(levels(y)) > 12)
-            warning("Too few colors to assign unique ones to each class.")
-        col <- rep(brewer.pal(12, "Set3"),
-                   ceiling(length(levels(y))/12))[seq_along(levels(y))]
-        col <- hex2RGB(col)
-        col@coords <- do.call(rbind, lapply(
-            seq(.7, 1, length.out=max(x, na.rm=TRUE)+1),
-            "*", col@coords))
-        col <- hex(col)
-        mat <- sweep(x*length(levels(y)), 1, as.integer(y), "+")
-    } else {
-        mat <- 1 + x
-    }
-    mat <- matrix(col[mat], nrow(mat))
-    mat[is.na(x)] <- "transparent"
-    plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
-         xlab=sprintf("Folds (%i sets of %i folds)", param$nrep, param$nfold),
-         ylab="Observations")
-    rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
     if(param$nrep > 1){
         l <- 1:(param$nrep-1)*param$nfold + .5
         segments(l, par("usr")[3], l, par("usr")[4])
