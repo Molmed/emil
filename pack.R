@@ -7,11 +7,13 @@ library("roxygen2")
 
 roxygen.update.description("emil")
 doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/NAMESPACE"),
-                     sprintf("emil/man/%s.Rd", c("emil", "emil.extensions")))
+                     sprintf("emil/man/%s.Rd", c("emil", "emil.extensions"),
+                             "emil/emil-Ex.R"))
 file.remove(doc.files)
 roxygenize("emil")
-system("R CMD check emil")
+system("R CMD check emil --as-cran")
 file.remove("emil/emil-Ex.R")
+unlink("emil.Rcheck", recursive=TRUE)
 
 # To just check examples
 system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vignettes")
@@ -36,9 +38,25 @@ system("R CMD build emilPlots")
 #-----------------------------------------------------------------[ Distribute ]
 
 new.build <- tail(dir(, "emil.*\\.tar\\.gz"), 1)
-system("~/bin/tank0.sh")
+
+# On laptop
+file.copy(new.build, "~/mnt/uppmax-repo/src/contrib") # The p2010042 repo
+tools::write_PACKAGES("~/mnt/uppmax-repo/src/contrib")
+system(paste("scp", new.build, "uppmax:~/R-repos/b2010028/src/contrib"))
+tools::write_PACKAGES("~/R-repos/b2010028/src/contrib") # On uppmax
 system(paste("scp", new.build, "tank:~/R_packages/src/contrib"))
 tools::write_PACKAGES("~/R_packages/src/contrib") # On tank
+
+system("~/bin/tank0.sh")
+
+system(paste("scp", new.build, "tank:~/R_packages/src/contrib"))
+tools::write_PACKAGES("~/R_packages/src/contrib") # On tank
+
+# With mounted uppmax repo
+system(paste("cp", new.build, "~/R-repos/b2010028/src/contrib"))
+tools::write_PACKAGES("~/R-repos/b2010028/src/contrib") # On uppmax
+
+# Locally on uppmax
 system(paste("cp", new.build, "~/R-repos/b2010028/src/contrib"))
 tools::write_PACKAGES("~/R-repos/b2010028/src/contrib")
 system(paste("cp", new.build, "~/R-repos/p2010042/src/contrib"))

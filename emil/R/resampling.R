@@ -56,8 +56,8 @@
 ##' @seealso \code{\link{emil}}, \code{\link{subresample}},
 ##'   \code{\link{image.resample}}, \code{\link{index.fit}}
 ##' @export
-resample <- function(method, y, ..., subset){
-    x <- get(sprintf("resample.%s", method))(y, ...)
+resample <- function(method, y, ..., subset=TRUE){
+    x <- get(sprintf("resample.%s", method))(y, ..., subset=subset)
     class(x$folds) <- c(method, "resample", "data.frame")
     if(all(grepl("^V\\d+$", names(x$folds))))
         names(x$folds) <- sprintf("fold%i", seq_along(x$folds))
@@ -128,12 +128,12 @@ index.test <- function(fold){
 ##' resample("holdout", factor(runif(60) >= .5))
 ##' @rdname resample
 ##' @export
-resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), subset=TRUE){
+resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), subset){
     if(length(y) == 1 && is.numeric(y)){
         n <- y
     } else{
         n <- length(y)
-        subset <- seq_along(y)[subset] & !is.na(y)
+        subset <- seq_along(y)[subset & !is.na(y)]
     }
     class.idx <- if(balanced){
         lapply(levels(y), function(lev) intersect(which(y == lev), (1:n)[subset]))
@@ -158,7 +158,7 @@ resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), su
 ##' image(cv, main="Cross-validation scheme")
 ##' @rdname resample
 ##' @export
-resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset=TRUE){
+resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset){
     n <- if(length(y) == 1) y else length(y)
     if(inherits(y, "Surv"))
         y <- as.factor(y[,"status"])
@@ -223,7 +223,7 @@ image.resample <- function(x, col, ...){
         col <- rep(brewer.pal(12, "Set3"),
                    ceiling(length(levels(y))/12))[seq_along(levels(y))]
         col <- apply(col2rgb(col), 2, function(cl){
-              apply(cl %o% seq(.7, 1, length.out=max(x)+1), 2,
+              apply(cl %o% seq(.7, 1, length.out=max(x, na.rm=TRUE)+1), 2,
                     function(cc) do.call(rgb, as.list(cc/255)))
         })
         mat <- matrix(col[cbind(as.vector(x)+1, as.integer(y))], nrow(x), ncol(x))

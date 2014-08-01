@@ -36,15 +36,29 @@ test_that("Standard usage", {
 
 test_that("Parallelization", {
     require(parallel)
-    if(detectCores() > 1){
+    if(detectCores() > 1 && .Platform$OS.type != "windows"){
         proc <- modeling.procedure("lda", error.fun = function(...){
             Sys.sleep(0.5)
             list(pid=Sys.getpid(), time=Sys.time())
         })
-        modeling.FUN <- function(...) batch.model(proc, x, y, cv[1:4], ...)
+        modeling.FUN <- function(..., resample=cv[1:4])
+            batch.model(proc, x, y, resample=resample, ...)
 
         seq.time <- system.time( seq.perf <- modeling.FUN() )
-        par.time <- system.time( par.perf <- modeling.FUN(.parallel.cores=2) )
+        if(.Platform$OS.type == "windows"){
+            cl <- makePSOCKcluster(2)
+            clusterExport(cl, c("proc", "x", "y", "modeling.FUN", "listify",
+                "get.debug.flags", "set.debug.flags", "is.blank", "is.tuned",
+                "is.tunable", "error.rate", "trace.msg", "increase",
+                "pre.split", "index.fit", "index.test", "na.fill", "fill",
+                "nice.require"))
+            par.time <- system.time(
+                par.perf <- parLapply(cl, cv[1:4], function(fold) modeling.FUN(resample=fold))
+            )
+            stopCluster(cl)
+        } else {
+            par.time <- system.time( par.perf <- modeling.FUN(.parallel.cores=2) )
+        }
 
         expect_more_than(seq.time["elapsed"], par.time["elapsed"])
         expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1)
@@ -57,19 +71,15 @@ test_that("Parallelization", {
 })
 
 test_that("Checkpointing", {
-    if(is.writable(".")){
-        if(file.exists("tmp")){
-            file.remove(dir("tmp", full.names=TRUE))
-            file.remove("tmp")
-        }
+    if(file.access(".", 2) == 0){
+        tmp.dir <- tempdir()
         perf <- modeling.FUN()
-        check.perf <- modeling.FUN(.checkpoint.dir="tmp")
+        check.perf <- modeling.FUN(.checkpoint.dir=tmp.dir)
 
         expect_that(check.perf, is_identical_to(perf))
-        expect_true(file.exists("tmp"))
+        expect_true(file.exists(tmp.dir))
 
-        file.remove(dir("tmp", full.names=TRUE))
-        file.remove("tmp")
+        unlink(tmp.dir, recursive=TRUE)
     }
 })
 

@@ -9,6 +9,12 @@ test_that("repeated holdout", {
 
     ho.tab <- lapply(ho, table, y)
     expect_true(all(sapply(ho.tab[-1], all.equal, ho.tab[[1]])))
+
+    sub.ho <- subresample(ho, y)
+    expect_equivalent(
+        lapply(ho, function(fold) index.test(fold)),
+        lapply(sub.ho, function(sh) which(is.na(sh[[1]])))
+    )
 })
 
 test_that("cross-validation", {
@@ -19,11 +25,18 @@ test_that("cross-validation", {
     cv.tab <- lapply(cv, table, y)
     expect_true(all(sapply(cv.tab[-1], all.equal, cv.tab[[1]])))
 
+    sub.cv <- subresample(cv, y)
+    expect_equivalent(
+        lapply(cv, function(fold) index.test(fold)),
+        lapply(sub.cv, function(sc) which(is.na(sc[[1]])))
+    )
+
     y[1] <- NA
     cv <- resample("crossval", y, nfold=5, nrep=3)
     cv.tab <- lapply(cv, table, y)
     expect_that(range(sapply(cv.tab, "[", 1)), is_equivalent_to(1:2))
     expect_that(range(sapply(cv.tab, "[", 2)), is_equivalent_to(7:8))
     expect_true(all(sapply(cv.tab[-1], function(x) all.equal(x[,2], cv.tab[[1]][,2]))))
+
 })
 

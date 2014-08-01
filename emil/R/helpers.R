@@ -311,26 +311,3 @@ reset.warn.once <- function(){
     options(emil.warnings = NULL)
 }
 
-##' Test if a directory is writable
-##'
-##' @param path The path to the directory
-##' @return Logical indicating if the directory is writable
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @export
-is.writable <- function(path="."){
-    filename <- sprintf("%s/save_test.Rdata", path)
-    success <- FALSE
-    if(file.exists(path)){
-        try({
-            about <- "This variable was loaded from a temporary file only used to test if a directory was writable. Please delete it."
-            save(about, file=filename)
-            success <- TRUE
-        }, silent=TRUE)
-        try({
-            if(file.exists(filename))
-                file.remove(filename)
-        }, silent=TRUE)
-    }
-    success
-}
-

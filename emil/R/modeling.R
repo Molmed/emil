@@ -160,6 +160,12 @@ print.modeling.procedure <- function(x, ...){
 ##' @param .save What aspects of the modeling to perform and return to the
 ##'   user.
 ##' @param .parallel.cores Number of CPU-cores to use for parallel computation.
+##'   The current implementation is based on \code{\link{mcMap}}, which
+##'   unfortunatelly do not work on Windows systems. It can however be
+##'   re-implemented by the user fairly easily by setting up a PSOCK cluster and
+##'   calling \code{\link{parLapply}} as in the example below. This solution
+##'   might be included in future versions of the package, after further
+##'   investigation.
 ##' @param .checkpoint.dir Directory to save intermediate results to. If set
 ##'   the computation can be restarted with minimal loss of results.
 ##' @param .return.errors If \code{FALSE} the entire modeling is aborted upon an
@@ -181,6 +187,20 @@ print.modeling.procedure <- function(x, ...){
 ##'       \item{\code{tune}}{Results from the parameter tuning. See
 ##'           \code{\link{tune}} for details.}
 ##'   }
+##' @examples
+##' x <- iris[-5]
+##' y <- iris$Species
+##' proc <- modeling.procedure("lda")
+##' cv <- resample("crossval", y, 4, 4)
+##' perf <- batch.model(proc, x, y, cv, .save=list(pred=TRUE))
+##' 
+##' # Parallelization on windows
+##' require(parallel)
+##' cl <- makePSOCKcluster(2)
+##' clusterEvalQ(cl, library(emil))
+##' clusterExport(cl, c("proc", "x", "y"))
+##' perf <- parLapply(cl, cv, function(fold)
+##'     batch.model(proc, x, y, resample=fold))
 ##' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
@@ -252,6 +272,10 @@ batch.model <- function(proc, x, y,
 #------------------------------------------------------------------------------o
 #   Set up parallelization, error handling and checkpointing
 
+    if(.Platform$OS.type == "windows" && .parallel.cores > 1){
+        warn.once("windows_parallelization", "Parallelization is not yet implemented for windows systems. Please set it up manually as described in `?batch.model`. Running sequentially.")
+        .parallel.cores <- 1
+    }
     if(.parallel.cores > 1){
         require("parallel")
         options(mc.cores = .parallel.cores)

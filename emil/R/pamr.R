@@ -106,7 +106,7 @@ emil.fit.pamr <- function(x, y, error.fun, cv, threshold=NULL, ...,
                     if(nrow(cv) != length(x$y))
                         stop("Resampling set for shrinkage selection does not match dataset in size.")
                     fit.cv <- pamr::pamr.cv(fit, x,
-                        folds=lapply(cv, function(x) which(x == 0)))
+                        folds=lapply(cv, index.test))
                     if(slim.fit){
                         fit.cv$cv.objects <- NULL
                     }
