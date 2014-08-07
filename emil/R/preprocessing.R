@@ -148,7 +148,7 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     }
 
 
-    if(k < 1) k <- max(1, round(.05*nrow(x)))
+    if(k < 1) k <- max(1, round(.05*length(index.fit(fold))))
     if(k > sum(fold > 0, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
 
     # If a feature has fewer non-NAs than k exclude it
@@ -204,19 +204,26 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 ##' @param k Number of nearest neighbors to use.
 ##' @param distmat Distance matrix.
 ##' @return An imputed matrix.
+##' @examples
+##' x <- matrix(rnorm(36), 6, 6)
+##' x[sample(length(x), 5)] <- NA
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @name impute
 ##' @seealso \code{\link{emil}}, \code{\link{pre.process}},
 ##'   \code{\link{pre.impute.knn}}, \code{\link{pre.impute.median}}
 {}
+##' @examples
+##' impute.knn(x)
 ##' @rdname impute
 ##' @export
 impute.knn <- function(x, k=.05, distmat="auto"){
-    pre.impute.knn(x, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$fit$x
+    pre.impute.knn(x, NULL, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$fit$x
 }
+##' @examples
+##' impute.median(x)
 ##' @rdname impute
 ##' @export
 impute.median <- function(x){
-    pre.impute.median(x, , rep(TRUE, nrow(x)))$fit$x
+    pre.impute.median(x, NULL, rep(TRUE, nrow(x)))$fit$x
 }
 

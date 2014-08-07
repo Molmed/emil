@@ -166,8 +166,9 @@ print.modeling.procedure <- function(x, ...){
 ##'   calling \code{\link{parLapply}} as in the example below. This solution
 ##'   might be included in future versions of the package, after further
 ##'   investigation.
-##' @param .checkpoint.dir Directory to save intermediate results to. If set
-##'   the computation can be restarted with minimal loss of results.
+##' @param .checkpoint.dir Directory to save intermediate results to, after
+##'   every completed fold. The directory will be created if it doesn't exist,
+##'   but not recursively.
 ##' @param .return.errors If \code{FALSE} the entire modeling is aborted upon an
 ##'   error. If \code{TRUE} the modeling of the particular fold is aborted and
 ##'   the error message is returned instead of its results.
@@ -298,6 +299,8 @@ batch.model <- function(proc, x, y,
     if(!is.null(.checkpoint.dir)){
         if(!file.exists(.checkpoint.dir))
             dir.create(.checkpoint.dir)
+        if(file.access(.checkpoint.dir, 6) != 0)
+            stop("You do not have read and write permissions to the checkpoint directory.")
         checkpoint.files <- sprintf("%s/%s.Rdata",
             .checkpoint.dir, gsub("\\W+", "-", names(resample)))
     } else {
