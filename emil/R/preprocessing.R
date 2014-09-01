@@ -154,13 +154,13 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     # If a feature has fewer non-NAs than k exclude it
     non.na.count <- apply(!is.na(x[index.fit(fold, allow.oversample=FALSE),]), 2, sum)
     features <- non.na.count >= k
-    na.ind <- na.ind[na.ind[,"col"] %in% which(features),]
+    na.ind <- na.ind[na.ind[,"col"] %in% which(features),,drop=FALSE]
 
     if(missing(distmat))
         stop("You must supply a distance matrix, see `?pre.impute.knn` for details.")
     if(is.character(distmat) && distmat == "auto"){
         idx <- !is.na(fold)
-        d <- as.matrix(dist(x[idx,]))
+        d <- as.matrix(dist(x[idx,,drop=FALSE]))
         if(any(is.na(d)))
             stop("Could not calculate distance matrix, check data set for observations with all values missing.")
         distmat <- matrix(NA, nrow(x), nrow(x))

@@ -261,7 +261,7 @@ trapz <- function(x,y){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file=""){
-    if(level){
+    if(level > 0){
         for(msg in sprintf(...)){
         cat(sep="", file=file,
             # timestamp

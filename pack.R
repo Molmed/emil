@@ -37,9 +37,11 @@ system("R CMD build emilPlots")
 
 #-----------------------------------------------------------------[ Distribute ]
 
-new.build <- tail(dir(, "emil.*\\.tar\\.gz"), 1)
+f <- file.info(dir(, "emil.*\\.tar\\.gz"))
+new.build <- rownames(f)[which.max(f$mtime)]
 
 # On laptop
+uppmax.repo()
 file.copy(new.build, "~/mnt/uppmax-repo/src/contrib") # The p2010042 repo
 tools::write_PACKAGES("~/mnt/uppmax-repo/src/contrib")
 system(paste("scp", new.build, "uppmax:~/R-repos/b2010028/src/contrib"))

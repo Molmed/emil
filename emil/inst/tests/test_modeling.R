@@ -21,8 +21,8 @@ x <- iris[-5]
 y <- iris$Species
 cv <- resample("crossval", y, nfold=3, nrep=2)
 proc <- modeling.procedure("lda")
-modeling.FUN <- function(..., xx=x)
-    evaluate.modeling(proc, xx, y, resample=cv, ..., .verbose=FALSE)
+modeling.FUN <- function(..., xx=x, .verbose=FALSE)
+    evaluate.modeling(proc, xx, y, resample=cv, ..., .verbose=.verbose)
 
 test_that("Standard usage", {
     perf <- modeling.FUN(.save=list(fit=TRUE, pred=TRUE, vimp=FALSE))
@@ -86,7 +86,7 @@ test_that("Checkpointing", {
 test_that("Error handling", {
     x[1] <- NA
     expect_error(modeling.FUN(xx=x, .return.errors=FALSE))
-    perf <- modeling.FUN(xx=x, .return.errors=TRUE)
+    perf <- modeling.FUN(xx=x, .return.errors=TRUE, .verbose=-1) # Test verbosity too
     expect_true(all(sapply(perf, inherits, "error")))
 })
 

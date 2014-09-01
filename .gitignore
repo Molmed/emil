@@ -2,6 +2,7 @@
 *.tar.gz
 builds
 *.Rapp.history
+.Rhistory
 *~
 *.swp
 *.bak

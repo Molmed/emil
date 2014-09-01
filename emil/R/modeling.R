@@ -279,8 +279,9 @@ batch.model <- function(proc, x, y,
     }
     if(.parallel.cores > 1){
         require("parallel")
-        options(mc.cores = .parallel.cores)
-        Map.FUN <- parallel::mcMap
+        Map.FUN <- function(f, ...)
+            parallel::mcmapply(f, ..., SIMPLIFY=FALSE,
+                               mc.silent=.verbose, mc.cores=.parallel.cores)
     } else {
         Map.FUN <- Map
     }
