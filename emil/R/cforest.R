@@ -24,12 +24,10 @@
 emil.fit.cforest <- function(x, y, formula=y~., ctrl.fun=cforest_unbiased, ...){
     nice.require("party")
     nice.require("survival")
-    if(!is.outcome(y) && !is.Surv(y))
-        warn.once("The `cforest` wrappers only been properly tested for survival analysis problems, proceed with care.")
-    if(is.outcome(y)){
-        if(length(levels(y$event) > 1) && any(table(y$event)[-1] > 0))
-            stop("cforest cannot handle competing events.")
-        y <- as.Surv(y)
+    if(!inherits(y, "Surv")){
+        warn.once("The `cforest` wrappers has only been properly tested for survival analysis problems so far, proceed with care.")
+    } else if(attr(y, "type") %in% c("mright", "mcounting")){
+        stop("cforest cannot handle competing events.")
     }
     if(any(is.na(y))) stop("`y` contains missing values")
     party::cforest(formula, data.frame(y=y, as.data.frame(x)), controls=ctrl.fun(...))

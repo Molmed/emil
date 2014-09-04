@@ -259,7 +259,7 @@ batch.model <- function(proc, x, y,
             if(is.null(proc[[i]]$error.fun)){
             proc[[i]]$error.fun <- if(class(y) == "factor"){
                 error.rate
-            } else if(inherits(y, c("outcome", "Surv"))){
+            } else if(inherits(y, "Surv")){
                 neg.harrell.C
             } else if(is.numeric(y)){
                 mse

@@ -98,3 +98,84 @@ p.value.survdiff <- function(x, log.p=FALSE, ...){
     pchisq(x$chisq, length(x$n) - 1, lower.tail=FALSE, log.p=log.p)
 }
 
+
+##' Dichotomize time-to-event data
+##'
+##' Convert time-to-event data (typically created with the \code{\link{Surv}}
+##' function) to factor or integer.
+##' 
+##' If no time point is given the observation times will be stripped, leaving
+##' only the event types. If a time point is given
+##' observations with events occurring before \code{time} will be labelled by
+##' their event type,
+##' observations with events occurring after \code{time} will be labelled as
+##' \dQuote{no event}, and
+##' observations censored before \code{time} will be considered as missing
+##' information.
+##' 
+##' @param x \code{\link{Surv}} vector.
+##' @param time Time point to dichotomize at.
+##' @param to.factor Depending on the type of \code{x} the return value may be
+##'   integer or factor. Set this argument to explicitly state the return type.
+##' @return Integer vector or factor.
+##' @seealso \code{\link{Surv}}
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+dichotomize <- function(x, time, to.factor){
+    ev <- if(missing(time)){
+        x[,"status"]
+    } else {
+        ifelse(x[,"status"] %in% 0,
+               ifelse(x[,"time"] < time, NA, 0),
+               ifelse(x[,"time"] > time, 0, x[,"status"]))
+    }
+    if(missing(to.factor))
+        to.factor <- attr(x, "type") %in% c("mright", "mcounting")
+    if(to.factor){
+        labels <- SurvEventTypes(x)
+        factor(ev, levels=0:length(labels), labels=c("no event", labels))
+    } else {
+        ev
+    }
+}
+
+##' Get event types of a Surv object
+##'
+##' @param x \code{\link{Surv}} vector.
+##' @return Character vector of event types.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @noRd
+SurvEventTypes <- function(x){
+    mstat <- attr(x, "type") %in% c("mright", "mcounting")
+    if(mstat) attr(x, "states") else c("no event", "event")
+}
+
+##' Plot Surv vector
+##' 
+##' @param x \code{\link{Surv}} vector.
+##' @param y Y-values.
+##' @param segments Whether to draw horizontal segments.
+##' @param flip Flip the plot to show time on y.
+##' @param legendpos Position of legend, see \code{\link{legend}}. Set to NA or
+##'   NULL to suppress legend.
+##' @param ... Sent to \code{\link{plot}}.
+##' @author Christofer \enc{Bäcklin}{Backlin}
+##' @export
+plot.Surv <- function(x, y, segments=TRUE, flip=FALSE, legendpos="topright", ...){
+    if(missing(y)) y <- 1:length(x)
+
+    if(flip){
+        plot(y, x[,"time"], type="n", ...)
+        if(segments) segments(y, 0, y, x[,"time"], col=dichotomize(x, to.factor=FALSE)+1)
+        points(y, x[,"time"], pch=20, col=dichotomize(x)+1)
+    } else {
+        plot(x[,"time"], y, type="n", ...)
+        if(segments) segments(0, y, x[,"time"], y, col=dichotomize(x, to.factor=FALSE)+1)
+        points(x[,"time"], y, pch=20, col=dichotomize(x)+1)
+    }
+    if(!is.blank(legendpos)){
+        legend(legendpos, SurvEventTypes(x), pch=20,
+               col=seq_along(SurvEventTypes(x)))
+    }
+}
+

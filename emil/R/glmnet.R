@@ -34,7 +34,7 @@ emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, 
         stop("The glmnet wrapper is only implemented for classification (factor response) so far.")
     nice.require("glmnet", "is required to fit elastic net models")
     if(missing(family)){
-        if(inherits(y, c("outcome", "Surv"))) family <- "cox" else
+        if(inherits(y, "Surv")) family <- "cox" else
         if(is.factor(y))
             if(length(levels(y)) == 2) family <- "binomial" else
             family <- "multinomial" else
@@ -42,7 +42,7 @@ emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, 
         if(is.numeric(y)) family <- "gaussian" else
         stop("Could not auto detect glmnet family, see `?fit.glmnet`.")
     }
-    if(inherits(y, "outcome")) y <- as.Surv(y)
+    if(inherits(y, "Surv")) y <- as.Surv(y)
 
     if(length(lambda) > 1 || length(lambda) != 1){
         if(missing(nfolds)){

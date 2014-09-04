@@ -1,5 +1,6 @@
-##' Create a vector of outcomes
-
+##' Create a vector of outcomes [deprecated]
+##'
+##' Deprecated since \pkg{emil} version 1.1-11. Use \code{\link{Surv}} instead.
 ##'
 ##' Heavily modeled after the \code{\link{Surv}} class in the `survival` package.
 ##' Objects of this class are internally stored as data frames but should be
@@ -20,6 +21,7 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
 outcome <- function(time, event, levels, censor){
+    warning("The outcome class is deprecated, use Surv instead.")
     if(missing(censor)){
         if(missing(levels)){
             censor <- NA

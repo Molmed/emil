@@ -163,7 +163,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset)
     if(inherits(y, "Surv"))
         y <- as.factor(y[,"status"])
     if(n < nfold) stop("Number of objects cannot be smaller than number of groups")
-    if(is.outcome(y)) y <- factor.events(y)
+    if(inherits(y, "Surv")) y <- dichotomize(y, to.factor=TRUE)
 
     # Convert subset to logical vector
     subset <- (1:n) %in% (1:n)[subset]
@@ -211,8 +211,7 @@ resample.crossval <- function(y, nfold=5, nrep=5, balanced=is.factor(y), subset)
 image.resample <- function(x, col, ...){
     x <- as.matrix(x)
     if(missing(col)) col <- gl(1, nrow(x))
-    if(inherits(col, "Surv")) col <- as.outcome(col)
-    if(inherits(col, "outcome")) col <- col$event
+    if(inherits(col, "Surv")) col <- dichotomize(col, to.factor=TRUE)
     if(is.factor(col)){
         y <- col
         if(length(y) != nrow(x))
