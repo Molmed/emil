@@ -146,7 +146,7 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 ##' @seealso \code{\link{subframe}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-subtree <- function(x, i, ..., fun.value, silent=FALSE, simplify=TRUE){
+subtree <- function(x, i, ..., fun.value=NULL, silent=FALSE, simplify=TRUE){
     ret <- if(missing(i)){
         x
     } else if(is.function(i)){
@@ -156,7 +156,7 @@ subtree <- function(x, i, ..., fun.value, silent=FALSE, simplify=TRUE){
     } else {
         lapply(x[i], subtree, ..., fun.value=fun.value, silent=silent, simplify=simplify)
     }
-    if((missing(i) || missing(...)) && !missing(fun.value)){
+    if((missing(i) || missing(...)) && !is.null(fun.value)){
         ret <- if(silent) tryCatch({
             as(ret, class(fun.value))
         }, error=function(err){
