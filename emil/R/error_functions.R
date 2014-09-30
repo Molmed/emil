@@ -135,3 +135,15 @@ neg.harrell.C <- function(true, pred){
     -Hmisc::rcorr.cens(pred$risk, as.Surv(true))[1]
 }
 
+
+
+error.convergence <- function(x){
+    if("error" %in% x[[1]]){
+        # Single procedure
+        err <- subtree(x, TRUE, "error")
+    } else {
+        err <- subtree(x, TRUE, TRUE, "error")
+    }
+
+}
+

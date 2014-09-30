@@ -365,14 +365,14 @@ batch.model <- function(proc, x, y,
                     p$fit.fun(sets$fit$x, sets$fit$y, ...), p$param)
                 predictions <- p$predict.fun(model, sets$test$x)
             }
-            c(
+            structure(c(
                 if(.save$fit) list(fit = model) else NULL,
                 list(error = p$error.fun(sets$test$y, predictions)),
                 if(.save$pred) list(pred = predictions) else NULL,
                 if(.save$vimp) list(vimp = fixvimp(p$vimp.fun(model), sets$features)) else NULL,
                 if(.save$tuning && is.tunable(p))
                     list(param=p$param, tuning = p$tuning) else NULL
-            )
+            ), class="model")
         })
 
         # Estimate run time

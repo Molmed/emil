@@ -21,6 +21,19 @@ is.blank <- function(x, false.triggers=FALSE){
 }
 
 
+is.multi.proc <- function(x){
+    if(inherits(x, "modeling.result")){
+        if(all(sapply(x, inherits, "model"))){
+            return(FALSE)
+        } else if(all(sapply(x, sapply, inherits, "model")) &&
+                  all(sapply(x, length) == length(x[[1]]))){
+            return(TRUE)
+        }
+    }
+    stop("Invalid modeling result.")
+}
+
+
 ##' Replace values with something else
 ##'
 ##' @param x Variable containing NAs.
@@ -118,8 +131,10 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 ##' @param i Indexes to extract on the first level of the tree. Can also be a
 ##'   function that will be applied to the downstream result of the function.
 ##' @param ... Indexes to extract on subsequent levels.
-##' @param error A function to be called if there is an error when parsing
-##'   \code{x}, or a value to replace erroneous elements with, see the examples.
+##' @param fun.value A template for the return value, analog to the
+##'   \code{FUN.VALUE} argument of \code{\link{vapply}}.
+##' @param silent Should errors related to \code{fun.value} break the execution
+##'   (\code{FALSE}) or be replaced with \code{NA} (\code{TRUE}).
 ##' @param simplify Whether to collapse lists of length one (\code{TRUE}) or
 ##'   preserve the original tree structure (\code{FALSE}).
 ##' @return A subset of the list tree.
@@ -128,31 +143,31 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 ##'           B=list(a=5:7, b=8:9))
 ##' subtree(l, 1:2, "b")
 ##' subtree(l, TRUE, mean, "a")
-##'
-##' subtree(l, TRUE, exp, "c", error=browser)
-##' subtree(l, TRUE, exp, "c", error=NA)
 ##' @seealso \code{\link{subframe}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-subtree <- function(x, i, ..., error=NULL, simplify=TRUE){
-    get.value <- expression({
-        if(missing(i)){
-            x
-        } else if(is.function(i)){
-            i(subtree(x, ..., error=error, simplify=simplify))
-        } else if(missing(...)){
-            x[i]
-        } else {
-            lapply(x[i], subtree, ..., error=error, simplify=simplify)
-        }
-    })
-    ret <- if(is.null(error)){
-        # Leave error handling to whatever function will produce the error
-        eval(get.value)
+subtree <- function(x, i, ..., fun.value, silent=FALSE, simplify=TRUE){
+    ret <- if(missing(i)){
+        x
+    } else if(is.function(i)){
+        i(subtree(x, ..., fun.value=fun.value, silent=silent, simplify=simplify))
+    } else if(missing(...)){
+        x[i]
     } else {
-        # Handle errors within this function 
-        tryCatch(eval(get.value), 
-                 error = if(is.function(error)) error else function(...) error)
+        lapply(x[i], subtree, ..., fun.value=fun.value, silent=silent, simplify=simplify)
+    }
+    if((missing(i) || missing(...)) && !missing(fun.value)){
+        ret <- if(silent) tryCatch({
+            as(ret, class(fun.value))
+        }, error=function(err){
+            warning(err$message)
+            as(rep(NA, length(fun.value)), class(fun.value))
+        }) else {
+            as(ret, class(fun.value))
+        }
+        if(length(ret) != length(fun.value))
+            stop(sprintf("values must be length %i, but result is length %i",
+                         length(fun.value), length(ret)))
     }
     if(simplify){
         if(length(ret) == 1){

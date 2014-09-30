@@ -11,6 +11,7 @@ doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/NAMESPACE"),
                              "emil/emil-Ex.R"))
 file.remove(doc.files)
 roxygenize("emil")
+system("R CMD check emil")
 system("R CMD check emil --as-cran")
 file.remove("emil/emil-Ex.R")
 unlink("emil.Rcheck", recursive=TRUE)
