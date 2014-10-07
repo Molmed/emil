@@ -3,9 +3,11 @@
 ##' Note that different methods calculates variable importance in different
 ##' ways and that they are not directly comparable.
 ##'
-##' @param object Modeling procedure.
+##' @param proc Modeling procedure.
 ##' @param model Fitted model.
 ##' @param ... Sent on to the procedure's variable importance scoring function.
+##' @param .verbose Whether to print an activity log. Set to \code{-1} to
+##'   suppress all messages.
 ##' @return A vector of length p or an p-x-c matrix of variable importance
 ##'   scores where p is the number of descriptors and c is the number of classes.
 ##' @examples
@@ -15,8 +17,15 @@
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @seealso \code{\link{emil}}
 ##' @export
-vimp <- function(object, model, ...){
-    object$vimp.fun(model, ...)
+vimp <- function(proc, model, ..., .verbose=TRUE){
+    if(.verbose < 0){
+        capture.output(suppressMessages(
+            res <- proc$vimp.fun(model, ...)
+        ))
+        res
+    } else {
+        proc$vimp.fun(model, ...)
+    }
 }
 
 

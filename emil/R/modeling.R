@@ -35,36 +35,7 @@
 ##' @param error.fun Performance measure used to evaluate modeling procedures
 ##'   and to tune parameters. See \code{\link{error.fun}} for details.
 ##' @return An object of class \code{modeling.procedure}.
-##' @examples
-##' # 1: Fit linear discriminants without tuning any parameter,
-##' # since it has none
-##' modeling.procedure("lda")
-##' 
-##' # 2: Tune random forest's `mtry` parameter, with 3 possible values
-##' modeling.procedure("randomForest", list(mtry = list(100, 250, 1000)))
-##' 
-##' # 3: Tune random forest's `mtry` and `maxnodes` parameters simultaneously,
-##' # with 3 values each, testing all 9 possible combinations
-##' modeling.procedure("randomForest", list(mtry = list(100, 250, 1000),
-##'                                          maxnodes = list(5, 10, 25)))
-##' 
-##' # 4: Tune random forest's `mtry` and `maxnodes` parameters simultaneously,
-##' # but only test 3 manually specified combinations of the two
-##' modeling.procedure("randomForest", list(list(mtry = 100, maxnodes = 5),
-##'                                     list(mtry = 250, maxnodes = 10),
-##'                                     list(mtry = 1000, maxnodes = 25)))
-##' 
-##' # 5: Tune elastic net's `alpha` and `lambda` parameters. Since elastic net's
-##' # fitting function can tune `lambda` internally in a more efficient way
-##' # than the general framework is able to do, only tune `alpha` and pass all
-##' # `lambda` values as a single argument.
-##' modeling.procedure("glmnet", list(alpha = seq(0, 1, length.out=6),
-##'                                    lambda = list(seq(0, 5, length.out=30))))
-##' 
-##' # 6: Train elastic nets using the caret package's model fitting framework
-##' library(caret)
-##' modeling.procedure("caret", list(method = "glmnet",
-##'     trControl = list(trainControl(verboseIter = TRUE, classProbs = TRUE))))
+##' @example ../examples/modeling_procedure.R
 ##' @seealso \code{\link{emil}}, \code{\link{evaluate.modeling}},
 ##'   \code{\link{fit}}, \code{\link{tune}},
 ##'   \code{\link[=predict.modeling.procedure]{predict}}, \code{\link{vimp}}
@@ -188,20 +159,7 @@ print.modeling.procedure <- function(x, ...){
 ##'       \item{\code{tune}}{Results from the parameter tuning. See
 ##'           \code{\link{tune}} for details.}
 ##'   }
-##' @examples
-##' x <- iris[-5]
-##' y <- iris$Species
-##' proc <- modeling.procedure("lda")
-##' cv <- resample("crossval", y, 4, 4)
-##' perf <- batch.model(proc, x, y, cv, .save=list(pred=TRUE))
-##' 
-##' # Parallelization on windows
-##' require(parallel)
-##' cl <- makePSOCKcluster(2)
-##' clusterEvalQ(cl, library(emil))
-##' clusterExport(cl, c("proc", "x", "y"))
-##' perf <- parLapply(cl, cv, function(fold)
-##'     batch.model(proc, x, y, resample=fold))
+##' @example ../examples/batch_model.R
 ##' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
@@ -209,54 +167,54 @@ batch.model <- function(proc, x, y,
     resample=emil::resample("crossval", y, nfold=2, nrep=2), pre.process=pre.split,
     .save=list(fit=FALSE, pred=FALSE, vimp=FALSE, tuning=FALSE),
     .parallel.cores=1, .checkpoint.dir=NULL, .return.errors=.parallel.cores > 1,
-        .verbose=FALSE){
+    .verbose=FALSE){
 
-        if(inherits(proc, "modeling.procedure")){
-            multi.proc <- FALSE
-            proc <- listify(proc)
-        } else {
-            multi.proc <- TRUE
-        }
-        debug.flags <- get.debug.flags(proc)
-        if(is.logical(resample)){
-            multi.fold <- FALSE
-            resample <- data.frame(resample)
-            names(resample) <- attr(resample[[1]], "fold.name")
-        } else {
-            multi.fold <- TRUE
-        }
-        make.na <- is.na(y) & !Reduce("&", lapply(resample, is.na))
-        if(any(make.na)){
-            trace.msg(.verbose, "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
-            resample[make.na,] <- NA
-        }
+    if(inherits(proc, "modeling.procedure")){
+        multi.proc <- FALSE
+        proc <- listify(proc)
+    } else {
+        multi.proc <- TRUE
+    }
+    debug.flags <- get.debug.flags(proc)
+    if(is.logical(resample)){
+        multi.fold <- FALSE
+        resample <- data.frame(resample)
+        names(resample) <- attr(resample[[1]], "fold.name")
+    } else {
+        multi.fold <- TRUE
+    }
+    make.na <- is.na(y) & !Reduce("&", lapply(resample, is.na))
+    if(any(make.na)){
+        trace.msg(.verbose, "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
+        resample[make.na,] <- NA
+    }
 
-        .save <- lapply(c(fit="fit", pred="pred", vimp="vimp", tuning="tuning"), function(lab){
-            if(!is.blank(.save[[lab]]) && .save[[lab]]) TRUE else FALSE
-        })
+    .save <- lapply(c(fit="fit", pred="pred", vimp="vimp", tuning="tuning"), function(lab){
+        if(!is.blank(.save[[lab]]) && .save[[lab]]) TRUE else FALSE
+    })
 
-    #------------------------------------------------------------------------------o
-    #   Make sure all plug-ins exist before we start crunching
+#------------------------------------------------------------------------------o
+#   Make sure all plug-ins exist before we start crunching
 
-        do.tuning <- !sapply(proc, is.tuned)
-        missing.fun <- unlist(Map(function(p, to.be.tuned) c(
-            if(!is.function(p$fit.fun))
-                sprintf("fit.%s", p$method)
-            else NULL,
-            if(!is.function(p$predict.fun) && (.save$pred || to.be.tuned))
-                sprintf("predict.%s", p$method)
-            else NULL,
-            if(!is.function(p$vimp.fun) && .save$vimp)
-                sprintf("vimp.%s", p$method)
-            else NULL
-        ), proc, do.tuning))
-        if(!is.null(missing.fun))
-            stop(sprintf("Plug-in%s function %s not found.",
-                if(length(missing.fun) > 1) "s" else "",
-                paste("`", missing.fun, "`", sep="", collapse=", ")))
+    do.tuning <- !sapply(proc, is.tuned)
+    missing.fun <- unlist(Map(function(p, to.be.tuned) c(
+        if(!is.function(p$fit.fun))
+            sprintf("fit.%s", p$method)
+        else NULL,
+        if(!is.function(p$predict.fun) && (.save$pred || to.be.tuned))
+            sprintf("predict.%s", p$method)
+        else NULL,
+        if(!is.function(p$vimp.fun) && .save$vimp)
+            sprintf("vimp.%s", p$method)
+        else NULL
+    ), proc, do.tuning))
+    if(!is.null(missing.fun))
+        stop(sprintf("Plug-in%s function %s not found.",
+            if(length(missing.fun) > 1) "s" else "",
+            paste("`", missing.fun, "`", sep="", collapse=", ")))
 
-        for(i in seq_along(proc)){
-            if(is.null(proc[[i]]$error.fun)){
+    for(i in seq_along(proc)){
+        if(is.null(proc[[i]]$error.fun)){
             proc[[i]]$error.fun <- if(class(y) == "factor"){
                 error.rate
             } else if(inherits(y, "Surv")){
@@ -340,7 +298,7 @@ batch.model <- function(proc, x, y,
         } else if(.verbose) cat("\n")
 
         # Disable further messages if run in parallel
-        if(.parallel.cores > 1) .verbose <- FALSE
+        if(.parallel.cores > 1) .verbose <- -1
 
         # Do the work
         if(any(do.tuning)){
@@ -352,24 +310,24 @@ batch.model <- function(proc, x, y,
         }
         trace.msg(increase(.verbose, 1), "Extracting fitting and testing datasets.")
         sets <- pre.process(x, y, fold)
-        trace.msg(increase(.verbose, 1), "Fitting models.")
+        #trace.msg(increase(.verbose, 1), "Fitting models.")
         res <- lapply(fold.proc, function(p){
             if(.verbose < 0){
-                invisible(capture.output({
+                # TODO: This block should be replaced with a call to the fit function
+                capture.output(suppressMessages({
                     model <- do.call(function(...)
                         p$fit.fun(sets$fit$x, sets$fit$y, ...), p$param)
-                    predictions <- p$predict.fun(model, sets$test$x)
                 }))
             } else {
                 model <- do.call(function(...)
                     p$fit.fun(sets$fit$x, sets$fit$y, ...), p$param)
-                predictions <- p$predict.fun(model, sets$test$x)
             }
+            predictions <- predict(p, model, sets$test$x, .verbose=increase(.verbose, 1))
             structure(c(
                 if(.save$fit) list(fit = model) else NULL,
                 list(error = p$error.fun(sets$test$y, predictions)),
                 if(.save$pred) list(pred = predictions) else NULL,
-                if(.save$vimp) list(vimp = fixvimp(p$vimp.fun(model), sets$features)) else NULL,
+                if(.save$vimp) list(vimp = fixvimp(vimp(p, model, .verbose=increase(.verbose)), sets$features)) else NULL,
                 if(.save$tuning && is.tunable(p))
                     list(param=p$param, tuning = p$tuning) else NULL
             ), class="model")
@@ -445,7 +403,8 @@ batch.model <- function(proc, x, y,
 ##' @param y Response vector.
 ##' @param ... Sent to \code{\link{tune}}, in case tuning is required,
 ##'   which will pass them on to \code{\link{batch.model}}.
-##' @param .verbose Whether to print an activity log.
+##' @param .verbose Whether to print an activity log. Set to \code{-1} to
+##'   suppress all messages.
 ##' @return A list of fitted models.
 ##' @examples
 ##' proc <- modeling.procedure("lda")
@@ -455,7 +414,7 @@ batch.model <- function(proc, x, y,
 ##'   \code{\link[=predict.modeling.procedure]{predict}}, \code{\link{vimp}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-fit <- function(proc, x, y, ..., .verbose){
+fit <- function(proc, x, y, ..., .verbose=TRUE){
     reset.warn.once()
     if(inherits(proc, "modeling.procedure")){
         multi.proc <- FALSE
@@ -507,7 +466,8 @@ fit <- function(proc, x, y, ..., .verbose){
 ##'   produced by \code{\link{modeling.procedure}}.
 ##' @param ... Sent to \code{\link{batch.model}}.
 ##' @param .retune Whether to retune already tuned processes.
-##' @param .verbose Whether to print an activity log.
+##' @param .verbose Whether to print an activity log. Set to \code{-1} to
+##'   suppress all messages.
 ##' @return A tuned modeling procedures or a list of such.
 ##' @examples
 ##' proc <- modeling.procedure("randomForest", param=list(mtry=1:4))
@@ -602,7 +562,8 @@ detune <- function(proc){
 ##' @param y Response vector.
 ##' @param ... Sent to \code{\link{tune}} and \code{\link{batch.model}}.
 ##' @param .save See \code{\link{batch.model}}.
-##' @param .verbose Whether to print an activity log.
+##' @param .verbose Whether to print an activity log. Set to \code{-1} to
+##'   suppress all messages.
 ##' @return A list of fitted models.
 ##' @examples
 ##' proc <- modeling.procedure("lda")
@@ -646,6 +607,8 @@ evaluate.modeling <- function(proc, x, y, ...,
 ##' @param model Fitted model.
 ##' @param x Data set with observations whose response is to be predicted.
 ##' @param ... Sent to the procedure's prediction function.
+##' @param .verbose Whether to print an activity log. Set to \code{-1} to
+##'   suppress all messages.
 ##' @return See the documentation of procedure's method.
 ##' @examples
 ##' proc <- modeling.procedure("lda")
@@ -656,8 +619,15 @@ evaluate.modeling <- function(proc, x, y, ...,
 ##'   \code{\link{evaluate.modeling}},\code{\link{fit}}, \code{\link{tune}},
 ##'   \code{\link{vimp}}
 ##' @export
-predict.modeling.procedure <- function(object, model, x, ...){
-    object$predict.fun(object = model, x = x, ...)
+predict.modeling.procedure <- function(object, model, x, ..., .verbose=TRUE){
+    if(.verbose < 0){
+        capture.output(suppressMessages(
+            res <- object$predict.fun(object = model, x = x, ...)
+        ))
+        res
+    } else {
+        object$predict.fun(object = model, x = x, ...)
+    }
 }
 
 

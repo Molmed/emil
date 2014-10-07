@@ -6,12 +6,7 @@ library("roxygen2")
 #-----------------------------------------------------------------------[ emil ]
 
 roxygen.update.description("emil")
-doc.files <- setdiff(c(dir("emil/man", full.names=TRUE), "emil/NAMESPACE"),
-                     sprintf("emil/man/%s.Rd", c("emil", "emil.extensions"),
-                             "emil/emil-Ex.R"))
-file.remove(doc.files)
 roxygenize("emil")
-system("R CMD check emil")
 system("R CMD check emil --as-cran")
 file.remove("emil/emil-Ex.R")
 unlink("emil.Rcheck", recursive=TRUE)
@@ -49,6 +44,7 @@ system(paste("scp", new.build, "uppmax:~/R-repos/b2010028/src/contrib"))
 tools::write_PACKAGES("~/R-repos/b2010028/src/contrib") # On uppmax
 system(paste("scp", new.build, "tank:~/R_packages/src/contrib"))
 tools::write_PACKAGES("~/R_packages/src/contrib") # On tank
+system("mv emil*.tar.gz builds")
 
 system("~/bin/tank0.sh")
 
@@ -64,7 +60,6 @@ system(paste("cp", new.build, "~/R-repos/b2010028/src/contrib"))
 tools::write_PACKAGES("~/R-repos/b2010028/src/contrib")
 system(paste("cp", new.build, "~/R-repos/p2010042/src/contrib"))
 tools::write_PACKAGES("~/R-repos/p2010042/src/contrib")
-system("mv emil*.tar.gz builds")
 
 
 #---------------------------------------------------------------------[ Commit ]

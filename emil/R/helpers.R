@@ -131,43 +131,60 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 ##' @param i Indexes to extract on the first level of the tree. Can also be a
 ##'   function that will be applied to the downstream result of the function.
 ##' @param ... Indexes to extract on subsequent levels.
-##' @param fun.value A template for the return value, analog to the
-##'   \code{FUN.VALUE} argument of \code{\link{vapply}}.
-##' @param silent Should errors related to \code{fun.value} break the execution
-##'   (\code{FALSE}) or be replaced with \code{NA} (\code{TRUE}).
-##' @param simplify Whether to collapse lists of length one (\code{TRUE}) or
-##'   preserve the original tree structure (\code{FALSE}).
+##' @param error.value A template for the return value in case it is missing or
+##'   invalid. Note that \code{NA} is a \code{\link{logical}} by default,
+##'   causing \code{subtree} to also convert existing results to logicals.
+##'   To get around this, please specify it as \code{as.numeric(NA)},
+##'   \code{as.character(NA)}, or similar (see the example below).
+##' @param warn Specifies whether warnings should be displayed (\code{0}),
+##'   ignored (\code{-1}), or break execution (\code{1}). Works like the
+##'   \code{\link{options}} parameter \code{warn}.
+##' @param simplify Whether to collapse results into vectors or matrices when
+##'   possible (\code{TRUE}) or to preserve the original tree structure as a
+##'   list (\code{FALSE}).
 ##' @return A subset of the list tree.
-##' @examples
-##' l <- list(A=list(a=0:2, b=3:4, c=023-22030),
-##'           B=list(a=5:7, b=8:9))
-##' subtree(l, 1:2, "b")
-##' subtree(l, TRUE, mean, "a")
+##' @example ../examples/subtree.R
 ##' @seealso \code{\link{subframe}}
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @export
-subtree <- function(x, i, ..., fun.value=NULL, silent=FALSE, simplify=TRUE){
-    ret <- if(missing(i)){
-        x
-    } else if(is.function(i)){
-        i(subtree(x, ..., fun.value=fun.value, silent=silent, simplify=simplify))
-    } else if(missing(...)){
-        x[i]
-    } else {
-        lapply(x[i], subtree, ..., fun.value=fun.value, silent=silent, simplify=simplify)
+subtree <- function(x, i, ..., error.value, warn, simplify=TRUE){
+    if(missing(error.value)) error.value <- NULL
+    if(missing(warn)) warn <- is.null(error.value)
+    if(is.null(error.value) && warn < 1){
+        warning("With no `error.value` `warn` is ignored and all errors break the execution")
+        warn <- 1
     }
-    if((missing(i) || missing(...)) && !is.null(fun.value)){
-        ret <- if(silent) tryCatch({
-            as(ret, class(fun.value))
-        }, error=function(err){
-            warning(err$message)
-            as(rep(NA, length(fun.value)), class(fun.value))
-        }) else {
-            as(ret, class(fun.value))
+    ret <- if(is.function(i)){
+        if(missing(...)){
+            i(x)
+        } else {
+            i(subtree(x, ..., error.value=error.value, warn=warn, simplify=simplify))
         }
-        if(length(ret) != length(fun.value))
-            stop(sprintf("values must be length %i, but result is length %i",
-                         length(fun.value), length(ret)))
+    } else if(missing(...)){
+        if(is.null(error.value)){
+            x[i]
+        } else {
+            coerce.class <- function(x){
+                x <- as(x, class(error.value))
+                if(length(x) != length(error.value))
+                    stop(sprintf("values must be length %i, but result is length %i",
+                                 length(error.value), length(x)))
+                x
+            }
+            lapply(x[i], function(xi){
+                if(warn < 1) tryCatch({
+                    coerce.class(xi)
+                }, error = function(err){
+                    if(warn == 0)
+                        warning(err$message)
+                    error.value
+                }) else {
+                    coerce.class(xi)
+                }
+            })
+        }
+    } else {
+        lapply(x[i], subtree, ..., error.value=error.value, warn=warn, simplify=simplify)
     }
     if(simplify){
         if(length(ret) == 1){
@@ -264,7 +281,6 @@ trapz <- function(x,y){
 ##' @param linebreak Whether to finish the message with a linebreak or not.
 ##' @param file Sent to \code{\link{cat}}.
 ##' @examples
-##' 
 ##' equipment <- c("flashlight", "snacks", "pick")
 ##' {
 ##'     trace.msg(1, "Begin descent")
@@ -300,7 +316,7 @@ trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file=""){
 ##' @author Christofer \enc{Bäcklin}{Backlin}
 ##' @noRd
 increase <- function(x, i=1){
-    x + i*as.logical(x)
+    x + i*(x > 0)
 }
 
 
