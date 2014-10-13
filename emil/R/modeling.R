@@ -291,11 +291,11 @@ batch.model <- function(proc, x, y,
 
         # Check for checkpoint files
         if(!is.null(checkpoint.file) && file.exists(checkpoint.file)){
-            if(.verbose) cat(" Already completed.\n")
+            if(.verbose > 0) cat(" Already completed.\n")
             en <- new.env()
             load(checkpoint.file, envir=en)
             return(en$res)
-        } else if(.verbose) cat("\n")
+        } else if(.verbose > 0) cat("\n")
 
         # Disable further messages if run in parallel
         if(.parallel.cores > 1) .verbose <- -1
@@ -335,7 +335,7 @@ batch.model <- function(proc, x, y,
 
         # Estimate run time
         if(.parallel.cores == 1 && is.null(checkpoint.file)){
-            if(.verbose && counter == 1 && is.data.frame(resample) && ncol(resample) > 1){
+            if(.verbose > 0 && counter == 1 && is.data.frame(resample) && ncol(resample) > 1){
                 t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(resample)
                 fmt <- if(difftime(t2, t1, units="days") < 1){
                     "%H:%M"
