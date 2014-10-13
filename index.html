@@ -31,13 +31,29 @@
         <section id="main-content">
           <h2>
 <a name="welcome-to-the-emil-web-page" class="anchor" href="#welcome-to-the-emil-web-page"><span class="octicon octicon-link"></span></a>Welcome!</h2>
-          <p>This page is under development and will soon contain an informal introduction to the package and usage examples highlighting its fancy features.In the meantime please refer to the documentation included in the package which is available <a href="http://cran.r-project.org/web/packages/emil/emil.pdf">here</a> or from within R by typing <code>?emil</code>.
-          </p>
-          <h3>
-<a name="welcome-to-the-emil-web-page" class="anchor" href="#welcome-to-the-emil-web-page"><span class="octicon octicon-link"></span></a>Installation</h3>
           <p>
-          The package is available on CRAN and can be installed from within R by
+          This page serves as an informal complement to the original publication about the framework (currently under review) and the <a href="http://cran.r-project.org/web/packages/emil/emil.pdf">included documentation</a>.
           </p>
+          <h3><a name="table-of-contents" class="anchor" href="#table-of-contents"><span class="octicon octicon-link"></span></a>Table of contents</h3>
+          <ul>
+            <li><a href="#introduction">Introduction &amp; installation</a></li>
+            <li><a href="#">What it does</a></li>
+            <li><a href="#">Transparency,  Flexibility</a></li>
+            <li><a href="#overview-and-testrun">Overview and test-run</a></li>
+            <li><a href="#modeling-procedures">Modeling procedures</a></li>
+            <li><a href="#performance-evaluation">Performance evaluation</a></li>
+            <li><a href="#extracting-and-presenting-results">Extracting and presenting results</a></li>
+            <li><a href="#big-data-computations">Big data computations</a></li>
+          </ul>
+
+          <h2>Introduction</h2>
+          <p><a href="http://drewconway.com/">Drew Conway</a> put his finger on what data science essentially is in <a href="http://drewconway.com/zia/2013/3/26/the-data-science-venn-diagram">a venn diagram I like very much</a>.</p>
+          <center><img src="images/Data_Science_VD.png" alt="The Venn Diagram of Data Science"/></center>
+
+          <p>Meaning, when tackling a new classification, regression, or survival analysis problem you rarely manage to find a ready-to-use-tool that is both perfectly adapted to the situation at hand and just works out of the box. Typically, you add some additional filtering or feature selection, use a custom kernel or regularization term, or maybe even implement your own classification algorithm from scratch. When running it you spend quite some time debugging it, setting up a resampling procedure for testing how good it is, and then debug it again when it goes crazy on some data that doesn't look like you expected it would. In other words, <em>you hack together a solution</em>, and can actually save a lot of by not re-inventing the wheel from scratch.</p>
+
+          <p>Get it installed and let me show you how!
+          The lastest official release of the emil package can be downloaded from CRAN.</p>
           <div style="overflow:auto;">
             <div class="geshifilter">
               <pre class="r geshifilter-R" style="font-family:monospace;"><a href="http://inside-r.org/r-doc/utils/install.packages"><span style="color: #003399; font-weight: bold;">install.packages</span></a><span style="color: #009900;">&#40;</span><span style="color: #0000ff;">&quot;emil&quot;</span><span style="color: #009900;">&#41;</span></pre>
@@ -52,6 +68,20 @@
 install_github<span style="color: #009900;">&#40;</span><span style="color: #0000ff;">&quot;molmed/emil/emil&quot;</span><span style="color: #339933;">,</span> <a href="http://inside-r.org/packages/cran/ref"><span style="">ref</span></a>=<span style="color: #0000ff;">&quot;develop&quot;</span><span style="color: #009900;">&#41;</span></pre>
             </div>
           </div>
+
+          <h3>What it does</h3>
+          <p>Lipsum lipsum</p>
+
+          <h3>Transparency, Customization, and Debugging</h3>
+
+          <p>Emil is designed to help you through this process. It provides a flexible boiler plate for the analysis that takes care of the tedious but straight-forward book-keeping aspects (like resampling and parameter tuning), but at the same time let's you change or reimplement anything that isn't to your liking. At the same time it doesn't add any noticable computational burden and 
+
+           a lot of development time. and allow you to evaluate your complete .</p>
+
+          <p>
+          To get the most out of your data when doing predictive modeling, it is crucial to adapt the modeling to the application at hand. Typically you end up with custom filterings, distance or kernel functions, regularization
+
+          Emil, short for <em>evaluation of modeling without information leakage</em>, is designed to be a flexible backbone of predictive modeling analyses that allows the user to quickly implement and test any kind of method.</p>
         </section>
 
         <aside id="sidebar">
