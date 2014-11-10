@@ -5,18 +5,16 @@ library("roxygen2")
 
 #-----------------------------------------------------------------------[ emil ]
 
-roxygen.update.description("emil")
+bump.version("emil")
 roxygenize("emil")
-system("R CMD check emil --as-cran")
-file.remove("emil/emil-Ex.R")
-unlink("emil.Rcheck", recursive=TRUE)
+system("R CMD build emil")
+f <- file.info(dir(, "^emil_*\\.tar\\.gz"))
+new.build <- rownames(f)[which.max(f$mtime)]
+system(sprintf("R CMD check %s --as-cran", new.build))
+system(sprintf("R CMD INSTALL %s", new.build))
 
 # To just check examples
-system("R CMD check emil --no-clean --no-codoc --no-install --no-manual --no-vignettes")
-file.remove("emil/emil-Ex.R")
-
-system("R CMD INSTALL emil")
-system("R CMD build emil")
+system(sprintf("R CMD check %s --no-clean --no-codoc --no-install --no-manual --no-vignettes", new.build))
 
 
 #------------------------------------------------------------------[ emilPlots ]
@@ -32,6 +30,8 @@ system("R CMD build emilPlots")
 
 
 #-----------------------------------------------------------------[ Distribute ]
+
+install_github("backlin/emil@develop")
 
 f <- file.info(dir(, "emil.*\\.tar\\.gz"))
 new.build <- rownames(f)[which.max(f$mtime)]

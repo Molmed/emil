@@ -1,30 +1,30 @@
-##' Contingency tables
-##' 
-##' Contingency tables with counts of true positives, negatives etc. for
-##' different threshold values.
-##' 
-##' @param object Modeling result, as produced by \code{\link{batch.model}}.
-##' @param y Response vector.
-##' @param ... Sent to class methods.
-##' @return A data frame with contingency tables for different threshold values.
-##'   Each row list the number of true positives (TP), false positives (FP),
-##'   false negatives (FN), and true negatives (TN) obtained with
-##'   probability >= threshold. Sensitivity, specificity, precision, and recall
-##'   are also returned (although sensitivity and recall are in fact the same).
-##' @examples
-##' proc <- modeling.procedure("lda")
-##' y <- factor(iris$Species == "setosa", levels=c(TRUE, FALSE), labels=c("Setosa", "Other"))
-##' cv <- resample("crossval", y, nfold=5, nrep=3)
-##' perf <- evaluate.modeling(proc, x=iris[-5], y=y, resample=cv)
-##' contingency(perf, y, cv)
-##' @seealso plot.contingency
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @export
+#' Contingency tables
+#' 
+#' Contingency tables with counts of true positives, negatives etc. for
+#' different threshold values.
+#' 
+#' @param object Modeling result, as produced by \code{\link{batch.model}}.
+#' @param y Response vector.
+#' @param ... Sent to class methods.
+#' @return A data frame with contingency tables for different threshold values.
+#'   Each row list the number of true positives (TP), false positives (FP),
+#'   false negatives (FN), and true negatives (TN) obtained with
+#'   probability >= threshold. Sensitivity, specificity, precision, and recall
+#'   are also returned (although sensitivity and recall are in fact the same).
+#' @examples
+#' proc <- modeling.procedure("lda")
+#' y <- factor(iris$Species == "setosa", levels=c(TRUE, FALSE), labels=c("Setosa", "Other"))
+#' cv <- resample("crossval", y, nfold=5, nrep=3)
+#' perf <- evaluate.modeling(proc, x=iris[-5], y=y, resample=cv)
+#' contingency(perf, y, cv)
+#' @seealso plot.contingency
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
 contingency <- function(object, y, ...){
     UseMethod("contingency")
 }
-##' @rdname contingency
-##' @export
+#' @rdname contingency
+#' @export
 contingency.default <- function(object, y, ...){
     if(is.list(object)){
         lapply(object, contingency, y, ...)
@@ -32,8 +32,8 @@ contingency.default <- function(object, y, ...){
         stop("Invalid modeling result")
     }
 }
-##' @rdname contingency
-##' @export
+#' @rdname contingency
+#' @export
 contingency.model <- function(object, y, ...){
     if(!is.factor(y) && length(levels(y)) == 2)
         stop("Contingency can only be computed for binary classification problems.")
@@ -63,9 +63,9 @@ contingency.model <- function(object, y, ...){
         class = c("contingency", "data.frame")
     )
 }
-##' @param resample Resampling scheme used to obtain \code{object}.
-##' @rdname contingency
-##' @export
+#' @param resample Resampling scheme used to obtain \code{object}.
+#' @rdname contingency
+#' @export
 contingency.modeling.result <- function(object, y, resample, ...){
     structure(
         Map(function(obj, res) contingency(obj, y[index.test(res)]),

@@ -1,30 +1,30 @@
-##' Fit GLM with LASSO, Ridge or elastic net regularization.
-##' 
-##' Fits generalized linear models with regularization using the \code{glmnet}
-##' package implementation.
-##' 
-##' The \code{alpha} parameter of \code{\link[glmnet]{glmnet}} controls the type of
-##' penalty. Use \code{0} (default) for lasso only, \code{1} for ridge only, or
-##' an intermediate for a combination. This is typically the variable to tune
-##' on. The shrinkage, controlled by the \code{lambda} parameter, can be left
-##' unspecified for internal tuning (works the same way as
-##' \code{\link{emil.fit.glmnet}}).
-##' 
-##' @param x Dataset.
-##' @param y Response vector. Can be of many different types for solving
-##'   different problems, see \code{\link[glmnet]{glmnet}}.
-##' @param family Determines the the type of problem to solve. Auto detected if
-##'   \code{y} is numeric or survival. See \code{\link{family}} for details.
-##' @param nfolds See \code{\link[glmnet]{cv.glmnet}}.
-##' @param foldid See \code{\link[glmnet]{cv.glmnet}}.
-##' @param alpha Regularization parameter, see \code{\link[glmnet]{glmnet}}.
-##' @param lambda Regularization parameter, see \code{\link[glmnet]{glmnet}}.
-##' @param ... Sent to \code{\link[glmnet]{cv.glmnet}}.
-##' @return Fitted GLM.
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso \code{\link{emil}}, \code{\link{emil.predict.glmnet}},
-##'   \code{\link{modeling.procedure}}
-##' @export
+#' Fit GLM with LASSO, Ridge or elastic net regularization.
+#' 
+#' Fits generalized linear models with regularization using the \code{glmnet}
+#' package implementation.
+#' 
+#' The \code{alpha} parameter of \code{\link[glmnet]{glmnet}} controls the type of
+#' penalty. Use \code{0} (default) for lasso only, \code{1} for ridge only, or
+#' an intermediate for a combination. This is typically the variable to tune
+#' on. The shrinkage, controlled by the \code{lambda} parameter, can be left
+#' unspecified for internal tuning (works the same way as
+#' \code{\link{emil.fit.glmnet}}).
+#' 
+#' @param x Dataset.
+#' @param y Response vector. Can be of many different types for solving
+#'   different problems, see \code{\link[glmnet]{glmnet}}.
+#' @param family Determines the the type of problem to solve. Auto detected if
+#'   \code{y} is numeric or survival. See \code{\link{family}} for details.
+#' @param nfolds See \code{\link[glmnet]{cv.glmnet}}.
+#' @param foldid See \code{\link[glmnet]{cv.glmnet}}.
+#' @param alpha Regularization parameter, see \code{\link[glmnet]{glmnet}}.
+#' @param lambda Regularization parameter, see \code{\link[glmnet]{glmnet}}.
+#' @param ... Sent to \code{\link[glmnet]{cv.glmnet}}.
+#' @return Fitted GLM.
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @seealso \code{\link{emil}}, \code{\link{emil.predict.glmnet}},
+#'   \code{\link{modeling.procedure}}
+#' @export
 emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     if(is.data.frame(x)){
         warn.once("glmnet x is not matrix", "glmnet only takes data sets in matrix form. The conversion in the fitting function introduces an extra copy of the data set in the memory.")
@@ -86,24 +86,24 @@ emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, 
 }
 
 
-##' Predict using generalized linear model with elastic net regularization
-##'
-##' Due to the way \code{\link[glmnet]{glmnet}} is implemented, the regularization alpha
-##' can not be modified after the model is fitted.
-##'
-##' @param object Fitted model.
-##' @param x New data to be predicted.
-##' @param s Regularization parameter lambda.
-##' @param ... Sent to \code{\link[glmnet]{predict.glmnet}}.
-##' @return A list with elements:
-##' \itemize{
-##'     \item{\code{pred}: Factor of predicted class memberships.}
-##'     \item{\code{prob}: Data frame of predicted class probabilities.}
-##' }
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso \code{\link{emil}}, \code{\link{emil.fit.glmnet}},
-##'   \code{\link{modeling.procedure}}
-##' @export
+#' Predict using generalized linear model with elastic net regularization
+#'
+#' Due to the way \code{\link[glmnet]{glmnet}} is implemented, the regularization alpha
+#' can not be modified after the model is fitted.
+#'
+#' @param object Fitted model.
+#' @param x New data to be predicted.
+#' @param s Regularization parameter lambda.
+#' @param ... Sent to \code{\link[glmnet]{predict.glmnet}}.
+#' @return A list with elements:
+#' \itemize{
+#'     \item{\code{pred}: Factor of predicted class memberships.}
+#'     \item{\code{prob}: Data frame of predicted class probabilities.}
+#' }
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @seealso \code{\link{emil}}, \code{\link{emil.fit.glmnet}},
+#'   \code{\link{modeling.procedure}}
+#' @export
 emil.predict.glmnet <- function(object, x, s, ...){
     nice.require("glmnet", "is required to make precdictions with an elastic net model")
     if(missing(s)){
