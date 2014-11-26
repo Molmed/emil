@@ -82,15 +82,26 @@ na.fill <- function(x, replacement){
 #' nice.require("base", "is required to do anything at all")
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-nice.require <- function(pkg, reason="is required"){
-    if(!eval(substitute(require(pkg, quietly=TRUE), list(pkg=pkg))) && interactive()){
-        cat(sprintf("Package `%s` %s. Install now? (Y/n) ", pkg, reason))
+nice.require <- function(pkg, reason){
+    pkg.loaded <- sapply(pkg, function(p)
+        eval(substitute(require(p, quietly=TRUE), list(p=p))))
+    if(!all(pkg.loaded) && interactive()){
+        pkg <- pkg[!pkg.loaded]
+        if(missing(reason))
+            reason <- paste(if(length(pkg) > 1) "are" else "is", "required but not installed")
+        cat(sprintf("Package%s %s %s. Install now? (Y/n) ",
+                    if(length(pkg) > 1) "s" else "",
+                    paste("`", pkg, "`", sep="", collapse=", "),
+                    reason))
         if(grepl("^(y(es)?)?$", tolower(readline()))){
             install.packages(pkg)
-            if(!eval(substitute(require(pkg), list(pkg=pkg))))
-                stop("Cannot load package `%s`.", pkg)
+            pkg.loaded <- sapply(pkg, function(p)
+                eval(substitute(require(p, quietly=TRUE), list(p=p))))
+            if(!all(pkg.loaded))
+                stop("Cannot load package `%s`.", pkg[!pkg.loaded])
         } else {
-            stop(sprintf("`%s` was not installed.", pkg))
+            stop(sprintf("%s was not installed.",
+                         paste("`", pkg, "`", sep="", collapse=", ")))
         }
     }
 }
@@ -280,7 +291,10 @@ trapz <- function(x,y){
 
 
 #' Print a timestamped and indented log message
-#' 
+#'
+#' To suppress messages below a given indentation level set the global
+#' \code{\link{option}} setting \code{emil.max.indent}, as in the example below.
+#'
 #' @param level Indentation level.
 #' @param ... Sent to \code{\link{sprintf}}.
 #' @param time Whether or not to print timestamp.
@@ -294,7 +308,16 @@ trapz <- function(x,y){
 #'     trace.msg(2, "Hello? Can you throw it down to me?", time=FALSE)
 #'     trace.msg(1, "Aw shucks, I'm coming back up.")
 #' }
-#' 
+#'
+#' for(verbose in c(TRUE, FALSE)){
+#'     cat("It's", verbose, "\n")
+#'     for(i in 0:3)
+#'         trace.msg(indent(verbose, i), "Down")
+#' }
+#'
+#' options(emil.max.indent = 2)
+#' for(i in 1:3)
+#'     trace.msg(i, "Down")
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file=""){
@@ -313,16 +336,16 @@ trace.msg <- function(level=1, ..., time=TRUE, linebreak=TRUE, file=""){
         }
     }
 }
-
-
-#' Increase a non-FALSE variable
-#' 
-#' Only intended for internal use.
-#' 
-#' @author Christofer \enc{Bäcklin}{Backlin}
-#' @noRd
-increase <- function(x, i=1){
-    x + i*(x > 0)
+#' @param base Base indentation level of the function printing the message.
+#' @param indent Extra indentation of this message.
+#' @rdname trace.msg
+#' @export
+indent <- function(base, indent){
+    if(base > 0 && base + indent <= getOption("emil.max.indent", Inf)){
+        base + indent
+    } else {
+        0
+    }
 }
 
 

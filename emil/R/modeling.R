@@ -185,7 +185,7 @@ batch.model <- function(proc, x, y,
     }
     make.na <- is.na(y) & !Reduce("&", lapply(resample, is.na))
     if(any(make.na)){
-        trace.msg(.verbose, "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
+        trace.msg(indent(.verbose, 0), "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
         resample[make.na,] <- NA
     }
 
@@ -247,7 +247,7 @@ batch.model <- function(proc, x, y,
         Modeling.FUN <- function(f, ...){
             Map.FUN(function(...){
                 tryCatch(f(...), error = function(err){
-                    trace.msg(increase(.verbose, 1), "An error occurred, skipping fold.")
+                    trace.msg(indent(.verbose, 1), "An error occurred, skipping fold.")
                     err
                 })
             }, ...)
@@ -280,22 +280,22 @@ batch.model <- function(proc, x, y,
 
         # Print status message
         if(inherits(resample, "crossval")){
-            trace.msg(.verbose, sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", fold.name),
-                      time=.parallel.cores > 1, linebreak=FALSE)
+            trace.msg(indent(.verbose, 0), sub("^fold(\\d+):(\\d+)$", "Replicate \\1, fold \\2:", fold.name),
+                      linebreak=FALSE)
         } else if(inherits(resample, "holdout")){
-            trace.msg(.verbose, sub("^fold(\\d+)$", "Fold \\1:", fold.name),
-                      time=.parallel.cores > 1, linebreak=FALSE)
+            trace.msg(indent(.verbose, 0), sub("^fold(\\d+)$", "Fold \\1:", fold.name),
+                      linebreak=FALSE)
         } else {
-            trace.msg(.verbose, fold.name, time=.parallel.cores > 1, linebreak=FALSE)
+            trace.msg(indent(.verbose, 0), fold.name, linebreak=FALSE)
         }
 
         # Check for checkpoint files
         if(!is.null(checkpoint.file) && file.exists(checkpoint.file)){
-            if(.verbose > 0) cat(" Already completed.\n")
+            if(indent(.verbose, 0)) cat(" Already completed.\n")
             en <- new.env()
             load(checkpoint.file, envir=en)
             return(en$res)
-        } else if(.verbose > 0) cat("\n")
+        } else if(indent(.verbose, 0)) cat("\n")
 
         # Disable further messages if run in parallel
         if(.parallel.cores > 1) .verbose <- -1
@@ -304,13 +304,13 @@ batch.model <- function(proc, x, y,
         if(any(do.tuning)){
             tune.subset <- subresample(fold, y)
             fold.proc <- tune(proc, x, y, resample=tune.subset,
-                pre.process=pre.process, .save=NULL, .verbose=increase(.verbose))
+                pre.process=pre.process, .save=NULL, .verbose=indent(.verbose, 1))
         } else {
             fold.proc <- proc
         }
-        trace.msg(increase(.verbose, 1), "Extracting fitting and testing datasets.")
+        trace.msg(indent(.verbose, 1), "Extracting fitting and testing datasets.")
         sets <- pre.process(x, y, fold)
-        #trace.msg(increase(.verbose, 1), "Fitting models.")
+        trace.msg(indent(.verbose, 1), "Fitting models and making predictions.")
         res <- lapply(fold.proc, function(p){
             if(.verbose < 0){
                 # TODO: This block should be replaced with a call to the fit function
@@ -322,12 +322,12 @@ batch.model <- function(proc, x, y,
                 model <- do.call(function(...)
                     p$fit.fun(sets$fit$x, sets$fit$y, ...), p$param)
             }
-            predictions <- predict(p, model, sets$test$x, .verbose=increase(.verbose, 1))
+            predictions <- predict(p, model, sets$test$x, .verbose=indent(.verbose, 1))
             structure(c(
                 if(.save$fit) list(fit = model) else NULL,
                 list(error = p$error.fun(sets$test$y, predictions)),
                 if(.save$pred) list(pred = predictions) else NULL,
-                if(.save$vimp) list(vimp = fixvimp(vimp(p, model, .verbose=increase(.verbose)), sets$features)) else NULL,
+                if(.save$vimp) list(vimp = fixvimp(vimp(p, model, .verbose=indent(.verbose, 1)), sets$features)) else NULL,
                 if(.save$tuning && is.tunable(p))
                     list(param=p$param, tuning = p$tuning) else NULL
             ), class="model")
@@ -335,7 +335,18 @@ batch.model <- function(proc, x, y,
 
         # Estimate run time
         if(.parallel.cores == 1 && is.null(checkpoint.file)){
-            if(.verbose > 0 && counter == 1 && is.data.frame(resample) && ncol(resample) > 1){
+            if(indent(.verbose, 0) && counter == 1 && is.data.frame(resample) && ncol(resample) > 1){
+                # Fold result size
+                os <- object.size(res)
+                os.i <- trunc(log(os)/log(1024))
+                if(os.i == 0){
+                    trace.msg(indent(.verbose, 0), "Result size is %i B.", os, time=FALSE)
+                } else {
+                    trace.msg(indent(.verbose, 0), "Result size is %.2f %s.",
+                        exp(log(os) - os.i * log(1024)), c("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")[os.i],
+                        time=FALSE)
+                }
+                # Estimated completion time
                 t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(resample)
                 fmt <- if(difftime(t2, t1, units="days") < 1){
                     "%H:%M"
@@ -348,20 +359,11 @@ batch.model <- function(proc, x, y,
                 } else {
                     "%H:%M, %b %d, %Y"
                 }
-                trace.msg(increase(.verbose, 1),
+                trace.msg(indent(.verbose, 0),
                           "Estimated completion time %sis %s.",
                           if("tune" %in% sapply(sys.calls(), function(x) as.character(x)[1]))
                               "of tuning " else "",
                           strftime(t2, fmt), time=FALSE)
-                os <- object.size(res)
-                os.i <- trunc(log(os)/log(1024))
-                if(os.i == 0){
-                    trace.msg(increase(.verbose, 1), "Result size is %i B.", os, time=FALSE)
-                } else {
-                    trace.msg(increase(.verbose, 1), "Result size is %.2f %s.",
-                        exp(log(os) - os.i * log(1024)), c("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")[os.i],
-                        time=FALSE)
-                }
             }
         }
 
@@ -430,13 +432,13 @@ fit <- function(proc, x, y, ..., .verbose=TRUE){
             paste("`", missing.fun, "`", sep="", collapse=", ")))
     need.tuning <- !sapply(proc, is.tuned)
     if(missing(.verbose)) .verbose <- any(need.tuning)
-    trace.msg(.verbose, "Model fitting:", length(proc))
+    trace.msg(indent(.verbose, 0), "Model fitting:", length(proc))
     if(any(need.tuning)){
         proc[need.tuning] <- tune(proc[need.tuning], x, y, ...,
-            .verbose=increase(.verbose))
-        trace.msg(increase(.verbose, 1), "Fitting final models.")
+            .verbose=indent(.verbose, 1))
+        trace.msg(indent(.verbose, 1), "Fitting final models.")
     } else {
-        trace.msg(increase(.verbose, 1),
+        trace.msg(indent(.verbose, 1),
             if(any(sapply(proc, is.tunable))){
                 if(length(proc) == 1){
                     "Process already tuned."
@@ -479,7 +481,7 @@ fit <- function(proc, x, y, ..., .verbose=TRUE){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
-    trace.msg(.verbose, "Parameter tuning:")
+    trace.msg(indent(.verbose, 0), "Parameter tuning:")
     if(inherits(proc, "modeling.procedure")){
         multi.proc <- FALSE
         proc <- listify(proc)
@@ -491,7 +493,7 @@ tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
         do.tuning <- sapply(proc, is.tunable)
         discard.tuning <- do.tuning & sapply(proc, is.tuned)
         if(any(discard.tuning)){
-            trace.msg(increase(.verbose, 1), "Discarding previous tuning of %i procedures.",
+            trace.msg(indent(.verbose, 1), "Discarding previous tuning of %i procedures.",
                 sum(discard.tuning))
             for(i in which(discard.tuning))
                 proc[[i]]$tuning <- NULL
@@ -500,7 +502,7 @@ tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
         do.tuning <- !sapply(proc, is.tuned)
         not.tuned <- !do.tuning & sapply(proc, is.tunable)
         if(any(not.tuned)){
-            trace.msg(increase(.verbose, 1), "%i procedures are already tuned and will not be retuned.",
+            trace.msg(indent(.verbose, 1), "%i procedures are already tuned and will not be retuned.",
                 sum(not.tuned), time=FALSE)
         }
     }
@@ -513,7 +515,7 @@ tune <- function(proc, ..., .retune=FALSE, .verbose=FALSE){
     }), recursive=FALSE)
     tune.proc <- set.debug.flags(tune.proc, rep(debug.flags,
         each=sapply(proc, function(p) length(p$tuning$param) )))
-    tuning <- batch.model(tune.proc, ..., .verbose=increase(.verbose))
+    tuning <- batch.model(tune.proc, ..., .verbose=indent(.verbose, 1))
     proc.id <- rep(which(do.tuning),
                    sapply(proc[do.tuning], function(p) length(p$tuning$param)))
     for(i in which(do.tuning)){
@@ -579,7 +581,7 @@ evaluate.modeling <- function(proc, x, y, ...,
     .save=list(fit=FALSE, pred=TRUE, vimp=FALSE, tuning=TRUE), .verbose=TRUE){
 
     reset.warn.once()
-    trace.msg(.verbose, "Evaluating modeling performance:")
+    trace.msg(indent(.verbose, 0), "Evaluating modeling performance:")
     if(inherits(proc, "modeling.procedure")){
         multi.proc <- FALSE
         proc <- listify(proc)
@@ -589,7 +591,7 @@ evaluate.modeling <- function(proc, x, y, ...,
     do.tuning <- sapply(proc, is.tunable)
     discard.tuning <- do.tuning & sapply(proc, is.tuned)
     if(any(discard.tuning)){
-        trace.msg(increase(.verbose, 1),
+        trace.msg(indent(.verbose, 1),
             "Discarding previous tuning of %i modeling procedures.",
             sum(discard.tuning))
         for(i in which(discard.tuning))
@@ -597,7 +599,7 @@ evaluate.modeling <- function(proc, x, y, ...,
     }
 
     return(batch.model(if(multi.proc) proc else proc[[1]], x, y, ...,
-           .save=.save, .verbose=increase(.verbose)))
+           .save=.save, .verbose=indent(.verbose, 1)))
 }
 
 
