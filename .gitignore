@@ -8,6 +8,4 @@ builds
 *.bak
 old
 *.Rd
-demo/
-NAMESPACE
 *-Ex.R
