@@ -1,23 +1,23 @@
-##' Plot decision border
-##' 
-##' Only implemented for 2-d problems.
-##' 
-##' @param x Modeling procedure.
-##' @param dx Dataset descriptors. Not needed if an already trained model is
-##'   supplied.
-##' @param dy Response vector for classification.
-##' @param model Trained model. If omitted it will be trained from the data.
-##' @param n Resolution.
-##' @param plot.data Whether or not to plot the data in addition to the border.
-##' @param pch Plot characters, see \code{\link{par}}.
-##' @param col Color palette, see \code{\link{get.colors.factor}}.
-##' @param ... Sent to \code{\link{contour}}.
-##' @return Nothing, produces a plot.
-##' @examples
-##' contour(modeling.procedure("qda"), iris[c(3,4)], iris$Species)
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @import emil
-##' @export
+#' Plot decision border
+#' 
+#' Only implemented for 2-d problems.
+#' 
+#' @param x Modeling procedure.
+#' @param dx Dataset descriptors. Not needed if an already trained model is
+#'   supplied.
+#' @param dy Response vector for classification.
+#' @param model Trained model. If omitted it will be trained from the data.
+#' @param n Resolution.
+#' @param plot.data Whether or not to plot the data in addition to the border.
+#' @param pch Plot characters, see \code{\link{par}}.
+#' @param col Color palette, see \code{\link{get.colors.factor}}.
+#' @param ... Sent to \code{\link{contour}}.
+#' @return Nothing, produces a plot.
+#' @examples
+#' contour(modeling.procedure("qda"), iris[c(3,4)], iris$Species)
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @import emil
+#' @export
 contour.modeling.procedure <- function(x, dx, dy, model, n=c(100,100), plot.data=!missing(dx), pch, col="Set1", ...){
     if(missing(model)){
         if(missing(dx) || missing(dy))
