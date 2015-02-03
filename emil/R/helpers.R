@@ -263,6 +263,69 @@ subframe <- function(x, ..., resample){
         st, resample))
 }
 
+#' Extract a table of modeling results in long format
+#' 
+#' @param x Tree of nested lists
+#' @param ... Indices to select on each level of \code{x}. Can also contain
+#'   a function, which must return a \code{\link{data.table}}.
+#'   The execution time increases quite rapidly with the number of indexes
+#'   traversed, due to the recursive nature of the function. An efficient function
+#'   that reduces the number of function calls can often improve the time.
+#' @return A \code{\link{data.table}}
+#' @examples
+#' x <- list(A = list(a=c(x1=11, x2=12, x3=13), b="aha"),
+#'           B = list(a=c(x1=21, x2=22, x3=23), b="Nae, det va inget..."))
+#' subtable(x, outer=TRUE, inner="a")
+#' @seealso subtree, subframe
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+subtable <- function(x, ..., .parallel.at){
+    st <- function(x, i, path, par.at){
+        if(length(i) == 0){
+            if(inherits(x, c("matrix", "data.frame"))){
+                key <- if(is.null(rownames(x))) 1:nrow(x) else rownames(x)
+                data.table(..key=key, x)
+                res <- data.table(..key=key, value=x)
+            } else {
+                key <- if(is.null(names(x))) seq_along(x) else names(x)
+                res <- data.table(..key=key, value=x)
+            }
+            setnames(res, "..key", "key")
+        } else {
+            if(is.function(i[[1]])){
+                res <- i[[1]](x)
+            } else {
+                my.x <- if(identical(i[[1]], TRUE)) x else x[i[[1]]]
+                if(any(sapply(my.x, is.null)))
+                    stop(sprintf("Missing elements in %s.", path))
+                my.names <- if(is.null(names(my.x))){
+                    sprintf("[[%i]]", seq_along(my.x))
+                } else {
+                    sprintf("$%s", ifelse(names(my.x) == make.names(names(my.x)),
+                                          names(my.x), sprintf("`%s`", names(my.x))))
+                }
+                res <- Map(function(x, p) st(x, i[-1], sprintf("%s%s", path, p)),
+                           my.x, my.names)
+                res.names <- lapply(res, names)
+                res.names <- res.names[!duplicated(res.names)]
+                if(length(res.names) > 1)
+                    stop(sprintf("Result format differ in %s elements %s.", path, 
+                        paste("`", names(res.names), "`", sep="", collapse=", ")))
+                if(is.null(names(res))){
+                    rbindlist(res)
+                } else {
+                    key <- factor(rep(names(res), sapply(res, nrow)), names(res))
+                    res <- data.table(..key = key, rbindlist(res))
+                    setnames(res, "..key", names(i[1]))
+                }
+            }
+        }
+        res
+    }
+    if(missing(.parallel.at)) .parallel.at <- NULL
+    st(x, list(...), path=deparse(substitute(x)))
+}
+
 
 #' Trapezoid rule numerical integration
 #' 

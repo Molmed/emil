@@ -117,6 +117,9 @@ pre.impute.median <- function(x, y, fold){
 #' unnecessary to recalculate it every time, therefore this function requires
 #' the user to manually calculate it prior to resampling and supply it in a
 #' wrapper function.
+#'
+#' Features with fewer than \code{k} non-missing values will be removed
+#' automatically.
 #' 
 #' @param x Dataset.
 #' @param y Response vector.
@@ -143,10 +146,8 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
         # Duplicate names may cause problems otherwise
     na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
 
-    if(length(na.ind) == 0){
+    if(length(na.ind) == 0)
         return(pre.split(x, y, fold))
-    }
-
 
     if(k < 1) k <- max(1, round(.05*length(index.fit(fold))))
     if(k > sum(fold > 0, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
@@ -171,10 +172,13 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
     if(any(nrow(x) != dim(distmat)))
         stop("Distance matrix does not match dataset.")
 
+    diag(distmat) <- NA
     NN <- apply(distmat, 1, function(z)
         intersect(order(z), index.fit(fold)))
     fills <- apply(na.ind, 1, function(i){
-        mean(setdiff(x[NN[,i[1]], i[2]], NA)[1:k])
+        xf <- x[NN[,i[1]], i[2]]
+        xf <- xf[!is.na(xf)]
+        if(length(xf) < k) NA else mean(xf[1:k])
     })
     if(any(is.na(fills)))
         stop("Could not impute all missing values, too few non-missing values for some features.")

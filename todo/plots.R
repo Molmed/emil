@@ -1,13 +1,13 @@
-##' Plot the decision border of a 2-d classifier
-##' 
-##' @param fit Fitted classifier.
-##' @param x A dataset of the kind that was used for classifier design.
-##' @param n Resolution.
-##' @param ... Sent to \code{\link{contour}}.
-##' @return Nothing, produces a plot.
-##' @author Christofer \enc{Bäcklin}{Backlin}
-##' @seealso fit
-##' @export
+#' Plot the decision border of a 2-d classifier
+#' 
+#' @param fit Fitted classifier.
+#' @param x A dataset of the kind that was used for classifier design.
+#' @param n Resolution.
+#' @param ... Sent to \code{\link{contour}}.
+#' @return Nothing, produces a plot.
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @seealso fit
+#' @export
 decision.border <- function(fit, x, n=c(100, 100), ...){
     if(ncol(x) != 2){
         stop("The decision border can only be plotted for 2-d classification problems.")
