@@ -46,10 +46,10 @@ original publication included as the package's vignette (to be added).
                 from the output of \code{\link{evaluate.modeling}}. It is
                 essentially a recursive version of \code{\link{lapply}} and
                 \code{\link{sapply}}.}
-            \item{\code{\link{subframe}}}{Extracts results and organize
-                them per observation. Useful when comparing predictions and
-                properties of individual observations across folds of a
-                resampling scheme.}
+            \item{\code{\link{select}}}{Interface between emil and the
+                \code{\link{dplyr}} package for data manipulation.
+                Can be used to subset modeling results, reorganize or summarize
+                to help interpretation or prepare for plotting.}
         }
         No functions for plotting is included in the current version of the
         package, except for \code{\link{image.resample}}.

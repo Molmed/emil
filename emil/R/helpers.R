@@ -138,9 +138,11 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 
 #' Extract a subset of a tree of nested lists
 #' 
-#' Many functions of the package produce results on the form of nested list,
-#' like \code{\link{evaluate.modeling}}. Use this function to extract only a
-#' subset of the tree. Also note the similar function \code{\link{subframe}}.
+#' Modeling results produced by \code{\link{evaluate.modeling}} comes in the
+#' form of nested lists. This function can be used to subset or rearrange parts
+#' of the results into vectors, matrices or data frames.
+#' Also note the \code{\link[emil]{select}} function that provides an extension
+#' to the \code{dplyr} package for data manipulation.
 #' 
 #' This function can only be used to extract data, not to assign.
 #' 
@@ -161,7 +163,7 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 #'   list (\code{FALSE}).
 #' @return A subset of the list tree.
 #' @example ../examples/subtree.R
-#' @seealso \code{\link{subframe}}
+#' @seealso \code{\link{select}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 subtree <- function(x, i, ..., error.value, warn, simplify=TRUE){
@@ -225,107 +227,133 @@ subtree <- function(x, i, ..., error.value, warn, simplify=TRUE){
     ret
 }
 
-
-#' Extract and organize predictions according to a resampling scheme
+#' emil and dplyr integration
 #' 
-#' This function arranges predictions of a performance evaluation in a data
-#' frame where the rows correspond do observations and the columns to folds, to
-#' make it easy to study the variability of each observation with respect to
-#' the resampling.
-#' 
-#' @param x Performance evaluation results.
-#' @param ... Indexes specify what to extract, sent to \code{\link{subtree}}.
-#' @param resample Resampling scheme used to carry out a performance
-#'   evaluation.
+#' Modeling results can be converted to tabular format and manipulated using
+#' dplyr and other Hadleyverse packages. This is accomplished by a class
+#' specific \code{\link[dplyr]{select_}} function that differs somewhat in syntax
+#' from the default \code{\link[dplyr]{select_}}.
+#'
+#' @param .data Modeling results, as returned by \code{\link{evaluate.modeling}}.
+#' @param ... Not used, kept for consistency with \code{dplyr}.
+#' @param .dots Indices to select on each level of \code{.data}, i.e.
+#'   the first index specifies which top level elements of \code{.data} to
+#'   select, the second specifies second-level-elements etc.
+#'   The last index must select elements that can be converted to a data frame.
+#'   In case the desired bottom-level element is related to the observations of
+#'   a modeling task, e.g. the predctions of a test set, you must supply the
+#'   resampling scheme used to produce \code{.data} at the appropriate level
+#'   (see the examples).
+#'
+#'   The names of the \code{...} arguments specifies the names of the resulting
+#'   data frame. Non-named arguments will be used to traverse the data but not
+#'   returned.
+#'
+#'   In summary the \code{...} indices can be on the following forms:
+#'   \describe{
+#'     \item{Simple indices}{Anything that can be used to subset objects,
+#'       e.g. integers, logicals, or characters.}
+#'     \item{Functions}{A function that produces a data frame, vector or
+#'       factor.}
+#'     \item{Resampling schemes}{The same resampling scheme that was used to
+#'       produce the modeling results.}
+#'   }
+#' @return A \code{\link{data.frame}} in long format.
 #' @examples
-#' proc <- modeling.procedure("lda")
-#' cv <- resample("crossval", y=iris$Species, nfold=5, nrep=3)
-#' perf <- evaluate.modeling(proc, x=iris[-5], y=iris$Species, resample=cv)
-#' subframe(perf, TRUE, "pred", "prob", 1, resample=cv)
-#' @seealso \code{\link{subtree}}
+#' # Produce some results
+#' x <- iris[-5]
+#' y <- iris$Species
+#' names(y) <- sprintf("orchid%03i", seq_along(y))
+#' cv <- resample("crossval", y, nfold=3, nrep=2)
+#' procedures <- list(nsc = modeling.procedure("pamr"),
+#'                    rf = modeling.procedure("randomForest"))
+#' result <- evaluate.modeling(procedures, x, y, resample=cv)
+#' 
+#' # Get the foldwise error for the NSC method
+#' result %>% select(Fold = TRUE, "nsc", Error = "error")
+#'
+#' # Compare both methods 
+#' result %>%
+#'     select(Fold = TRUE, Method = TRUE, Error = "error") %>%
+#'     spread(Method, Error)
+#' result %>%
+#'     select(Fold = TRUE, Method = TRUE, Error = "error") %>%
+#'     group_by(Method) %>% summarize(MeanError = mean(Error))
+#'
+#' # Investigate the variability in estimated class 2 probability across folds
+#' result %>%
+#'     select(Fold = cv, "nsc", "pred", Probability = function(x) x$prob[,2]) %>%
+#'     spread(Fold, Probability)
+#' @seealso subtree
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @rdname select
+#' @import data.table
+#' @import dplyr
+#' @import lazyeval
+#' @import tidyr
 #' @export
-subframe <- function(x, ..., resample){
-    flatten <- function(x){
-        if(is.list(x)){
-            x <- lapply(x, flatten)
-            if(length(x) == 1)
-                x <- x[[1]]
-        }
-        x
-    }
-    st <- flatten(subtree(x, ..., simplify=FALSE))
-    if(any(sapply(st, length) != sapply(resample, function(x) sum(x %in% 0))))
-        stop("Data and resample does not match.")
-
-    as.data.frame(Map(
-        function(x, fold) x[ave(fold, fold, FUN=seq_along)*fill(!fold, FALSE, NA)],
-        st, resample))
+select_.modeling.result <- function(.data, ..., .dots){
+    select_modeling_result(.data, lazyeval::lazy_eval(.dots))
 }
+#' @noRd
+select_modeling_result <- function(.data, .dots, id=NULL){
+    named <- !is.null(names(.dots)) && names(.dots)[1] != ""
+    subsetting <- inherits(.dots[[1]], c("numeric", "integer", "logical", "character"))
 
-#' Extract a table of modeling results in long format
-#' 
-#' @param x Tree of nested lists
-#' @param ... Indices to select on each level of \code{x}. Can also contain
-#'   a function, which must return a \code{\link{data.table}}.
-#'   The execution time increases quite rapidly with the number of indexes
-#'   traversed, due to the recursive nature of the function. An efficient function
-#'   that reduces the number of function calls can often improve the time.
-#' @return A \code{\link{data.table}}
-#' @examples
-#' x <- list(A = list(a=c(x1=11, x2=12, x3=13), b="aha"),
-#'           B = list(a=c(x1=21, x2=22, x3=23), b="Nae, det va inget..."))
-#' subtable(x, outer=TRUE, inner="a")
-#' @seealso subtree, subframe
-#' @author Christofer \enc{Bäcklin}{Backlin}
-#' @export
-subtable <- function(x, ..., .parallel.at){
-    st <- function(x, i, path, par.at){
-        if(length(i) == 0){
-            if(inherits(x, c("matrix", "data.frame"))){
-                key <- if(is.null(rownames(x))) 1:nrow(x) else rownames(x)
-                data.table(..key=key, x)
-                res <- data.table(..key=key, value=x)
-            } else {
-                key <- if(is.null(names(x))) seq_along(x) else names(x)
-                res <- data.table(..key=key, value=x)
+    if(length(.dots) == 1){
+        if(subsetting){
+            d <- data.frame(Value = .data[[.dots[[1]]]])
+            if(named && length(d) > 0)
+                names(d) <- names(.dots)
+        } else if(is.function(.dots[[1]])){
+            d <- .dots[[1]](.data)
+            if(!inherits(d, "data.frame")){
+                if(named){
+                    d <- data.frame(d)
+                    names(d) <- names(.dots)
+                } else {
+                    stop("Functions must either be named or return a data frame.")
+                }
             }
-            setnames(res, "..key", "key")
         } else {
-            if(is.function(i[[1]])){
-                res <- i[[1]](x)
-            } else {
-                my.x <- if(identical(i[[1]], TRUE)) x else x[i[[1]]]
-                if(any(sapply(my.x, is.null)))
-                    stop(sprintf("Missing elements in %s.", path))
-                my.names <- if(is.null(names(my.x))){
-                    sprintf("[[%i]]", seq_along(my.x))
-                } else {
-                    sprintf("$%s", ifelse(names(my.x) == make.names(names(my.x)),
-                                          names(my.x), sprintf("`%s`", names(my.x))))
-                }
-                res <- Map(function(x, p) st(x, i[-1], sprintf("%s%s", path, p)),
-                           my.x, my.names)
-                res.names <- lapply(res, names)
-                res.names <- res.names[!duplicated(res.names)]
-                if(length(res.names) > 1)
-                    stop(sprintf("Result format differ in %s elements %s.", path, 
-                        paste("`", names(res.names), "`", sep="", collapse=", ")))
-                if(is.null(names(res))){
-                    rbindlist(res)
-                } else {
-                    key <- factor(rep(names(res), sapply(res, nrow)), names(res))
-                    res <- data.table(..key = key, rbindlist(res))
-                    setnames(res, "..key", names(i[1]))
-                }
-            }
+            stop("Invalid argument.")
         }
-        res
+        if(!is.null(id)){
+            if(nrow(d) != length(id)) stop("Fold did not match data.")
+            d$id <- id
+        }
+    } else {
+        if(subsetting){
+            d <- lapply(.data[.dots[[1]]], select_modeling_result, .dots[-1], id=id)
+            if(named && length(d) > 0){
+                d <- data.frame(..tmp = factor(rep(seq_along(d), sapply(d, nrow)),
+                                          seq_along(d), names(d)),
+                           rbindlist(d))
+                names(d)[1] <- names(.dots)[1]
+            } else {
+                d <- rbindlist(d)
+            }
+        } else if(is.function(.dots[[1]]) && length(.dots) > 1){
+            stop("Not implemented.")
+        } else if(inherits(.dots[[1]], "resample")){
+            if(!identical(names(.data), names(.dots[[1]])))
+                .data <- .data[names(.dots[[1]])]
+            r <- if(identical(rownames(.dots[[1]]), as.character(1:nrow(.dots[[1]])))){
+                seq_len(nrow(.dots[[1]]))
+            } else {
+                rownames(.dots[[1]])
+            }
+            d <- Map(function(x, i) select_modeling_result(x, .dots[-1], id=r[index.test(i)]),
+                     .data, .dots[[1]])
+            d <- data.frame(Fold = factor(rep(names(.dots[[1]]), sapply(d, nrow)),
+                                          names(.dots[[1]])),
+                            rbindlist(d))
+        } else {
+            stop("Invalid argument.")
+        }
     }
-    if(missing(.parallel.at)) .parallel.at <- NULL
-    st(x, list(...), path=deparse(substitute(x)))
+    d
 }
-
 
 #' Trapezoid rule numerical integration
 #' 
