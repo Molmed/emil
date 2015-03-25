@@ -22,8 +22,8 @@ test_that("dplyr integration", {
     y <- iris$Species
     names(y) <- sprintf("orchid%03i", seq_along(y))
     cv <- resample("crossval", y, nfold=3, nrep=2)
-    procedures <- list(nsc = modeling.procedure("nsc"),
-                       rf = modeling.procedure("randomForest"))
+    procedures <- list(lda = modeling.procedure("lda"),
+                       qda = modeling.procedure("qda"))
     result <- evaluate.modeling(procedures, x, y, resample=cv)
 
     # Normal subsetting

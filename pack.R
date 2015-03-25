@@ -1,33 +1,11 @@
-#cd("/home/christofer/Documents/R/egna paket/emil")
-#if(!exists("roxygen.update.description")) source("update_description.R")
-library("roxygen2")
 
+library(devtools)
+bump.version()
+check(".", cran=TRUE)
 
-#-----------------------------------------------------------------------[ emil ]
+install()
 
-bump.version("emil")
-roxygenize("emil")
-system("R CMD build emil")
-f <- file.info(dir(, "^emil_.*\\.tar\\.gz"))
-new.build <- rownames(f)[which.max(f$mtime)]
-system(sprintf("R CMD check %s --as-cran", new.build))
-system(sprintf("R CMD INSTALL %s", new.build))
-
-# To just check examples
-system(sprintf("R CMD check %s --no-clean --no-codoc --no-install --no-manual --no-vignettes", new.build))
-
-
-#------------------------------------------------------------------[ emilPlots ]
-
-library("roxygen2")
-roxygen.update.description("emilPlots")
-file.remove(dir("emilPlots/man", full.names=TRUE))
-roxygenize("emilPlots")
-system("R CMD check emilPlots")
-
-system("R CMD INSTALL emilPlots")
-system("R CMD build emilPlots")
-
+check(".", args="--no-examples")
 
 #-----------------------------------------------------------------[ Distribute ]
 

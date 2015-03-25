@@ -1,7 +1,7 @@
 context("Modeling framework")
 
 test_that("modeling procedure", {
-    proc1 <- modeling.procedure("pamr")
+    proc1 <- modeling.procedure("lda")
     proc2 <- modeling.procedure(fit.fun=identity, error.fun=rmse)
 
     expect_that(names(proc1), is_identical_to(names(proc2)))

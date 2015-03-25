@@ -35,7 +35,7 @@
 #' @param error.fun Performance measure used to evaluate modeling procedures
 #'   and to tune parameters. See \code{\link{error.fun}} for details.
 #' @return An object of class \code{modeling.procedure}.
-#' @example ../examples/modeling_procedure.R
+#' @example examples/modeling_procedure.R
 #' @seealso \code{\link{emil}}, \code{\link{evaluate.modeling}},
 #'   \code{\link{fit}}, \code{\link{tune}},
 #'   \code{\link[=predict.modeling.procedure]{predict}}, \code{\link{vimp}}
@@ -159,7 +159,7 @@ print.modeling.procedure <- function(x, ...){
 #'       \item{\code{tune}}{Results from the parameter tuning. See
 #'           \code{\link{tune}} for details.}
 #'   }
-#' @example ../examples/batch_model.R
+#' @example examples/batch_model.R
 #' @seealso \code{\link{emil}}, \code{\link{modeling.procedure}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
@@ -236,7 +236,7 @@ batch.model <- function(proc, x, y,
         .parallel.cores <- 1
     }
     if(.parallel.cores > 1){
-        require("parallel")
+        requireNamespace("parallel")
         Map.FUN <- function(f, ...)
             parallel::mcmapply(f, ..., SIMPLIFY=FALSE,
                                mc.silent=.verbose, mc.cores=.parallel.cores)

@@ -1,4 +1,3 @@
 library(testthat)
 library(emil)
-
-test_package("emil")
+test_check("emil")

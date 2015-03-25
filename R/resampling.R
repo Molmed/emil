@@ -220,7 +220,7 @@ image.resample <- function(x, col, ...){
         nice.require("RColorBrewer")
         if(length(levels(y)) > 12)
             warning("Too few colors to assign unique ones to each class.")
-        col <- rep(brewer.pal(12, "Set3"),
+        col <- rep(RColorBrewer::brewer.pal(12, "Set3"),
                    ceiling(length(levels(y))/12))[seq_along(levels(y))]
         col <- apply(col2rgb(col), 2, function(cl){
               apply(cl %o% seq(.7, 1, length.out=max(x, na.rm=TRUE)+1), 2,

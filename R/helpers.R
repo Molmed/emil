@@ -83,8 +83,7 @@ na.fill <- function(x, replacement){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 nice.require <- function(pkg, reason){
-    pkg.loaded <- sapply(pkg, function(p)
-        eval(substitute(require(p, quietly=TRUE), list(p=p))))
+    pkg.loaded <- sapply(pkg, requireNamespace)
     if(!all(pkg.loaded) && interactive()){
         pkg <- pkg[!pkg.loaded]
         if(missing(reason))
@@ -95,8 +94,7 @@ nice.require <- function(pkg, reason){
                     reason))
         if(grepl("^(y(es)?)?$", tolower(readline()))){
             install.packages(pkg)
-            pkg.loaded <- sapply(pkg, function(p)
-                eval(substitute(require(p, quietly=TRUE), list(p=p))))
+            pkg.loaded <- sapply(pkg, requireNamespace)
             if(!all(pkg.loaded))
                 stop("Cannot load package `%s`.", pkg[!pkg.loaded])
         } else {
@@ -162,7 +160,7 @@ resample.mapply <- function(fun, resample, true, pred, ...){
 #'   possible (\code{TRUE}) or to preserve the original tree structure as a
 #'   list (\code{FALSE}).
 #' @return A subset of the list tree.
-#' @example ../examples/subtree.R
+#' @example examples/subtree.R
 #' @seealso \code{\link{select}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
@@ -287,12 +285,12 @@ subtree <- function(x, i, ..., error.value, warn, simplify=TRUE){
 #' @seealso subtree
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @rdname select
-#' @import data.table
 #' @import dplyr
 #' @import lazyeval
 #' @import tidyr
 #' @export
 select_.modeling.result <- function(.data, ..., .dots){
+    requireNamespace("data.table")
     select_modeling_result(.data, lazyeval::lazy_eval(.dots))
 }
 #' @noRd
@@ -328,10 +326,10 @@ select_modeling_result <- function(.data, .dots, id=NULL){
             if(named && length(d) > 0){
                 d <- data.frame(..tmp = factor(rep(seq_along(d), sapply(d, nrow)),
                                           seq_along(d), names(d)),
-                           rbindlist(d))
+                           data.table::rbindlist(d))
                 names(d)[1] <- names(.dots)[1]
             } else {
-                d <- rbindlist(d)
+                d <- data.table::rbindlist(d)
             }
         } else if(is.function(.dots[[1]]) && length(.dots) > 1){
             stop("Not implemented.")
