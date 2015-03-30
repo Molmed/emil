@@ -129,23 +129,21 @@ index.test <- function(fold){
 #' @rdname resample
 #' @export
 resample.holdout <- function(y=NULL, frac=.5, nfold=5, balanced=is.factor(y), subset){
-    if(length(y) == 1 && is.numeric(y)){
-        n <- y
-    } else{
-        n <- length(y)
-        subset <- seq_along(y)[subset & !is.na(y)]
-    }
-    class.idx <- if(balanced){
-        lapply(levels(y), function(lev) intersect(which(y == lev), (1:n)[subset]))
+    # Convert subset to integer vector
+    n <- if(length(y) == 1 && is.numeric(y)) y else length(y)
+    subset <- if(is.logical(subset)){
+        (1:n) %in% (1:n)[subset & !is.na(y)]
     } else {
-        list((1:n)[subset])
+        subset[!subset %in% which(is.na(y))]
     }
-    class.ho <- round(frac*sapply(class.idx, length))
+
+    class.subset <- if(balanced) split(subset, y[subset]) else subset
+    class.ho <- round(frac * sapply(class.subset, length))
+
     ho <- as.data.frame(replicate(nfold, {
         idx <- rep(NA, n)
         idx[subset] <- TRUE
-        for(i in seq_along(class.idx))
-            idx[sample(class.idx[[i]], class.ho[[i]])] <- FALSE
+        idx[unlist(Map(sample, class.subset, class.ho))] <- FALSE
         idx
     }))
     list(folds=ho, param=list(frac=frac, nfold=nfold, balanced=balanced))
