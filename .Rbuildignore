@@ -7,3 +7,4 @@ pack.R
 .tar.gz$
 -Ex\.R$
 .txt$
+.sh$

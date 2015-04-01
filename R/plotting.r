@@ -26,15 +26,15 @@ hlines <- function(y, lend=1, ...)
 #' @param lwd Width of the line drawn along the plot area. Omitted by default
 #'   since it overlaps with \code{\link{box}} and causes it to look thicker
 #'   where the axis is.
-#' @param lwd.ticks Width of the tick lines. These are kept by default.
+#' @param lwd_ticks Width of the tick lines. These are kept by default.
 #' @param lend Line endings, see \code{\link{par}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-nice.axis <- function(..., las=1, lwd=0, lwd.ticks=par("lwd"), lend=2){
-    axis(..., las=las, lwd=0, lwd.ticks=lwd.ticks, lend=1)
+nice_axis <- function(..., las=1, lwd=0, lwd_ticks=par("lwd"), lend=2){
+    axis(..., las=las, lwd=0, lwd_ticks=lwd_ticks, lend=1)
     if(lwd){
         # Plot the line along the axis
-        args <- c(list(...), list(lwd=lwd, lwd.ticks=0, lend=lend))
+        args <- c(list(...), list(lwd=lwd, lwd_ticks=0, lend=lend))
         args$labels <- FALSE
         do.call(axis, args)
     }
@@ -48,7 +48,7 @@ nice.axis <- function(..., las=1, lwd=0, lwd.ticks=par("lwd"), lend=2){
 #' @param ... Sent to \code{\link{box}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-nice.box <- function(lend=2, ljoin=1, ...) box(lend=lend, ljoin=ljoin, ...)
+nice_box <- function(lend=2, ljoin=1, ...) box(lend=lend, ljoin=ljoin, ...)
 
 #' Get color palettes
 #'
@@ -60,17 +60,17 @@ nice.box <- function(lend=2, ljoin=1, ...) box(lend=lend, ljoin=ljoin, ...)
 #' @return A character vector of hex colors.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-get.colors <- function(x, ...){
-    UseMethod("get.colors")
+get_color <- function(x, ...){
+    UseMethod("get_color")
 }
 #' @param s Saturation. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
 #'   increases, and \code{-1 <= s < 0} decreases.
 #' @param v Value. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
 #'   increases, and \code{-1 <= s < 0} decreases.
 #' @param alpha Transparency.
-#' @rdname get.colors
+#' @rdname get_color
 #' @export
-get.colors.default <- function(x, s, v, alpha, ...){
+get_color.default <- function(x, s, v, alpha, ...){
     col <- as.data.frame(t(rgb2hsv(col2rgb(x))))
     if(!missing(alpha)) col$alpha <- alpha
 
@@ -97,19 +97,19 @@ get.colors.default <- function(x, s, v, alpha, ...){
 #' @param col Color palette with one color per class or the name of the color
 #'   brewer palette to use, see \code{name} argument of \code{\link[RColorBrewer]{brewer.pal}}
 #'   for a list of possible values.
-#' @param ... Sent to \code{\link{get.colors.default}}.
-#' @rdname get.colors
+#' @param ... Sent to \code{\link{get_color.default}}.
+#' @rdname get_color
 #' @export
-get.colors.factor <- function(x, levels=FALSE, col="Set1", ...){
+get_color.factor <- function(x, levels=FALSE, col="Set1", ...){
     if(length(col) == 1){
-        nice.require("RColorBrewer")
-        suppressWarnings(col <- brewer.pal(1000, col))
+        nice_require("RColorBrewer")
+        suppressWarnings(col <- RColorBrewer::brewer.pal(1000, col))
     }
     if (length(levels(x)) > length(col)) 
         warning("Too few colors to assign unique ones to each class.")
     col <- rep(col, ceiling(length(levels(x))/length(col)))[seq_along(levels(x))]
 
-    col <- get.colors(col, ...)
+    col <- get_color(col, ...)
     if(levels){
         structure(col, names=levels(x))
     } else {

@@ -3,7 +3,7 @@
 #' Note that different methods calculates variable importance in different
 #' ways and that they are not directly comparable.
 #'
-#' @param proc Modeling procedure.
+#' @param procedure Modeling procedure.
 #' @param model Fitted model.
 #' @param ... Sent on to the procedure's variable importance scoring function.
 #' @param .verbose Whether to print an activity log. Set to \code{-1} to
@@ -11,21 +11,14 @@
 #' @return A vector of length p or an p-x-c matrix of variable importance
 #'   scores where p is the number of descriptors and c is the number of classes.
 #' @examples
-#' proc <- modeling.procedure("randomForest")
-#' mod <- fit(proc, x=iris[-5], y=iris$Species)
-#' vimp(proc, mod)
+#' procedure <- modeling_procedure("pamr")
+#' model <- fit(procedure, x=iris[-5], y=iris$Species)
+#' importance(procedure, model)
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}
 #' @export
-vimp <- function(proc, model, ..., .verbose=TRUE){
-    if(.verbose < 0){
-        capture.output(suppressMessages(
-            res <- proc$vimp.fun(model, ...)
-        ))
-        res
-    } else {
-        proc$vimp.fun(model, ...)
-    }
+importance <- function(procedure, model, ..., .verbose=TRUE){
+    procedure$importance_fun(model, ...)
 }
 
 

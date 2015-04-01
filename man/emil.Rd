@@ -14,27 +14,27 @@ original publication included as the package's vignette (to be added).
             \item{\code{\link{resample}}}{Functions for generating and
                 resampling schemes and information on how to implement custom
                 resampling methods.}
-            \item{\code{\link{pre.process}}}{Data pre-processing
+            \item{\code{\link{pre_process}}}{Data pre-processing
                 functions.}
-            \item{\code{\link{modeling.procedure}}}{Manages
+            \item{\code{\link{modeling_procedure}}}{Manages
                 algorithms used for fitting models, making predictions, and
                 extracting variable importance scores.}
-            \item{\code{\link{error.fun}}}{Performance estimation
+            \item{\code{\link{error_fun}}}{Performance estimation
                 functions used to tune variables and evaluate performance
                 of modeling procedures.}
         }
     }
     \subsection{Solving modeling problems}{
         \describe{
-            \item{\code{\link{evaluate.modeling}}}{Evaluate
+            \item{\code{\link{evaluate}}}{Evaluate
                 the performance of a procedure using resampling.}
             \item{\code{\link{fit}}}{Fit a model (according to a procedure).}
             \item{\code{\link{tune}}}{Tune parameters of a procedure.}
-            \item{\code{\link[=predict.modeling.procedure]{predict}}}{Use a
+            \item{\code{\link[=predict.modeling_procedure]{predict}}}{Use a
                 fitted model to predict the response of observations.}
-            \item{\code{\link{vimp}}}{Extract variable importance scores of a
+            \item{\code{\link{importance}}}{Extract variable importance scores of a
                 fitted model.}
-            \item{\code{\link{batch.model}}}{A semi-internal function
+            \item{\code{\link{batch_model}}}{A semi-internal function
                 that carries out most of the work. Parameters passed along
                 from the above functions to this function are documented
                 here.}
@@ -43,7 +43,7 @@ original publication included as the package's vignette (to be added).
     \subsection{Managing the results of modeling problems}{
         \describe{
             \item{\code{\link{subtree}}}{Extracts results
-                from the output of \code{\link{evaluate.modeling}}. It is
+                from the output of \code{\link{evaluate}}. It is
                 essentially a recursive version of \code{\link{lapply}} and
                 \code{\link{sapply}}.}
             \item{\code{\link{select}}}{Interface between emil and the
@@ -61,57 +61,57 @@ original publication included as the package's vignette (to be added).
         See \code{\link{resample}} for information on usage and implementation
         of custom methods.
         \describe{
-            \item{\code{\link{resample.holdout}}}{Repeated holdout.}
-            \item{\code{\link{resample.crossval}}}{Cross validation.}
+            \item{\code{\link{resample_holdout}}}{Repeated holdout.}
+            \item{\code{\link{resample_crossvalidation}}}{Cross validation.}
         }
     }
     \subsection{Data pre-processing methods}{
-        See \code{\link{pre.process}} for information on usage and
+        See \code{\link{pre_process}} for information on usage and
         implementation of custom methods.  The imputation functions
         can also be used outside of the resampling scheme, see
         \code{\link{impute}}.
         \describe{
-            \item{\code{\link{pre.split}}}{Only split, no transformation.}
-            \item{\code{\link{pre.center}}}{Center data to have mean 0 of each
+            \item{\code{\link{pre_split}}}{Only split, no transformation.}
+            \item{\code{\link{pre_center}}}{Center data to have mean 0 of each
                 feature.}
-            \item{\code{\link{pre.scale}}}{Center and scale data to
+            \item{\code{\link{pre_scale}}}{Center and scale data to
                 have mean 0 and standard deviation 1.}
-            \item{\code{\link{pre.impute.median}}}{Impute missing
+            \item{\code{\link{pre_impute_median}}}{Impute missing
                 values with feature medians.}
-            \item{\code{\link{pre.impute.knn}}}{Impute missing values
-                with k-NN, see \code{\link{pre.impute.knn}} for details on
+            \item{\code{\link{pre_impute_knn}}}{Impute missing values
+                with k-NN, see \code{\link{pre_impute_knn}} for details on
                 how to set parameters.}
         }
     }
     \subsection{Modeling methods}{
-        See \code{\link{modeling.procedure}} for information on usage
-        and \code{\link{emil.extensions}} for information on
+        See \code{\link{modeling_procedure}} for information on usage
+        and \code{\link{extension}} for information on
         implementation of custom methods.
         \describe{
-            \item{\code{\link[=emil.fit.cforest]{cforest}}}{Conditional inference
+            \item{\code{\link[=fit_cforest]{cforest}}}{Conditional inference
                 forest.}
-            \item{\code{\link[=emil.fit.glmnet]{glmnet}}}{Elastic net.}
-            \item{\code{\link[=emil.fit.lda]{lda}}}{Linear discriminant.}
-            \item{\code{\link[=emil.fit.lm]{lm}}}{Linear model.}
-            \item{\code{\link[=emil.fit.pamr]{pamr}}}{Nearest shrunken
+            \item{\code{\link[=fit_glmnet]{glmnet}}}{Elastic net.}
+            \item{\code{\link[=fit_lda]{lda}}}{Linear discriminant.}
+            \item{\code{\link[=fit_lm]{lm}}}{Linear model.}
+            \item{\code{\link[=fit_pamr]{pamr}}}{Nearest shrunken
                 centroids.}
-            \item{\code{\link[=emil.fit.qda]{qda}}}{Quadratic discriminant.}
-            \item{\code{\link[=emil.fit.randomForest]{randomForest}}}{Random
+            \item{\code{\link[=fit_qda]{qda}}}{Quadratic discriminant.}
+            \item{\code{\link[=fit_randomForest]{randomForest}}}{Random
                 forest.}
         }
     }
     \subsection{Performance estimation methods}{
-        See \code{\link{error.fun}} for information on usage and implementation
+        See \code{\link{error_fun}} for information on usage and implementation
         of custom methods. Since the framework is designed to minimize the error
-        when tuning variables, some measures are negated, e.g. \code{\link{neg.auc}}.
+        when tuning variables, some measures are negated, e.g. \code{\link{neg_auc}}.
 
         For classification problems:
             \describe{
-                \item{\code{\link{error.rate}}}{Fraction of predictions that were
+                \item{\code{\link{error_rate}}}{Fraction of predictions that were
                     incorrect.}
-            \item{\code{\link{weighted.error.rate}}}{See its own documentation.}
-            \item{\code{\link{neg.auc}}}{Negative area under ROC curve.}
-            \item{\code{\link{neg.gmpa}}}{Negative geometric mean of class-specific
+            \item{\code{\link{weighted_error_rate}}}{See its own documentation.}
+            \item{\code{\link{neg_auc}}}{Negative area under ROC curve.}
+            \item{\code{\link{neg_gmpa}}}{Negative geometric mean of class-specific
                 prediction accuracy. Good for problems with imbalanced class sizes.}
         }
         For regression problems:
@@ -121,7 +121,7 @@ original publication included as the package's vignette (to be added).
         }
         For survival analysis problem:
         \describe{
-            \item{\code{\link{neg.harrell.C}}}{Negative Harrell's concordance index.}
+            \item{\code{\link{neg_harrell_c}}}{Negative Harrell's concordance index.}
         }
     }
 }

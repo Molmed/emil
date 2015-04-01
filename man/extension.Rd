@@ -1,13 +1,13 @@
-\name{emil.extensions}
-\alias{emil.extensions}
+\name{extension}
+\alias{extension}
 \title{Extending the emil framework with user-defined methods}
 \description{
     This page describes how to implement custom methods
     compatible with the functions of the emil framework, most
     notably \code{\link{fit}}, \code{\link{tune}}, and
-    \code{\link{evaluate.modeling}}. Pre-processing and
+    \code{\link{evaluate}}. Pre-processing and
     resampling is not covered here, but in the entries
-    \code{\link{pre.process}} and \code{\link{resample}}.
+    \code{\link{pre_process}} and \code{\link{resample}}.
 }
 \section{Fitting models}{
 
@@ -26,11 +26,11 @@
             classification method, \code{x} can be of any form you like
             as long as the fitting function knows how to handle it. In
             that case you will also need supply you own pre-processing
-            function (see \code{\link{pre.process}} that can extract
+            function (see \code{\link{pre_process}} that can extract
             training and test sets from the entire data set.
 
-            See the functions \code{\link{pre.pamr}} and
-            \code{\link{emil.fit.pamr}} for an example of a function
+            See the functions \code{\link{pre_pamr}} and
+            \code{\link{fit_pamr}} for an example of a function
             that does not take its descriptors in the default way.
         }
         \item{\code{y}}{
@@ -42,7 +42,7 @@
         }
         \item{\code{...}}{
             Model parameters. These will all be tunable with the
-            \code{\link{tune}} and \code{\link{evaluate.modeling}}
+            \code{\link{tune}} and \code{\link{evaluate}}
             functions.
         }
     }
@@ -69,7 +69,7 @@
         }
         \item{\code{...}}{
             Parameters to the prediction functions. These are ignored by
-            \code{\link{tune}} and \code{\link{evaluate.modeling}}, but
+            \code{\link{tune}} and \code{\link{evaluate}}, but
             could be convenient if the user wants to work with it manually.
         }
     }
@@ -82,7 +82,7 @@
     long as a compatible error function is used.
 }
 \section{Calculating performance}{
-    See \code{\link{error.fun}}.
+    See \code{\link{error_fun}}.
 }
 
 \section{Calculating variable importance scores}{
@@ -100,7 +100,7 @@
         \item{\code{...}}{
             Parameters to the prediction functions.
             These are ignored by \code{\link{tune}} and
-            \code{\link{evaluate.modeling}}, but could be convenient if
+            \code{\link{evaluate}}, but could be convenient if
             the user wants to work with it manually.
         }
     }
@@ -109,7 +109,21 @@
     data frame where p is the number of descriptors in the data
     set and c is the number of classes.
 }
+\section{Code style guidelines}{
+    Names of functions, arguments and variables should be written in underscore
+    separated lower case, singular form, unabbreviated, and American English.
+    Users are encouraged to also follow use this style when wrining extensions.
+    However, the guidelines may be violated in cases where they break the
+    consistency with an incorporated well established package, see for example
+    \code{\link{fit_randomForest}} which according to the guidelines should be
+    \code{fit_randomforest} or \code{fit_random_forest}.
+
+    A few exceptions to the rule against abbreviations exists, namely
+    \sQuote{fun} and \sQuote{function} and \sQuote{dir} for \sQuote{directory}.
+    These are only used for arguments to indicate the type of value that is
+    accepted.
+}
 \author{Christofer \enc{Bäcklin}{Backlin}}
-\seealso{\code{\link{emil}}, \code{\link{error.fun}}, \code{\link{pre.process}},
-    \code{\link{resample}}}
+\seealso{\code{\link{emil}}, \code{\link{error_fun}},
+    \code{\link{pre_process}}, \code{\link{resample}}}
 

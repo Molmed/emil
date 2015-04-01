@@ -6,14 +6,14 @@
 #' performance.
 #' The parameter tuning routine is designed to minimize its error function (or
 #' optimization criteria), which is why functions that are to be maximized must
-#' have their sign changed, like \code{neg.auc}.
+#' have their sign changed, like \code{neg_auc}.
 #'
 #' Custom performance estimation functions should be implemented as follows:
 #' 
-#' \code{function(true, pred)}
+#' \code{function(true, prediction)}
 #' \describe{
 #'     \item{\code{true}}{A vector of true responses.}
-#'     \item{\code{pred}}{Prediction returned from the prediction function.}
+#'     \item{\code{prediction}}{Prediction returned from the prediction function.}
 #' }
 #' 
 #' In most cases the true response and the predictions are of the same type,
@@ -23,25 +23,25 @@
 #' all classes rather than one label, or the risks that the observations will
 #' experience the event of interest, to be compared to the actual outcome that
 #' it did occur or has not yet occurred at a specific time point.
-#' See neg.harrell.C for an example of the latter.
+#' See neg_harrell_c for an example of the latter.
 #' 
 #' @param true The true response values, be it class labels, numeric values or
 #'   survival outcomes.
-#' @param pred A prediction object.
-#' @name error.fun
+#' @param prediction A prediction object.
+#' @name error_fun
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{emil}}, \code{\link{neg.gmpa}},
-#'   \code{\link{modeling.procedure}}, \code{\link{emil.extensions}}
+#' @seealso \code{\link{emil}}, \code{\link{neg_gmpa}},
+#'   \code{\link{modeling_procedure}}, \code{\link{extension}}
 {}
 
-#' @rdname error.fun
+#' @rdname error_fun
 #' @export
-error.rate <- function(true, pred){
-    if(!is.factor(true) || !is.factor(pred$pred))
+error_rate <- function(true, prediction){
+    if(!is.factor(true) || !is.factor(prediction$prediction))
         stop("Incorrect class of input variables.")
-    if(!identical(levels(true), levels(pred$pred)))
+    if(!identical(levels(true), levels(prediction$prediction)))
         stop("Levels of predicted labels do not match levels of the true labels.")
-    mean(true != pred$pred)
+    mean(true != prediction$prediction)
 }
 
 #' Weighted error rate
@@ -62,48 +62,48 @@ error.rate <- function(true, pred){
 #' @return An error function.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-weighted.error.rate <- function(x){
+weighted_error_rate <- function(x){
     if(is.factor(x)){
         if(length(levels(x)) != 2)
             stop("In multi-class-problems you must manually supply a cost matrix.")
         x <- matrix(c(0, rev(length(x)/table(x)*.5), 0), 2)
     }
-    function(true, pred){
-        mean(rep(x, table(true, pred$pred)))
+    function(true, prediction){
+        mean(rep(x, table(true, prediction$prediction)))
     }
 }
 
-#' @rdname error.fun
+#' @rdname error_fun
 #' @export
-neg.auc <- function(true, pred){
-    if(!is.factor(true) || !is.numeric(pred$prob))
+neg_auc <- function(true, prediction){
+    if(!is.factor(true) || !is.numeric(prediction$prob))
         stop("Incorrect class of input variables.")
     if(length(levels(true)) != 2)
         stop("AUC can only be calculated on binary classification problems.")
     if(any(table(true) == 0))
         stop("There needs to be at least one example of each class to calculate AUC.")
     true <- true == levels(true)[2]
-    thres <- rev(c(-Inf, sort(unique(pred$prob[,2]))))
+    thres <- rev(c(-Inf, sort(unique(prediction$prob[,2]))))
     conf <- sapply(thres, function(thr){
-        thr.pred <- pred$prob[,2] > thr
-        c(sum(!true & !thr.pred, na.rm=TRUE),
-          sum( true & !thr.pred, na.rm=TRUE),
-          sum(!true &  thr.pred, na.rm=TRUE),
-          sum( true &  thr.pred, na.rm=TRUE))
+        thr.prediction <- prediction$prob[,2] > thr
+        c(sum(!true & !thr.prediction, na.rm=TRUE),
+          sum( true & !thr.prediction, na.rm=TRUE),
+          sum(!true &  thr.prediction, na.rm=TRUE),
+          sum( true &  thr.prediction, na.rm=TRUE))
     })
     -trapz(conf[3,]/(conf[1,]+conf[3,]), conf[4,]/(conf[2,]+conf[4,]))
 }
 
-#' @rdname error.fun
+#' @rdname error_fun
 #' @export
-rmse <- function(true, pred){
-    sqrt(mean((true-pred$pred)^2))
+rmse <- function(true, prediction){
+    sqrt(mean((true-prediction$prediction)^2))
 }
 
-#' @rdname error.fun
+#' @rdname error_fun
 #' @export
-mse <- function(true, pred){
-    mean((true-pred$pred)^2)
+mse <- function(true, prediction){
+    mean((true-prediction$prediction)^2)
 }
 
 #' Negative geometric mean of class specific predictive accuracy
@@ -113,10 +113,10 @@ mse <- function(true, pred){
 #' parameters by optimizing error rate. Blagus and Lusa (2013) suggested to
 #' remedy the problem by using this performance measure instead.
 #' 
-#' @param true See \code{\link{error.fun}}.
-#' @param pred See \code{\link{error.fun}}.
+#' @param true See \code{\link{error_fun}}.
+#' @param prediction See \code{\link{error_fun}}.
 #' @return A numeric scalar.
-#' @seealso \code{\link{error.fun}}
+#' @seealso \code{\link{error_fun}}
 #' @references
 #' Blagus, R., & Lusa, L. (2013).
 #' \emph{Improved shrunken centroid classifiers for high-dimensional class-imbalanced data.}
@@ -124,20 +124,21 @@ mse <- function(true, pred){
 #' doi:10.1186/1471-2105-14-64
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-neg.gmpa <- function(true, pred){
-    -exp(mean(log( tapply(pred$pred == true, true, mean) )))
+neg_gmpa <- function(true, prediction){
+    -exp(mean(log( tapply(prediction$prediction == true, true, mean) )))
 }
 
-#' @rdname error.fun
+#' @rdname error_fun
 #' @export
-neg.harrell.C <- function(true, pred){
-    nice.require("Hmisc", "is required for calculating Harrell's C")
-    -Hmisc::rcorr.cens(pred$risk, as.Surv(true))[1]
+neg_harrell_c <- function(true, prediction){
+    stopifnot(inherits(true, "Surv"))
+    nice_require("Hmisc", "is required for calculating Harrell's C")
+    -Hmisc::rcorr.cens(prediction$risk, true)[1]
 }
 
 
 
-error.convergence <- function(x){
+error_convergence <- function(x){
     if("error" %in% x[[1]]){
         # Single procedure
         err <- subtree(x, TRUE, "error")

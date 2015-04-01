@@ -5,8 +5,8 @@
 #' @param ... Sent to \code{\link[caret]{train}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-emil.fit.caret <- function(x, y, ...){
-    nice.require("caret")
+fit_caret <- function(x, y, ...){
+    nice_require("caret")
     train(x, y, ...)
 }
 
@@ -19,10 +19,10 @@ emil.fit.caret <- function(x, y, ...){
 #'   appropriate predict function in the caret package.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-emil.predict.caret <- function(...){
-    nice.require("caret")
+predict_caret <- function(...){
+    nice_require("caret")
     tryCatch(
-        list(pred = predict(...)),
+        list(prediction = predict(...)),
         error = function(...){
             stop("When using the `caret` package to fit and tune models within the `predict` framework, you may need to supply your own prediction function.")
         }

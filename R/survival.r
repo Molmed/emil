@@ -4,14 +4,14 @@
 #' that plague the \code{survival} and \code{cmprsk} packages. 
 #'
 #' @param x Test, i.e. a fitted object of a supported type.
-#' @param log.p Whether to return the logarithm of the p-value.
+#' @param log_p Whether to return the logarithm of the p-value.
 #' @param ... Sent to class method.
 #' @return p-value.
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{p.value.crr}}, \code{\link{p.value.survdiff}},
-#'   \code{\link{p.value.cuminc}}
+#' @seealso \code{\link{pvalue.crr}}, \code{\link{pvalue.survdiff}},
+#'   \code{\link{pvalue.cuminc}}
 #' @export
-p.value <- function(x, log.p=FALSE, ...) UseMethod("p.value")
+pvalue <- function(x, log_p=FALSE, ...) UseMethod("pvalue")
 
 
 #' Extract p-value from a Cox proportional hazards model
@@ -19,21 +19,21 @@ p.value <- function(x, log.p=FALSE, ...) UseMethod("p.value")
 #' Based on \code{\link{summary.coxph}}.
 #'
 #' @param x Fitted \code{\link[survival]{coxph}} model.
-#' @param log.p Whether to return the logarithm of the p-value.
+#' @param log_p Whether to return the logarithm of the p-value.
 #' @param test What test to calculate. \code{"likelihood"} is short for means
 #'   likelihood ratio test.
 #' @param ... Ignored. Kept for S3 consistency.
 #' @return p-value.
-#' @seealso \code{\link{p.value}}
+#' @seealso \code{\link{pvalue}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-p.value.coxph <- function(x, log.p=FALSE, test=c("logrank", "wald", "likelihood"), ...){
+pvalue.coxph <- function(x, log_p=FALSE, test=c("logrank", "wald", "likelihood"), ...){
     test <- match.arg(test)
     df <- sum(!is.na(x$coefficients))
     switch(test,
-        logrank = pchisq(x$score, df, lower.tail=FALSE, log.p=log.p),
-        wald = pchisq(x$score, df, lower.tail=FALSE, log.p=log.p),
-        likelihood = pchisq(x$logtest, df, lower.tail=FALSE, log.p=log.p))
+        logrank = pchisq(x$score, df, lower.tail=FALSE, log.p=log_p),
+        wald = pchisq(x$score, df, lower.tail=FALSE, log.p=log_p),
+        likelihood = pchisq(x$logtest, df, lower.tail=FALSE, log.p=log_p))
 }
 
 
@@ -42,21 +42,21 @@ p.value.coxph <- function(x, log.p=FALSE, test=c("logrank", "wald", "likelihood"
 #' This is also known as Gray's test.
 #' 
 #' @param x Fitted \code{\link[cmprsk]{cuminc}} estimate.
-#' @param log.p Whether to return the logarithm of the p-value.
+#' @param log_p Whether to return the logarithm of the p-value.
 #' @param ... Ignored. Kept for S3 consistency.
 #' @return p-value.
-#' @seealso \code{\link{p.value}}
+#' @seealso \code{\link{pvalue}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-p.value.cuminc <- function(x, log.p=FALSE, ...){
-    pchisq(x$Tests[,"stat"], x$Tests[,"df"], lower.tail=FALSE, log.p=log.p)
+pvalue.cuminc <- function(x, log_p=FALSE, ...){
+    pchisq(x$Tests[,"stat"], x$Tests[,"df"], lower.tail=FALSE, log.p=log_p)
 }
 
 
 #' Extracts p-value from a competing risk model
 #' 
 #' @param x Fitted crr model, as returned by \code{\link[cmprsk]{crr}}.
-#' @param log.p Whether to return the logarithm of the p-value.
+#' @param log_p Whether to return the logarithm of the p-value.
 #' @param ... Ignored. Kept for S3 consistency.
 #' @return Two-sided p-value.
 #' @examples
@@ -68,19 +68,19 @@ p.value.cuminc <- function(x, log.p=FALSE, ...){
 #' 
 #' # Compare p-values of implementations
 #' print(x)
-#' p.value(x)
-#' @seealso \code{\link{p.value}}
+#' pvalue(x)
+#' @seealso \code{\link{pvalue}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-p.value.crr <- function(x, log.p=FALSE, ...){
-    pval <- pnorm(abs(x$coef)/sqrt(diag(x$var)), lower.tail=FALSE, log.p=log.p)
-    if(log.p) log(2) + pval else 2 * pval
+pvalue.crr <- function(x, log_p=FALSE, ...){
+    pval <- pnorm(abs(x$coef)/sqrt(diag(x$var)), lower.tail=FALSE, log.p=log_p)
+    if(log_p) log(2) + pval else 2 * pval
 }
 
 #' Extracts p-value from a logrank test
 #' 
 #' @param x Logrank test result, as returned by \code{\link[survival]{survdiff}}.
-#' @param log.p Whether to return the logarithm of the p-value.
+#' @param log_p Whether to return the logarithm of the p-value.
 #' @param ... Ignored. Kept for S3 consistency.
 #' @return p-value.
 #' library(survival)
@@ -90,12 +90,12 @@ p.value.crr <- function(x, log.p=FALSE, ...){
 #' 
 #' # Compare p-values of implementations
 #' print(x)
-#' p.value(x)
-#' @seealso \code{\link{p.value}}
+#' pvalue(x)
+#' @seealso \code{\link{pvalue}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-p.value.survdiff <- function(x, log.p=FALSE, ...){
-    pchisq(x$chisq, length(x$n) - 1, lower.tail=FALSE, log.p=log.p)
+pvalue.survdiff <- function(x, log_p=FALSE, ...){
+    pchisq(x$chisq, length(x$n) - 1, lower.tail=FALSE, log.p=log_p)
 }
 
 
@@ -115,13 +115,13 @@ p.value.survdiff <- function(x, log.p=FALSE, ...){
 #' 
 #' @param x \code{\link{Surv}} vector.
 #' @param time Time point to dichotomize at.
-#' @param to.factor Depending on the type of \code{x} the return value may be
+#' @param to_factor Depending on the type of \code{x} the return value may be
 #'   integer or factor. Set this argument to explicitly state the return type.
 #' @return Integer vector or factor.
 #' @seealso \code{\link{Surv}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-dichotomize <- function(x, time, to.factor){
+dichotomize <- function(x, time, to_factor){
     ev <- if(missing(time)){
         x[,"status"]
     } else {
@@ -129,10 +129,10 @@ dichotomize <- function(x, time, to.factor){
                ifelse(x[,"time"] < time, NA, 0),
                ifelse(x[,"time"] > time, 0, x[,"status"]))
     }
-    if(missing(to.factor))
-        to.factor <- attr(x, "type") %in% c("mright", "mcounting")
-    if(to.factor){
-        labels <- SurvEventTypes(x)
+    if(missing(to_factor))
+        to_factor <- attr(x, "type") %in% c("mright", "mcounting")
+    if(to_factor){
+        labels <- Surv_event_types(x)
         factor(ev, levels=0:length(labels), labels=c("no event", labels))
     } else {
         ev
@@ -145,7 +145,7 @@ dichotomize <- function(x, time, to.factor){
 #' @return Character vector of event types.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @noRd
-SurvEventTypes <- function(x){
+Surv_event_types <- function(x){
     mstat <- attr(x, "type") %in% c("mright", "mcounting")
     if(mstat) attr(x, "states") else c("no event", "event")
 }
@@ -166,16 +166,16 @@ plot.Surv <- function(x, y, segments=TRUE, flip=FALSE, legendpos="topright", ...
 
     if(flip){
         plot(y, x[,"time"], type="n", ...)
-        if(segments) segments(y, 0, y, x[,"time"], col=dichotomize(x, to.factor=FALSE)+1)
+        if(segments) segments(y, 0, y, x[,"time"], col=dichotomize(x, to_factor=FALSE)+1)
         points(y, x[,"time"], pch=20, col=dichotomize(x)+1)
     } else {
         plot(x[,"time"], y, type="n", ...)
-        if(segments) segments(0, y, x[,"time"], y, col=dichotomize(x, to.factor=FALSE)+1)
+        if(segments) segments(0, y, x[,"time"], y, col=dichotomize(x, to_factor=FALSE)+1)
         points(x[,"time"], y, pch=20, col=dichotomize(x)+1)
     }
-    if(!is.blank(legendpos)){
-        legend(legendpos, SurvEventTypes(x), pch=20,
-               col=seq_along(SurvEventTypes(x)))
+    if(!is_blank(legendpos)){
+        legend(legendpos, Surv_event_types(x), pch=20,
+               col=seq_along(Surv_event_types(x)))
     }
 }
 

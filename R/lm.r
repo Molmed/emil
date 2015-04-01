@@ -8,14 +8,14 @@
 #' @param ... Sent to \code{\link{lm}}.
 #' @return Fitted linear model.
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{emil}}, \code{\link{emil.predict.lm}},
-#'   \code{\link{modeling.procedure}}
+#' @seealso \code{\link{emil}}, \code{\link{predict_lm}},
+#'   \code{\link{modeling_procedure}}
 #' @export
-emil.fit.lm <- function(x, y, formula=y~., ...){
+fit_lm <- function(x, y, formula=y~., ...){
     df <- data.frame(y, x)
     rm(y,x)
     vars.missing <- all.vars(formula)[!all.vars(formula) %in% names(df)]
-    if(!is.blank(vars.missing)){
+    if(!is_blank(vars.missing)){
         omitted <- length(vars.missing) - 20
         vars.missing <- paste(sprintf("`%s`", head(vars.missing, 20)), collapse=", ")
         if(omitted > 0) vars.missing <- paste(vars.missing, "+", omitted, "more")
@@ -32,18 +32,18 @@ emil.fit.lm <- function(x, y, formula=y~., ...){
 
 #' Prediction using linear model
 #' 
-#' @param object Fitted classifier produced by \code{\link{emil.fit.lm}}.
+#' @param object Fitted classifier produced by \code{\link{fit_lm}}.
 #' @param x Dataset to be predicted upon.
 #' @param ... Sent to \code{\link{predict.lm}}
 #' @return A list with elements:
 #' \itemize{
-#'     \item{\code{pred}: Vector of predicted response.}
+#'     \item{\code{prediction}: Vector of predicted response.}
 #' }
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{emil}}, \code{\link{emil.fit.lm}},
-#'   \code{\link{modeling.procedure}}
+#' @seealso \code{\link{emil}}, \code{\link{fit_lm}},
+#'   \code{\link{modeling_procedure}}
 #' @export
-emil.predict.lm <- function(object, x, ...){
-    list(pred = predict.lm(object, data.frame(y=NA, x), ...))
+predict_lm <- function(object, x, ...){
+    list(prediction = predict.lm(object, data.frame(y=NA, x), ...))
 }
 

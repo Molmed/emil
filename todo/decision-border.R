@@ -1,6 +1,6 @@
 #' Plot decision border
 #' 
-#' Only implemented for 2-d problems.
+#' Only implemented for 2-prediction problems.
 #' 
 #' @param x Modeling procedure.
 #' @param dx Dataset descriptors. Not needed if an already trained model is
@@ -18,7 +18,7 @@
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @import emil
 #' @export
-contour.modeling.procedure <- function(x, dx, dy, model, n=c(100,100), plot.data=!missing(dx), pch, col="Set1", ...){
+contour.modeling_procedure <- function(x, dx, dy, model, n=c(100,100), plot.data=!missing(dx), pch, col="Set1", ...){
     if(missing(model)){
         if(missing(dx) || missing(dy))
             stop("You must suppy either a fitted model or data to use for fitting.")
@@ -26,7 +26,7 @@ contour.modeling.procedure <- function(x, dx, dy, model, n=c(100,100), plot.data
     }
     if(plot.data){
         if(ncol(dx) != 2)
-            stop("Only 2-d problems can be plotted.")
+            stop("Only 2-prediction problems can be plotted.")
         plot(dx[,1], dx[,2], type="n", xlab = colnames(dx)[1], ylab=colnames(dx)[2],
              bty="n", axes=FALSE)
     }
@@ -38,26 +38,26 @@ contour.modeling.procedure <- function(x, dx, dy, model, n=c(100,100), plot.data
         colnames(grid) <- colnames(dx)
         if(is.matrix(dx)) grid <- as.matrix(grid)
     }
-    pred <- predict(x, model, grid)
+    prediction <- predict(x, model, grid)
 
     if(plot.data){
-        col <- get.colors(pred$pred, levels=TRUE, col=col)
+        col <- get.colors(prediction$prediction, levels=TRUE, col=col)
         rgb2hsv(col2rgb(col))
-        grid.class <- apply(pred$prob, 1, which.max)
+        grid.class <- apply(prediction$prob, 1, which.max)
         i <- cbind(1:nrow(grid), grid.class)
-        tmp.prob <- pred$prob
+        tmp.prob <- prediction$prob
         tmp.prob[i] <- NA
-        grid.intensity <- pred$prob[i] - apply(tmp.prob, 1, max, na.rm=TRUE)
+        grid.intensity <- prediction$prob[i] - apply(tmp.prob, 1, max, na.rm=TRUE)
 
-        #grid.intensity <- matrix(apply(pred$prob, 1, function(x) diff(tail(sort(x), 2))), n[1])
+        #grid.intensity <- matrix(apply(prediction$prob, 1, function(x) diff(tail(sort(x), 2))), n[1])
         image(gx, gy, matrix(1:nrow(grid), n[1]), useRaster=TRUE,
               col = get.colors(col[grid.class], s=.3*grid.intensity-1, v=1),
               add=TRUE)
         if(missing(pch)) pch <- as.integer(dy)
         points(dx[,1], dx[,2], col=get.colors(dy, col=col), pch=pch)
     }
-    for(i in seq_along(levels(pred$pred))){
-        z <- matrix(pred$prob[,i]-apply(pred$prob[,-i, drop=FALSE], 1, max), n[1])
+    for(i in seq_along(levels(prediction$prediction))){
+        z <- matrix(prediction$prob[,i]-apply(prediction$prob[,-i, drop=FALSE], 1, max), n[1])
         contour(gx, gy, z, levels=0, add=TRUE, drawlabels=FALSE, lty=2, col=col[i], ...)
     }
     nice.axis(1)

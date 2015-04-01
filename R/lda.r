@@ -7,11 +7,11 @@
 #' @param ... Sent to \code{\link{lda}}.
 #' @return Fitted linear discriminant.
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{emil}}, \code{\link{emil.predict.lda}},
-#'   \code{\link{modeling.procedure}}
+#' @seealso \code{\link{emil}}, \code{\link{predict_lda}},
+#'   \code{\link{modeling_procedure}}
 #' @export
-emil.fit.lda <- function(x, y, ...) {
-    nice.require("MASS")
+fit_lda <- function(x, y, ...) {
+    nice_require("MASS")
     MASS::lda(x, y, ...)
 }
 
@@ -19,22 +19,22 @@ emil.fit.lda <- function(x, y, ...) {
 #'
 #' Wrapper for the MASS package implementation.
 #'
-#' @param object Fitted classifier as produced by \code{\link{batch.model}}.
+#' @param object Fitted classifier as produced by \code{\link{batch_model}}.
 #' @param x Dataset of observations to be classified.
 #' @param ... Sent to \code{\link{predict.lda}}.
 #' @return A list with elements:
 #' \itemize{
-#'     \item{\code{pred}: Factor of predicted class memberships.}
+#'     \item{\code{prediction}: Factor of predicted class memberships.}
 #'     \item{\code{prob}: Data frame of predicted class probabilities.}
 #' }
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{emil}}, \code{\link{emil.fit.lda}},
-#'   \code{\link{modeling.procedure}}
+#' @seealso \code{\link{emil}}, \code{\link{fit_lda}},
+#'   \code{\link{modeling_procedure}}
 #' @export
-emil.predict.lda <- function(object, x, ...){
-    nice.require("MASS")
-    pred <- predict(object, newdata=x, ...)
-    return(list(pred = pred$class,
-                prob = as.data.frame(pred$posterior)))
+predict_lda <- function(object, x, ...){
+    nice_require("MASS")
+    prediction <- predict(object, newdata=x, ...)
+    return(list(prediction = prediction$class,
+                prob = as.data.frame(prediction$posterior)))
 }
 

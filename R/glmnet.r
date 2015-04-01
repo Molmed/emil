@@ -8,7 +8,7 @@
 #' an intermediate for a combination. This is typically the variable to tune
 #' on. The shrinkage, controlled by the \code{lambda} parameter, can be left
 #' unspecified for internal tuning (works the same way as
-#' \code{\link{emil.fit.glmnet}}).
+#' \code{\link{fit_glmnet}}).
 #' 
 #' @param x Dataset.
 #' @param y Response vector. Can be of many different types for solving
@@ -22,17 +22,19 @@
 #' @param ... Sent to \code{\link[glmnet]{cv.glmnet}}.
 #' @return Fitted GLM.
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{emil}}, \code{\link{emil.predict.glmnet}},
-#'   \code{\link{modeling.procedure}}
+#' @seealso \code{\link{emil}}, \code{\link{predict_glmnet}},
+#'   \code{\link{modeling_procedure}}
 #' @export
-emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
+fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     if(is.data.frame(x)){
-        warn.once("glmnet x is not matrix", "glmnet only takes data sets in matrix form. The conversion in the fitting function introduces an extra copy of the data set in the memory.")
+        notify_once(id = "glmnet 'x' is not matrix",
+                    "glmnet only takes data sets in matrix form. The conversion in the fitting function introduces an extra copy of the data set in the memory.",
+                    fun = message)
         x <- as.matrix(x)
     }
     if(!is.factor(y))
         stop("The glmnet wrapper is only implemented for classification (factor response) so far.")
-    nice.require("glmnet", "is required to fit elastic net models")
+    nice_require("glmnet", "is required to fit elastic net models")
     if(missing(family)){
         if(inherits(y, "Surv")) family <- "cox" else
         if(is.factor(y))
@@ -49,7 +51,7 @@ emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, 
             nfolds <- if(missing(foldid)) 10 else max(foldid)
         }
         if(missing(foldid)){
-            foldid <- apply(resample("crossval", y, nfold=nfolds, nrep=1) == 0, 1, which)
+            foldid <- apply(resample("crossvalidation", y, nfold=nfolds, nreplicate=1) == 0, 1, which)
         }
     }
 
@@ -97,15 +99,15 @@ emil.fit.glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, 
 #' @param ... Sent to \code{\link[glmnet]{predict.glmnet}}.
 #' @return A list with elements:
 #' \itemize{
-#'     \item{\code{pred}: Factor of predicted class memberships.}
+#'     \item{\code{prediction}: Factor of predicted class memberships.}
 #'     \item{\code{prob}: Data frame of predicted class probabilities.}
 #' }
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @seealso \code{\link{emil}}, \code{\link{emil.fit.glmnet}},
-#'   \code{\link{modeling.procedure}}
+#' @seealso \code{\link{emil}}, \code{\link{fit_glmnet}},
+#'   \code{\link{modeling_procedure}}
 #' @export
-emil.predict.glmnet <- function(object, x, s, ...){
-    nice.require("glmnet", "is required to make precdictions with an elastic net model")
+predict_glmnet <- function(object, x, s, ...){
+    nice_require("glmnet", "is required to make precdictions with an elastic net model")
     if(missing(s)){
         if("lambda.min" %in% names(object)){
             s <- object$lambda.min
@@ -118,7 +120,7 @@ emil.predict.glmnet <- function(object, x, s, ...){
         binomial = { p <- matrix(c(1-p, p), ncol=2, dimnames=list(rownames(p), object$glmnet.fit$classnames)) },
         multinomial = { p <- p[T,T,1,drop=TRUE] }
     )
-    list(pred = factor(predict(object$glmnet.fit, x, s=s, type="class", ...),
+    list(prediction = factor(predict(object$glmnet.fit, x, s=s, type="class", ...),
                        levels=object$glmnet.fit$classnames),
          prob = as.data.frame(p))
 }

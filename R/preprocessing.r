@@ -1,12 +1,12 @@
 #' Data preprocessing
 #' 
-#' These functions are run in \code{\link{batch.model}} just prior to model
+#' These functions are run in \code{\link{batch_model}} just prior to model
 #' fitting and serve two purposes. 1) They extract fitting and test sets from
 #' the entire dataset and 2) they can at the same time apply a transformation
 #' to pre-process the data for handling missing values, scaling, compression
 #' etc.
 #' They can also be used to modify the form of the data, if required by the
-#' fitting function, e.g. \code{\link{pre.pamr}} that transposes the dataset
+#' fitting function, e.g. \code{\link{pre_pamr}} that transposes the dataset
 #' to make it compatible with the \code{pamr} classification method.
 #' 
 #' Note that all transformations are defined based on the fitting data only
@@ -27,14 +27,14 @@
 #' }
 #'
 #' @examples
-#' # A splitter that only keeps variables with a class-wise mean difference > `d`
-#' my.split <- function(x, y, fold, d=2){
-#'     fit.idx <- index.fit(fold)
-#'     test.idx <- index.test(fold)
+#' # A splitter that only keeps variables with a class-wise mean difference > `prediction`
+#' my_split <- function(x, y, fold, prediction=2){
+#'     fit.idx <- index_fit(fold)
+#'     test.idx <- index_test(fold)
 #'     class.means <- sapply(
 #'         split(x[fit.idx,, drop=FALSE], y[fit.idx]),
 #'         sapply, mean, na.rm=TRUE)
-#'     diff.feats <- apply(class.means, 1, function(x) diff(range(x))) > d
+#'     diff.feats <- apply(class.means, 1, function(x) diff(range(x))) > prediction
 #'     return(list(
 #'         fit = list(x = x[fit.idx, diff.feats, drop=FALSE],
 #'                    y = y[fit.idx]),
@@ -44,17 +44,17 @@
 #' }
 #' 
 #' # Use it during modeling
-#' proc <- modeling.procedure("lda")
-#' perf <- evaluate.modeling(proc, x = iris[-5], y = iris$Species,
-#'                           pre.process = my.split)
+#' procedure <- modeling_procedure("lda")
+#' perf <- evaluate(procedure, x = iris[-5], y = iris$Species,
+#'                           pre_process = my_split)
 #' 
-#' # Example of how the end user can change the `d` parameter,
+#' # Example of how the end user can change the `prediction` parameter,
 #' # without redefining the function
-#' perf <- evaluate.modeling(proc, x = iris[-5], y = iris$Species,
-#'                           pre.process = function(...) my.split(..., d = 1.3))
-#' @seealso \code{\link{emil}}, \code{\link{pre.impute.knn}}
+#' perf <- evaluate(procedure, x = iris[-5], y = iris$Species,
+#'                           pre_process = function(...) my_split(..., prediction = 1.3))
+#' @seealso \code{\link{emil}}, \code{\link{pre_impute_knn}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
-#' @name pre.process
+#' @name pre_process
 {}
 
 
@@ -63,51 +63,51 @@
 #' @param fold A logical or numeric vector with \code{TRUE} or positive numbers
 #'   for fitting observations, \code{FALSE} or \code{0} for test
 #'   observations, and \code{NA} for observations not to be included.
-#' @rdname pre.process
+#' @rdname pre_process
 #' @export
-pre.split <- function(x, y, fold){
-    list(fit = list(x = x[index.fit(fold),,drop=FALSE],
-                  y = y[index.fit(fold)]),
-         test = list(x = x[index.test(fold),,drop=FALSE],
-                     y = y[index.test(fold)]))
+pre_split <- function(x, y, fold){
+    list(fit = list(x = x[index_fit(fold),,drop=FALSE],
+                  y = y[index_fit(fold)]),
+         test = list(x = x[index_test(fold),,drop=FALSE],
+                     y = y[index_test(fold)]))
 }
 
-#' @rdname pre.process
+#' @rdname pre_process
 #' @export
-pre.center <- function(x, y, fold){
-    pre.scale(x, fold, scale=FALSE)
+pre_center <- function(x, y, fold){
+    pre_scale(x, fold, scale=FALSE)
 }
 
 #' @param scale Whether to scale each feature to have standard deviation = 1.
-#' @rdname pre.process
+#' @rdname pre_process
 #' @export
-pre.scale <- function(x, y, fold, scale=TRUE){
-    m <- apply(x[index.fit(fold),,drop=FALSE], 2, mean, na.rm=TRUE)
+pre_scale <- function(x, y, fold, scale=TRUE){
+    m <- apply(x[index_fit(fold),,drop=FALSE], 2, mean, na.rm=TRUE)
     if(scale){
-        s <- apply(x[index.fit(fold),,drop=FALSE], 2, sd, na.rm=TRUE)
+        s <- apply(x[index_fit(fold),,drop=FALSE], 2, sd, na.rm=TRUE)
         fun <- function(z) sweep(sweep(z, 2, m, "-"), 2, s, "/")
     } else {
         fun <- function(z) sweep(z, 2, m, "-")
     }
-    list(fit = list(x = fun(x[index.fit(fold),,drop=FALSE]),
-                    y = y[index.fit(fold)]),
-         test = list(x = fun(x[index.test(fold),,drop=FALSE]),
-                     y = y[index.test(fold)]))
+    list(fit = list(x = fun(x[index_fit(fold),,drop=FALSE]),
+                    y = y[index_fit(fold)]),
+         test = list(x = fun(x[index_test(fold),,drop=FALSE]),
+                     y = y[index_test(fold)]))
 }
 
-#' @rdname pre.process
+#' @rdname pre_process
 #' @export
-pre.impute.median <- function(x, y, fold){
+pre_impute_median <- function(x, y, fold){
     na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
         # Duplicate names may cause problems otherwise
     na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
     na.feats <- unique(na.ind[,"col"])
-    fills <- apply(x[index.fit(fold), na.feats, drop=FALSE], 2, median, na.rm=TRUE)
+    fills <- apply(x[index_fit(fold), na.feats, drop=FALSE], 2, median, na.rm=TRUE)
     x[na.ind] <- fills[match(na.ind[,"col"], na.feats)]
-    list(fit = list(x = x[index.fit(fold),,drop=FALSE],
-                    y = y[index.fit(fold)]),
-         test = list(x = x[index.test(fold),,drop=FALSE],
-                     y = y[index.test(fold)]))
+    list(fit = list(x = x[index_fit(fold),,drop=FALSE],
+                    y = y[index_fit(fold)]),
+         test = list(x = x[index_test(fold),,drop=FALSE],
+                     y = y[index_test(fold)]))
 }
 
 #' kNN imputation
@@ -137,35 +137,35 @@ pre.impute.median <- function(x, y, fold){
 #' x <- iris[-5]
 #' x[sample(nrow(x), 30), 3] <- NA
 #' my.dist <- dist(x)
-#' evaluate.modeling(modeling.procedure("lda"), x=x, y=iris$Species,
-#'     pre.process=function(...) pre.impute.knn(..., k=4, my.dist))
+#' evaluate(modeling_procedure("lda"), x=x, y=iris$Species,
+#'     pre_process=function(...) pre_impute_knn(..., k=4, my.dist))
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-pre.impute.knn <- function(x, y, fold, k=.05, distmat){
+pre_impute_knn <- function(x, y, fold, k=.05, distmat){
     na.ind <- which(is.na(unname(x)), arr.ind=TRUE)
         # Duplicate names may cause problems otherwise
     na.ind <- na.ind[!is.na(fold[na.ind[,1]]),,drop=FALSE]
 
     if(length(na.ind) == 0)
-        return(pre.split(x, y, fold))
+        return(pre_split(x, y, fold))
 
-    if(k < 1) k <- max(1, round(.05*length(index.fit(fold))))
+    if(k < 1) k <- max(1, round(.05*length(index_fit(fold))))
     if(k > sum(fold > 0, na.rm=TRUE)) stop("k is larger than number of fitting observations.")
 
     # If a feature has fewer non-NAs than k exclude it
-    non.na.count <- apply(!is.na(x[index.fit(fold, allow.oversample=FALSE),]), 2, sum)
+    non.na.count <- apply(!is.na(x[index_fit(fold, allow_oversample=FALSE),]), 2, sum)
     features <- non.na.count >= k
     na.ind <- na.ind[na.ind[,"col"] %in% which(features),,drop=FALSE]
 
     if(missing(distmat))
-        stop("You must supply a distance matrix, see `?pre.impute.knn` for details.")
+        stop("You must supply a distance matrix, see `?pre_impute_knn` for details.")
     if(is.character(distmat) && distmat == "auto"){
         idx <- !is.na(fold)
-        d <- as.matrix(dist(x[idx,,drop=FALSE]))
-        if(any(is.na(d)))
+        prediction <- as.matrix(dist(x[idx,,drop=FALSE]))
+        if(any(is.na(prediction)))
             stop("Could not calculate distance matrix, check data set for observations with all values missing.")
         distmat <- matrix(NA, nrow(x), nrow(x))
-        distmat[idx, idx] <- d
+        distmat[idx, idx] <- prediction
     } else if(!is.matrix(distmat)){
         distmat <- as.matrix(distmat)
     }
@@ -174,7 +174,7 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 
     diag(distmat) <- NA
     NN <- apply(distmat, 1, function(z)
-        intersect(order(z), index.fit(fold)))
+        intersect(order(z), index_fit(fold)))
     fills <- apply(na.ind, 1, function(i){
         xf <- x[NN[,i[1]], i[2]]
         xf <- xf[!is.na(xf)]
@@ -184,10 +184,10 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
         stop("Could not impute all missing values, too few non-missing values for some features.")
     x[na.ind] <- fills
     c(
-        list(fit = list(x = x[index.fit(fold), features, drop=FALSE],
-                        y = y[index.fit(fold)]),
-             test = list(x = x[index.test(fold), features, drop=FALSE],
-                         y = y[index.test(fold)])),
+        list(fit = list(x = x[index_fit(fold), features, drop=FALSE],
+                        y = y[index_fit(fold)]),
+             test = list(x = x[index_test(fold), features, drop=FALSE],
+                         y = y[index_test(fold)])),
         if(all(features)) NULL else list(features = features)
     )
 }
@@ -197,12 +197,12 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 #' Regular imputation
 #'
 #' If you want to impute, build model and predict you should use
-#' \code{\link{pre.impute.median}} or \code{\link{pre.impute.knn}}.
+#' \code{\link{pre_impute_median}} or \code{\link{pre_impute_knn}}.
 #' This function imputes using all observations
 #' without caring about cross-validation folds.
 #'
-#' For additional information on the parameters see \code{\link{pre.impute.knn}}
-#' and \code{\link{pre.impute.median}}.
+#' For additional information on the parameters see \code{\link{pre_impute_knn}}
+#' and \code{\link{pre_impute_median}}.
 #' 
 #' @param x Dataset.
 #' @param k Number of nearest neighbors to use.
@@ -213,21 +213,21 @@ pre.impute.knn <- function(x, y, fold, k=.05, distmat){
 #' x[sample(length(x), 5)] <- NA
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @name impute
-#' @seealso \code{\link{emil}}, \code{\link{pre.process}},
-#'   \code{\link{pre.impute.knn}}, \code{\link{pre.impute.median}}
+#' @seealso \code{\link{emil}}, \code{\link{pre_process}},
+#'   \code{\link{pre_impute_knn}}, \code{\link{pre_impute_median}}
 {}
 #' @examples
-#' impute.knn(x)
+#' impute_knn(x)
 #' @rdname impute
 #' @export
-impute.knn <- function(x, k=.05, distmat="auto"){
-    pre.impute.knn(x, NULL, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$fit$x
+impute_knn <- function(x, k=.05, distmat="auto"){
+    pre_impute_knn(x, NULL, fold=rep(TRUE, nrow(x)), k=k, distmat=distmat)$fit$x
 }
 #' @examples
-#' impute.median(x)
+#' impute_median(x)
 #' @rdname impute
 #' @export
-impute.median <- function(x){
-    pre.impute.median(x, NULL, rep(TRUE, nrow(x)))$fit$x
+impute_median <- function(x){
+    pre_impute_median(x, NULL, rep(TRUE, nrow(x)))$fit$x
 }
 
