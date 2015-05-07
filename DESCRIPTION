@@ -1,0 +1,35 @@
+Encoding: UTF-8
+Package: emil
+Type: Package
+Title: Evaluation of Modeling without Information Leakage
+Version: 1.3-3
+Date: 2015-05-07
+Author: Christofer Backlin, Mats Gustafsson
+Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
+Description: A toolbox for designing and evaluating predictive models with
+    resampling methods. The aim of this package is to provide a simple and
+    efficient general framework for working with any type of prediction
+    problem, be it classification, regression or survival analysis, that is
+    easy to extend and adapt to your specific setting. Some commonly used
+    methods for classification, regression and survival analysis are included.
+Depends:
+    data.table,
+    dplyr,
+    lazyeval,
+    tidyr
+Suggests:
+    caret,
+    cmprsk,
+    glmnet,
+    Hmisc,
+    MASS,
+    parallel,
+    party,
+    pamr,
+    randomForest,
+    RColorBrewer,
+    survival,
+    testthat (>= 0.9.1)
+License: GPL (>=2)
+LazyLoad: yes
+LazyData: yes
