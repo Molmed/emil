@@ -35,7 +35,7 @@
 #' @param error_fun Performance measure used to evaluate procedures
 #'   and to tune parameters. See \code{\link{error_fun}} for details.
 #' @return An object of class \code{modeling_procedure}.
-#' @example examples/modeling_procedure.R
+#' @example examples/modeling_procedure.r
 #' @seealso \code{\link{emil}}, \code{\link{evaluate}},
 #'   \code{\link{fit}}, \code{\link{tune}},
 #'   \code{\link[=predict.modeling_procedure]{predict}}, \code{\link{importance}}
@@ -159,7 +159,7 @@ print.modeling_procedure <- function(x, ...){
 #'       \item{\code{tune}}{Results from the parameter tuning. See
 #'           \code{\link{tune}} for details.}
 #'   }
-#' @example examples/batch_model.R
+#' @example examples/batch_model.r
 #' @seealso \code{\link{emil}}, \code{\link{modeling_procedure}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
@@ -481,7 +481,7 @@ fit <- function(procedure, x, y, ..., .verbose=TRUE){
 #'   \code{\link[=predict.modeling_procedure]{predict}}, \code{\link{importance}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-tune <- function(procedure, ..., .retune=FALSE, .verbose=FALSE){
+tune <- function(procedure, ..., .retune=TRUE, .verbose=FALSE){
     log_message(indent(.verbose, 0), "Parameter tuning:")
     if(inherits(procedure, "modeling_procedure")){
         multi.procedure <- FALSE
@@ -490,22 +490,13 @@ tune <- function(procedure, ..., .retune=FALSE, .verbose=FALSE){
         multi.procedure <- TRUE
     }
     debug.flags <- get_debug_flag(procedure)
-    if(.retune){
-        do.tuning <- sapply(procedure, is_tunable)
-        discard.tuning <- do.tuning & sapply(procedure, is_tuned)
-        if(any(discard.tuning)){
-            log_message(indent(.verbose, 1), "Discarding previous tuning of %i procedures.",
-                sum(discard.tuning))
-            for(i in which(discard.tuning))
-                procedure[[i]]$tuning <- NULL
-        }
-    } else {
-        do.tuning <- !sapply(procedure, is_tuned)
-        not.tuned <- !do.tuning & sapply(procedure, is_tunable)
-        if(any(not.tuned)){
-            log_message(indent(.verbose, 1), "%i procedures are already tuned and will not be retuned.",
-                sum(not.tuned), time=FALSE)
-        }
+    do.tuning <- sapply(procedure, is_tunable)
+    discard.tuning <- do.tuning & sapply(procedure, is_tuned)
+    if(any(discard.tuning)){
+        log_message(indent(.verbose, 1), "Discarding previous tuning of %i procedures.",
+            sum(discard.tuning))
+        for(i in which(discard.tuning))
+            procedure[[i]]$tuning <- NULL
     }
     tune.procedure <- unlist(lapply(procedure[do.tuning], function(p){
         lapply(p$tuning$param, function(pp){
@@ -527,7 +518,7 @@ tune <- function(procedure, ..., .retune=FALSE, .verbose=FALSE){
         best.param <- which(mean.err == min(mean.err))
         if(length(best.param) > 1) best.param <- sample(best.param, 1)
         procedure[[i]]$param <- procedure[[i]]$tuning$param[[best.param]]
-        procedure[[i]]$tuning$result <- tuning[procedure.id == i]
+        procedure[[i]]$tuning$result <- lapply(tuning, "[", procedure.id == i)
     }
     procedure <- set_debug_flag(procedure, debug.flags)
     if(multi.procedure) procedure else procedure[[1]]
@@ -633,7 +624,6 @@ predict.modeling_procedure <- function(object, model, x, ..., .verbose=TRUE){
         object$predict_fun(object = model, x = x, ...)
     }
 }
-
 
 #' Preserve debugging flags when manipulating lists
 #'

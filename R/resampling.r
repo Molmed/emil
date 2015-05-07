@@ -163,7 +163,7 @@ resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.facto
     if(inherits(y, "Surv"))
         y <- as.factor(y[,"status"])
     if(n < nfold) stop("Number of objects cannot be smaller than number of groups")
-    if(inherits(y, "Surv")) y <- dichotomize(y, to.factor=TRUE)
+    if(inherits(y, "Surv")) y <- dichotomize(y, to_factor=TRUE)
 
     # Convert subset to logical vector
     subset <- (1:n) %in% (1:n)[subset]
@@ -194,6 +194,7 @@ resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.facto
 #'
 #' Class specific extension to \code{\link{image}}.
 #' 
+#' @method image resample
 #' @param x Resampling scheme, as returned by \code{\link{resample}}.
 #' @param col Color palette matching the values of \code{x}.
 #'   Can also be the response vector used to create the
@@ -211,7 +212,7 @@ resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.facto
 image.resample <- function(x, col, ...){
     x <- as.matrix(x)
     if(missing(col)) col <- gl(1, nrow(x))
-    if(inherits(col, "Surv")) col <- dichotomize(col, to.factor=TRUE)
+    if(inherits(col, "Surv")) col <- dichotomize(col, to_factor=TRUE)
     if(is.factor(col)){
         y <- col
         if(length(y) != nrow(x))
@@ -231,12 +232,18 @@ image.resample <- function(x, col, ...){
         mat <- matrix(col[mat], nrow(mat))
     }
     mat[is.na(x)] <- "transparent"
-    plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n", las=1,
-         xlab="Folds", ylab="Observations", ...)
+    par(xaxs="i", yaxs="i")
+    plot(c(.5, ncol(x)+.5), c(.5, nrow(x)+.5), type="n",
+         axes=FALSE, xlab="Folds", ylab="Observations", ...)
     rasterImage(mat, .5, .5, ncol(x)+.5, nrow(x)+.5, interpolate=FALSE)
+    nice_axis(1)
+    ticks <- pretty(pretty(par("usr")[3:4]))
+    nice_axis(2, at=nrow(x)-ticks+1, labels=ticks, las=1)
+    nice_box()
 }
 
 
+#' @method image crossvalidation
 #' @rdname image.resample
 #' @export
 image.crossvalidation <- function(x, col, ...){

@@ -1,12 +1,11 @@
-*.Rcheck
-*.tar.gz
 builds
+todo
+old
 *.Rapp.history
 .Rhistory
 *~
 *.swp
 *.bak
-old
 *.Rd
 *-Ex.R
 ideas.txt

@@ -57,6 +57,7 @@ learning_curve <- function(procedure, x, y, fraction, nfold=100, ..., .verbose=T
 
 #' Plot results from learning curve analysis
 #'
+#' @method plot learning_curve
 #' @param x Results from \code{\link{learning_curve}}.
 #' @param y Ignored, kept for S3 consistency.
 #' @param ... Ignored, kept for S3 consistency.

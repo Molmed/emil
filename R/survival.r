@@ -152,6 +152,7 @@ Surv_event_types <- function(x){
 
 #' Plot Surv vector
 #' 
+#' @method plot Surv
 #' @param x \code{\link{Surv}} vector.
 #' @param y Y-values.
 #' @param segments Whether to draw horizontal segments.

@@ -131,7 +131,7 @@ nice_require <- function(pkg, reason){
 #'   possible (\code{TRUE}) or to preserve the original tree structure as a
 #'   list (\code{FALSE}).
 #' @return A subset of the list tree.
-#' @example examples/subtree.R
+#' @example examples/subtree.r
 #' @seealso \code{\link{select}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export

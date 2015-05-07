@@ -26,15 +26,15 @@ hlines <- function(y, lend=1, ...)
 #' @param lwd Width of the line drawn along the plot area. Omitted by default
 #'   since it overlaps with \code{\link{box}} and causes it to look thicker
 #'   where the axis is.
-#' @param lwd_ticks Width of the tick lines. These are kept by default.
+#' @param lwd.ticks Width of the tick lines. These are kept by default.
 #' @param lend Line endings, see \code{\link{par}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-nice_axis <- function(..., las=1, lwd=0, lwd_ticks=par("lwd"), lend=2){
-    axis(..., las=las, lwd=0, lwd_ticks=lwd_ticks, lend=1)
+nice_axis <- function(..., las=1, lwd=0, lwd.ticks=par("lwd"), lend=2){
+    axis(..., las=las, lwd=0, lwd.ticks=lwd.ticks, lend=1)
     if(lwd){
         # Plot the line along the axis
-        args <- c(list(...), list(lwd=lwd, lwd_ticks=0, lend=lend))
+        args <- c(list(...), list(lwd=lwd, lwd.ticks=0, lend=lend))
         args$labels <- FALSE
         do.call(axis, args)
     }

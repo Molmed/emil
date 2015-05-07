@@ -87,7 +87,7 @@ notify_once <- function(id, ..., fun=message){
 }
 #' @rdname notify_once
 #' @export
-reset_notification <- function(if_top_level=FALSE){
+reset_notification <- function(if_top_level=TRUE){
     if(!if_top_level || identical(parent.frame(), globalenv()))
     options(emil_notification = NULL)
 }
