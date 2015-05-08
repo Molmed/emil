@@ -5,7 +5,7 @@ Title: Evaluation of Modeling without Information Leakage
 Version: 1.3-4
 Date: 2015-05-08
 Authors@R: c(
-    person("Christofer", "Backlin", role = c("aut", "cre"), email = "christofer.backlin1@medsci.uu.se"),
+    person("Christofer", "Backlin", role = c("aut", "cre"), email = "christofer.backlin@medsci.uu.se"),
     person("Mats", "Gustafsson", role = "aut")
     )
 Author: Christofer Backlin [aut, cre],
