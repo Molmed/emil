@@ -66,34 +66,98 @@
 #' @rdname pre_process
 #' @export
 pre_split <- function(x, y, fold){
-    list(fit = list(x = x[index_fit(fold),,drop=FALSE],
-                  y = y[index_fit(fold)]),
-         test = list(x = x[index_test(fold),,drop=FALSE],
-                     y = y[index_test(fold)]))
+    if(missing(fold)){
+        fold <- structure(rep(TRUE, nrow(x)),
+                          class=c("fit_only", "fold", "logical"))
+    }
+    structure(
+        list(fit = list(x = x[index_fit(fold),,drop=FALSE],
+                        y = y[index_fit(fold)]),
+             test = list(x = x[index_test(fold),,drop=FALSE],
+                     y = y[index_test(fold)]),
+             feature_selection = structure(rep(TRUE, ncol(x)),
+                                           names = colnames(x)),
+             fold = fold),
+        class=c("preprocessed_data", "list"))
+}
+
+#' @export
+pre_convert <- function(data, x_fun, y_fun){
+    if(!missing(x_fun)){
+        data$fit$x <- x_fun(data$fit$x)
+        data$test$x <- x_fun(data$test$x)
+    }
+    if(!missing(y_fun)){
+        data$fit$y <- y_fun(data$fit$y)
+        data$test$y <- y_fun(data$test$y)
+    }
+    data
+}
+
+#' @export
+pre_transpose <- function(data){
+    pre_convert(data, x_fun=t)
+}
+
+#' @export
+pre_remove <- function(data, feature){
+    if(!any(feature)){
+        return(data)
+    }
+    if(is.logical(feature)){
+        feature <- which(feature)
+    } else if(is.character(feature)){
+        feature <- match(feature, colnames(data$fit$x))
+    }
+    data$fit$x <- data$fit$x[, -feature, drop=FALSE]
+    data$test$x <- data$test$x[, -feature, drop=FALSE]
+    data$feature_selection[feature] <- FALSE
+    data
 }
 
 #' @rdname pre_process
 #' @export
-pre_center <- function(x, y, fold){
-    pre_scale(x, fold, scale=FALSE)
+pre_center <- function(data, y=FALSE, na.rm=TRUE){
+    m <- colMeans(data$fit$x, na.rm=na.rm)
+    data$fit$x <- sweep(data$fit$x, 2, m, "-")
+    data$test$x <- sweep(data$test$x, 2, m, "-")
+    if(y){
+        my <- mean(y, na.rm=na.rm)
+        if(is.na(my)) stop("Could not calculate the mean of `y`.")
+        data$fit$y <- data$fit$y - my
+        data$test$y <- data$test$y - my
+    }
+    data
 }
 
 #' @param scale Whether to scale each feature to have standard deviation = 1.
 #' @rdname pre_process
 #' @export
-pre_scale <- function(x, y, fold, scale=TRUE){
-    m <- apply(x[index_fit(fold),,drop=FALSE], 2, mean, na.rm=TRUE)
-    if(scale){
-        s <- apply(x[index_fit(fold),,drop=FALSE], 2, sd, na.rm=TRUE)
-        fun <- function(z) sweep(sweep(z, 2, m, "-"), 2, s, "/")
-    } else {
-        fun <- function(z) sweep(z, 2, m, "-")
+pre_scale <- function(data, y=FALSE, na.rm=TRUE, center=TRUE){
+    if(center) data <- pre_center(data, y=y)
+    s <- apply(data$fit$x, 2, sd, na.rm=na.rm)
+    data$fit$x <- sweep(data$fit$x, 2, s, "/")
+    data$test$x <- sweep(data$test$x, 2, s, "/")
+    if(y){
+        sy <- sd(y)
+        data$fit$y <- data$fit$y / sy
+        data$test$y <- data$test$y / sy
     }
-    list(fit = list(x = fun(x[index_fit(fold),,drop=FALSE]),
-                    y = y[index_fit(fold)]),
-         test = list(x = fun(x[index_test(fold),,drop=FALSE]),
-                     y = y[index_test(fold)]))
+    data
 }
+
+#' @export
+pre_remove_constant <- function(data){
+    pre_remove(data, apply(data$fit$x, 2, sd) == 0)
+}
+
+#' @export
+pre_remove_correlated <- function(data, cutoff){
+    if(missing(cutoff)) stop("`pre_remove_correlated` requires a cutoff.")
+    nice_require("caret")
+    pre_remove(data, caret::findCorrelation(cor(data$fit$x), cutoff = .75))
+}
+
 
 #' @rdname pre_process
 #' @export

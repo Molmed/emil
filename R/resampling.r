@@ -85,7 +85,7 @@ resample <- function(method, y, ..., subset=TRUE){
 #' inner.cv <- subresample(cv, y=12)
 #' @seealso \code{\link{emil}}, \code{\link{resample}}
 #' @export
-subresample <- function(fold, y){
+subresample <- function(fold, y=length(fold)){
     if(is.data.frame(fold)){
         # The user inputted a full scheme
         lapply(fold, subresample, y)

@@ -35,6 +35,6 @@ predict_lda <- function(object, x, ...){
     nice_require("MASS")
     prediction <- predict(object, newdata=x, ...)
     return(list(prediction = prediction$class,
-                prob = as.data.frame(prediction$posterior)))
+                probability = as.data.frame(prediction$posterior)))
 }
 

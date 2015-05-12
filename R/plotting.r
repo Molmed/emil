@@ -116,3 +116,4 @@ get_color.factor <- function(x, levels=FALSE, col="Set1", ...){
         structure(col[as.integer(x)], names=names(x))
     }
 }
+
