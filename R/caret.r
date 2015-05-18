@@ -7,7 +7,7 @@
 #' @export
 fit_caret <- function(x, y, ...){
     nice_require("caret")
-    train(x, y, ...)
+    caret::train(x, y, ...)
 }
 
 #' Predict using a caret method

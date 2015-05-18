@@ -2,7 +2,8 @@
 
 # Emil version 1.3.2 introduced new coding style guidelines and renamed many
 # functions and arguments. This script can be used to convert R-scripts written
-# for emil v < 1.3.2 to the new standard.
+# for emil v < 1.3.2 to the new standard. The script is unfortunatelly not able
+# to fix all possible problems, but can still be of good help in most cases.
 
 if [ $# -eq 0 ]
   then
@@ -12,7 +13,7 @@ fi
 sed -i 's/\.checkpoint\.dir\b/.checkpoint_dir/g' $1
 sed -i 's/\.parallel\.cores\b/.cores/g' $1
 sed -i 's/\.return\.errors\b/.return_error/g' $1
-sed -i 's/\bbatch\.model\b/batch_model/g' $1
+sed -i 's/\bbatch\.model\b/evaluate/g' $1
 sed -i 's/\bemil\.fit\./fit_/g' $1
 sed -i 's/\bemil\.predict\./predict_/g' $1
 sed -i 's/\bemil\.vimp\./importance_/g' $1

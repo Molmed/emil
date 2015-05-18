@@ -30,14 +30,10 @@ original publication included as the package's vignette (to be added).
                 the performance of a procedure using resampling.}
             \item{\code{\link{fit}}}{Fit a model (according to a procedure).}
             \item{\code{\link{tune}}}{Tune parameters of a procedure.}
-            \item{\code{\link[=predict.modeling_procedure]{predict}}}{Use a
+            \item{\code{\link[=predict.model]{predict}}}{Use a
                 fitted model to predict the response of observations.}
             \item{\code{\link{importance}}}{Extract variable importance scores of a
                 fitted model.}
-            \item{\code{\link{batch_model}}}{A semi-internal function
-                that carries out most of the work. Parameters passed along
-                from the above functions to this function are documented
-                here.}
         } 
     }
     \subsection{Managing the results of modeling problems}{

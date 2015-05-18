@@ -20,13 +20,13 @@ fit_qda <- function(x, y, ...){
 #'
 #' Wrapper for the MASS package implementation.
 #'
-#' @param object Fitted classifier as produced by \code{\link{batch_model}}.
+#' @param object Fitted classifier as produced by \code{\link{evaluate}}.
 #' @param x Dataset of observations to be classified.
 #' @param ... Sent to \code{\link{predict.qda}}.
 #' @return A list with elements:
 #' \itemize{
 #'     \item{\code{prediction}: Factor of predicted class memberships.}
-#'     \item{\code{prob}: Data frame of predicted class probabilities.}
+#'     \item{\code{probability}: Data frame of predicted class probabilities.}
 #' }
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{fit_qda}},

@@ -18,6 +18,7 @@ pvalue <- function(x, log_p=FALSE, ...) UseMethod("pvalue")
 #' 
 #' Based on \code{\link{summary.coxph}}.
 #'
+#' @method pvalue coxph
 #' @param x Fitted \code{\link[survival]{coxph}} model.
 #' @param log_p Whether to return the logarithm of the p-value.
 #' @param test What test to calculate. \code{"likelihood"} is short for means
@@ -41,6 +42,7 @@ pvalue.coxph <- function(x, log_p=FALSE, test=c("logrank", "wald", "likelihood")
 #' 
 #' This is also known as Gray's test.
 #' 
+#' @method pvalue cuminc
 #' @param x Fitted \code{\link[cmprsk]{cuminc}} estimate.
 #' @param log_p Whether to return the logarithm of the p-value.
 #' @param ... Ignored. Kept for S3 consistency.
@@ -55,6 +57,7 @@ pvalue.cuminc <- function(x, log_p=FALSE, ...){
 
 #' Extracts p-value from a competing risk model
 #' 
+#' @method pvalue crr
 #' @param x Fitted crr model, as returned by \code{\link[cmprsk]{crr}}.
 #' @param log_p Whether to return the logarithm of the p-value.
 #' @param ... Ignored. Kept for S3 consistency.
@@ -79,6 +82,7 @@ pvalue.crr <- function(x, log_p=FALSE, ...){
 
 #' Extracts p-value from a logrank test
 #' 
+#' @method pvalue survdiff
 #' @param x Logrank test result, as returned by \code{\link[survival]{survdiff}}.
 #' @param log_p Whether to return the logarithm of the p-value.
 #' @param ... Ignored. Kept for S3 consistency.

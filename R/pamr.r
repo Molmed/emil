@@ -6,30 +6,35 @@
 #' descriptors. This function applies a standard pre-processing function and
 #' then reformats the result to satisfy PAMR.
 #'
-#' @param x Dataset.
-#' @param y Response vector.
-#' @param fold A logical vector with \code{FALSE} for fitting observations,
-#'   \code{TRUE} for test observations and \code{NA} for observations not 
-#'   to be included.
-#' @param pre_process A pre-processing function to be wrapped.
-#' @param ... Sent to \code{pre_process}.
+#' \code{pre_pamr} must be run last if chained with other pre-processing
+#' functions, since it substantially reshapes the data.
+#'
+#' @param data Fitting and testing data sets, as returned by
+#'   \code{\link{pre_split}}.
 #' @return A list with fitting and testing sets, formatted the way pamr wants
 #'   them.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{pre_process}}
 #' @export
-pre_pamr <- function(x, y, fold, pre_process=pre_split, ...){
-    sets <- pre_process(x, y, fold, ...)
-    if(ncol(x) == 1){
+pre_pamr <- function(data){
+    if(ncol(data$fit$x) == 1){
         notify_once(id = "pamr_univariate",
                     "PAMR not designed to handle univariate data. An all-zero dummy variable added as a workaround.",
                     fun = message)
     }
-    sets$fit$x <- structure(class = "pamr.data", .Data = list(
-        x = if(ncol(x) == 1) rbind(t(sets$fit$x), dummy=0) else t(sets$fit$x),
-        y = sets$fit$y))
-    sets$test$x <- if(ncol(x) == 1) rbind(t(sets$test$x), dummy=0) else t(sets$test$x)
-    sets
+    data$fit$x <- structure(class = "pamr.data", .Data = list(
+        x = if(ncol(data$fit$x) == 1){
+            rbind(t(data$fit$x), dummy=0)
+        } else {
+            t(data$fit$x)
+        },
+        y = data$fit$y))
+    data$test$x <- if(ncol(data$test$x) == 1){
+        rbind(t(data$test$x), dummy=0)
+    } else {
+        t(data$test$x)
+    }
+    data
 }
 
 #' Fit nearest shrunken centroids model.
@@ -57,7 +62,7 @@ pre_pamr <- function(x, y, fold, pre_process=pre_split, ...){
 #' @param threshold Shrinkage thresholds to try (referred to as 'lambda' in the
 #'   literature). Chosen and tuned automatically by default, but must be given
 #'   by the user if not tuned (see the \code{cv} argument) if you wish to use
-#'   it with \code{\link{batch_model}}.
+#'   it with \code{\link{evaluate}}.
 #' @param ... Sent to \code{\link[pamr]{pamr.train}}.
 #' @param thres_fun Threshold selection function. Note that it is not uncommon
 #'   that several thresholds will result in the same tuning error.
@@ -115,7 +120,7 @@ fit_pamr <- function(x, y, error_fun, cv, threshold=NULL, ...,
                         fit.cv$cv.objects <- NULL
                     }
                     fit.cv$error <- sapply(seq_along(fit.cv$threshold), function(i)
-                        error_fun(fit.cv$y, list(prediction=fit.cv$yhat[[i]], prob=fit.cv$prob[,,i])))
+                        error_fun(fit.cv$y, list(prediction=fit.cv$yhat[[i]], probability=fit.cv$probability[,,i])))
                 }
             } else {
                 if(!missing(cv) && !is_blank(cv))
@@ -147,7 +152,7 @@ fit_pamr <- function(x, y, error_fun, cv, threshold=NULL, ...,
 #' @return A list with elements:
 #' \itemize{
 #'     \item{\code{prediction}: Factor of predicted class memberships.}
-#'     \item{\code{prob}: Data frame of predicted class probabilities.}
+#'     \item{\code{probability}: Data frame of predicted class probabilities.}
 #' }
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{fit_pamr}},
@@ -170,8 +175,9 @@ predict_pamr <- function(object, x, threshold, thres_fun, ...){
             threshold <- thres_fun(object$cv$threshold, object$cv$error)
         }
     }
-    list(prediction=pamr::pamr.predict(object$fit, x, type="class", threshold=threshold, ...),
-         prob=pamr::pamr.predict(object$fit, x, type="posterior", threshold=threshold, ...))
+    list(prediction = pamr::pamr.predict(object$fit, x, type="class", threshold=threshold, ...),
+         probability = as.data.frame(pamr::pamr.predict(object$fit,
+                            x, type="posterior", threshold=threshold, ...)))
 }
 
 
@@ -195,7 +201,7 @@ predict_pamr <- function(object, x, threshold, thres_fun, ...){
 #' @seealso \code{\link{emil}}, \code{\link{fit_pamr}},
 #'   \code{\link{predict_pamr}}, \code{\link{modeling_procedure}}
 #' @export
-importance_pamr <- function(object, threshold, thres_fun, ...){
+importance_pamr <- function(object, threshold, thres_fun=max, ...){
     nice_require("pamr")
     if(missing(threshold)){
         if(length(object$fit$threshold) == 1){
@@ -207,9 +213,9 @@ importance_pamr <- function(object, threshold, thres_fun, ...){
             threshold <- thres_fun(object$cv$threshold, object$cv$error)
         }
     }
-    cen <- (pamr::pamr.predict(object$fit, , threshold, type="centroid", ...) -
-            object$fit$centroid.overall) / object$fit$sd
-    names(cen) <- object$descriptors
-    return(cen)
+    cen <- sweep(sweep(pamr::pamr.predict(object$fit, , threshold, type="centroid", ...),
+                       1, object$fit$centroid.overall, "-"),
+                 1, object$fit$sd, "/")
+    as.data.frame(cen)
 }
 

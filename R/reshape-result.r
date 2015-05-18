@@ -96,6 +96,7 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #' specific \code{\link[dplyr]{select_}} function that differs somewhat in syntax
 #' from the default \code{\link[dplyr]{select_}}.
 #'
+#' @method select_ list
 #' @param .data Modeling results, as returned by \code{\link{evaluate}}.
 #' @param ... Not used, kept for consistency with \code{dplyr}.
 #' @param .dots Indices to select on each level of \code{.data}, i.e.
@@ -135,6 +136,7 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #' result %>% select(Fold = TRUE, "nsc", Error = "error")
 #'
 #' # Compare both methods 
+#' require(tidyr)
 #' result %>%
 #'     select(Fold = TRUE, Method = TRUE, Error = "error") %>%
 #'     spread(Method, Error)
@@ -144,7 +146,7 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #'
 #' # Investigate the variability in estimated class 2 probability across folds
 #' result %>%
-#'     select(Fold = cv, "nsc", "prediction", Probability = function(x) x$prob[,2]) %>%
+#'     select(Fold = cv, "nsc", "prediction", Probability = function(x) x$probability[,2]) %>%
 #'     spread(Fold, Probability)
 #' @seealso subtree
 #' @author Christofer \enc{Bäcklin}{Backlin}
@@ -157,12 +159,12 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 select_.list <- function(.data, ..., .dots){
     select_list(.data, lazyeval::lazy_eval(.dots))
 }
+#' @method select_ modeling_result
 #' @rdname select
 #' @export
 select_.modeling_result <- function(.data, ..., .dots){
     select_list(.data, lazyeval::lazy_eval(.dots))
 }
-#' @noRd
 select_list <- function(.data, .dots, id=NULL){
     named <- !is.null(names(.dots)) && names(.dots)[1] != ""
     subsetting <- inherits(.dots[[1]], c("numeric", "integer", "logical", "character"))
@@ -234,7 +236,7 @@ select_list <- function(.data, .dots, id=NULL){
 #' Extract predictions from modeling results
 #'
 #' @param result Modeling result, as returned by \code{\link{evaluate}} and
-#'   \code{\link{batch_model}}.
+#'   \code{\link{evaluate}}.
 #' @param resample Resampling scheme used to create the results.
 #' @param format Table format of the output. See
 #'   \url{http://en.wikipedia.org/wiki/Wide_and_narrow_data} for more info.
@@ -252,7 +254,7 @@ get_prediction <- function(result, resample, format=c("long", "wide")){
                              Prediction="prediction")
     }
     if(format == "wide"){
-        spread(prediction, Fold, Prediction)
+        tidyr::spread(prediction, Fold, Prediction)
     } else {
         prediction
     }

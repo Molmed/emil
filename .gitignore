@@ -9,3 +9,5 @@ old
 *.Rd
 *-Ex.R
 ideas.txt
+pack.r
+pack.R

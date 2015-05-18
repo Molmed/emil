@@ -51,7 +51,8 @@ log_message <- function(indent=1, ..., time=TRUE, domain="R-emil", appendLF=TRUE
 #'
 #' @param base Base indentation level of the function printing the message.
 #' @param indent Extra indentation of this message.
-#' @return An integer.
+#' @return An integer that can be used to specify the indentation level of
+#'   messages printed with \code{\link{log_message}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 indent <- function(base, indent){
@@ -79,7 +80,7 @@ indent <- function(base, indent){
 #'  \code{\link{message}} or \code{\link{warning}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-notify_once <- function(id, ..., fun=message){
+notify_once <- function(id, ..., fun=log_message){
     if(!id %in% getOption("emil_notification")){
         match.fun(fun)(...)
         options(emil_notification = c(getOption("emil_notification"), id))

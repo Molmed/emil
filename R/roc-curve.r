@@ -6,23 +6,10 @@
 #' @param class The class of interest to create ROC-curves for.
 #' @param statistic The name of the statistic (as returned by the prediction
 #'   function of the modeling procedure).
-#' @return A data frame of class \quote{roc}.
-#' @examples
-#' # Generate some noisy data
-#' my.data <- iris
-#' my.data[1:4] <- my.data[1:4] + 2*rnorm(150*4)
-#' 
-#' # Train and evaluate some classifiers
-#' procedure <- list(lda = modeling_procedure("lda"),
-#'                   qda = modeling_procedure("qda"))
-#' cv <- resample("crossvalidation", iris$Species, nrep=1, nfold=3)
-#' result <- evaluate(procedure, my.data[-5], my.data$Species, resample=cv)
-#' 
-#' # Study the performance
-#' select(result, Fold=TRUE, Method=TRUE, Error="error")
-#' roc <- roc_curve(result, my.data$Species, cv)
-#' plot(roc)
+#' @return A data frame of class \dQuote{roc}.
+#' @example examples/roc-curve.r
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom magrittr "%<>%"
 #' @export
 roc_curve <- function(result, y, resample, class=levels(y), statistic="probability"){
     stopifnot(inherits(result, "modeling_result"))
@@ -43,36 +30,42 @@ roc_curve <- function(result, y, resample, class=levels(y), statistic="probabili
                              statistic, Statistic = class)
     }
     if(length(class) > 1){
-        stat_table <- stat_table %>%
-            gather_("Class", "Statistic", class)
+        stat_table %<>% tidyr::gather_("Class", "Statistic", class)
     } else {
-        stat_table <- stat_table %>% mutate(Class = factor(class))
+        stat_table %<>% mutate(Class = factor(class))
     }
-    stat_table <- stat_table %>%
+    stat_table %<>%
         group_by_(.dots=intersect(c("Fold", "Method", "Class"), colnames(stat_table))) %>%
         do(roc_fun(.))
     structure(stat_table %>% as.data.frame,
               class=c("roc_curve", "data.frame"))
 }
 
+#' @param x Roc curve object, as returned by \code{roc_curve}.
+#' @param ... Sent to \code{\link{as.data.frame}} or \code{\link{as.data.table}}.
 #' @method as.data.table roc_curve
 #' @rdname roc_curve
+#' @importFrom data.table as.data.table
+#' @export
 as.data.table.roc_curve <- function(x, ...){
     if(inherits(x, "data.table")) return(x)
     class(x) <- class(x)[-1]
-    structure(as.data.table(x), class=c("roc_curve", "data.table"))
+    structure(data.table::as.data.table(x, ...), class=c("roc_curve", "data.table"))
 }
 
 #' @method as.data.frame roc_curve
 #' @rdname roc_curve
+#' @export
 as.data.frame.roc_curve <- function(x, ...){
     if(inherits(x, "data.frame")) return(x)
     class(x) <- class(x)[-1]
-    structure(as.data.frame(x), class=c("roc_curve", "data.frame"))
+    structure(as.data.frame(x, ...), class=c("roc_curve", "data.frame"))
 }
 
+#' @import ggplot2
 #' @method plot roc_curve
 #' @rdname roc_curve
+#' @export
 plot.roc_curve <- function(x, ...){
     nice_require("ggplot2")
     p <- ggplot(x) + 
@@ -80,7 +73,7 @@ plot.roc_curve <- function(x, ...){
         facet_wrap(~Class)
     if("Method" %in% colnames(x)){
         p + geom_path(aes(x=1-Specificity, y=Sensitivity,
-                          colour=Method, group=paste(Method, Fold)))
+                                   colour=Method, group=paste(Method, Fold)))
     } else {
         p + geom_path(aes(x=1-Specificity, y=Sensitivity, group=Fold))
     }

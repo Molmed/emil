@@ -76,16 +76,16 @@ weighted_error_rate <- function(x){
 #' @rdname error_fun
 #' @export
 neg_auc <- function(truth, prediction){
-    if(!is.factor(truth) || !is.numeric(prediction$prob))
+    if(!is.factor(truth) || !is.numeric(prediction$probability))
         stop("Incorrect class of input variables.")
     if(length(levels(truth)) != 2)
         stop("AUC can only be calculated on binary classification problems.")
     if(any(table(truth) == 0))
         stop("There needs to be at least one example of each class to calculate AUC.")
     truth <- truth == levels(truth)[2]
-    thres <- rev(c(-Inf, sort(unique(prediction$prob[,2]))))
+    thres <- rev(c(-Inf, sort(unique(prediction$probability[,2]))))
     conf <- sapply(thres, function(thr){
-        thr.prediction <- prediction$prob[,2] > thr
+        thr.prediction <- prediction$probability[,2] > thr
         c(sum(!truth & !thr.prediction, na.rm=TRUE),
           sum( truth & !thr.prediction, na.rm=TRUE),
           sum(!truth &  thr.prediction, na.rm=TRUE),

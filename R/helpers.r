@@ -23,15 +23,18 @@ is_blank <- function(x, false_triggers=FALSE){
 
 #' Detect if modeling results contains multiple procedures
 #' 
-#' @param x Modeling results, as returned by \code{\link{evaluate}}.
+#' @param result Modeling results, as returned by \code{\link{evaluate}}.
 #' @return Logical scalar.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 is_multi_procedure <- function(result){
+    belongs_to_method <- function(r){
+        identical(sort(names(r)), c("error", "importance", "model", "prediction"))
+    }
     if(inherits(result, "modeling_result")){
-        if(all(sapply(result, inherits, "model"))){
+        if(all(sapply(result, belongs_to_method))){
             return(FALSE)
-        } else if(all(sapply(result, sapply, inherits, "model")) &&
+        } else if(all(sapply(result, sapply, belongs_to_method)) &&
                   all(sapply(result, length) == length(result[[1]]))){
             return(TRUE)
         }

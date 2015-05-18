@@ -10,14 +10,19 @@ cv <- resample("crossvalidation", y, nfold=5, nrep=3)
 procedure <- modeling_procedure("pamr")
 
 # To illustrate the error handling capacities of subtree we'll introduce some
-# spurious errors in the pre-processing function. By setting .return_errors=TRUE
+# spurious errors in the pre-processing function. By setting .return_error=TRUE
 # they wont break the execution, but will instead be return in the results.
+pre_error <- function(data, risk=.1){
+    if(runif(1) < risk)
+        stop("Oh no! Random error!")
+    data
+}
 result <- evaluate(procedure, x, y, resample=cv,
-    .save=list(importance=TRUE), .return_error=TRUE,
+    .save=c(importance=TRUE), .return_error=TRUE,
     pre_process = function(...){
-        if(runif(1) < .3)
-            stop("Oh no! Unforseen error!")
-        pre_pamr(...)
+        pre_split(...) %>%
+            pre_error(risk=.3) %>%
+            pre_pamr
     }
 )
 message(sum(sapply(result, inherits, "error")),
@@ -45,10 +50,16 @@ subtree(result, TRUE, "importance", function(x){
 })
 
 # The equivalent 'select' command would be
-result %>% select(Fold = TRUE, "importance", function(x){
+require(tidyr)
+imp <- result %>% select(Fold = TRUE, "importance", function(x){
     if(is.null(x)) return(NULL)
     x %>%
         as.data.frame %>%
         mutate(Feature = rownames(x)) %>%
         gather(Species, Importance, -Feature)
 })
+require(ggplot2)
+ggplot(imp, aes(x=Species, y=Importance)) +
+    geom_abline(yintercept=0, slope=0, color="hotpink") +
+    geom_boxplot() + facet_wrap(~Feature)
+

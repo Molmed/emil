@@ -27,3 +27,4 @@ modeling_procedure("glmnet", list(alpha = seq(0, 1, length.out=6),
 library(caret)
 modeling_procedure("caret", list(method = "glmnet",
     trControl = list(trainControl(verboseIter = TRUE, classProbs = TRUE))))
+

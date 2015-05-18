@@ -35,7 +35,7 @@ fit_randomForest <- function(x, y, prediction=FALSE, ...){
 #' @return When used for classification, a list with elements:
 #' \itemize{
 #'     \item{\code{prediction}: Factor of predicted class memberships.}
-#'     \item{\code{prob}: Data frame of predicted class probabilities.}
+#'     \item{\code{probability}: Data frame of predicted class probabilities.}
 #' }
 #'
 #' When used for regression, a list with the element:
@@ -50,7 +50,7 @@ predict_randomForest <- function(object, x, ...){
     nice_require("randomForest")
     if(is.factor(object$y)){
         list(prediction = predict(object, newdata=x, type="response"),
-             prob = predict(object, newdata=x, type="prob"))
+             probability = as.data.frame(predict(object, newdata=x, type="prob")))
     } else {
         list(prediction = predict(object, newdata=x, type="response"))
     }

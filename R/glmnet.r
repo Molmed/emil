@@ -100,7 +100,7 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
 #' @return A list with elements:
 #' \itemize{
 #'     \item{\code{prediction}: Factor of predicted class memberships.}
-#'     \item{\code{prob}: Data frame of predicted class probabilities.}
+#'     \item{\code{probability}: Data frame of predicted class probabilities.}
 #' }
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{fit_glmnet}},
@@ -122,6 +122,6 @@ predict_glmnet <- function(object, x, s, ...){
     )
     list(prediction = factor(predict(object$glmnet.fit, x, s=s, type="class", ...),
                        levels=object$glmnet.fit$classnames),
-         prob = as.data.frame(p))
+         probability = as.data.frame(p))
 }
 

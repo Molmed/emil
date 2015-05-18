@@ -3,7 +3,7 @@
 #' This function studies the change in permformance as the sizes of the fitting
 #' and test sets are varied. In case the studied modeling procedures cannot
 #' produce models on the smallest fitting sets, please use
-#' \code{.return_error=TRUE} (see \code{\link{batch_model}}.
+#' \code{.return_error=TRUE} (see \code{\link{evaluate}}.
 #' 
 #' @param procedure \code{\link{modeling_procedure}}.
 #' @param x Dataset descriptors.
@@ -44,7 +44,7 @@ learning_curve <- function(procedure, x, y, fraction, nfold=100, ..., .verbose=T
 
     resamples <- lapply(fraction, function(f) resample("holdout", y, fraction=f, nfold=nfold))
     counter <- 0
-    log_message(indent(.verbose, 0), "Learning curve analysis")
+    log_message(.verbose, "Learning curve analysis")
     result <- lapply(resamples, function(r){
         counter <<- counter + 1
         log_message(indent(.verbose, 1), "Test set fraction %i of %i (%.4g)",

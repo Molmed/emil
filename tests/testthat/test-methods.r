@@ -12,7 +12,7 @@ test_that("glmnet", {
     reset_notification()
     expect_message(fit <- fit_glmnet(iris[-5], iris$Species),
                    ".*data set.*matrix.*form.*")
-    fit <- fit_glmnet(as.matrix(iris[-5]), iris$Species)
+    model <- fit_glmnet(as.matrix(iris[-5]), iris$Species)
     expect_that(fit, is_a("list"))
     expect_that(fit$glmnet.fit, is_a("glmnet"))
 })
