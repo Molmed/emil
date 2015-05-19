@@ -14,7 +14,7 @@
 fit_lm <- function(x, y, formula=y~., ...){
     df <- data.frame(y, x)
     rm(y,x)
-    vars.missing <- all.vars(formula)[!all.vars(formula) %in% names(df)]
+    vars.missing <- setdiff(all.vars(formula), c(".", names(df)))
     if(!is_blank(vars.missing)){
         omitted <- length(vars.missing) - 20
         vars.missing <- paste(sprintf("`%s`", head(vars.missing, 20)), collapse=", ")

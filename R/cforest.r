@@ -21,7 +21,7 @@
 #' @seealso \code{\link{emil}}, \code{\link{predict_cforest}},
 #'   \code{\link{modeling_procedure}}
 #' @export
-fit_cforest <- function(x, y, formula=y~., ctrl_fun=cforest_unbiased, ...){
+fit_cforest <- function(x, y, formula=y~., ctrl_fun=party::cforest_unbiased, ...){
     nice_require("party")
     nice_require("survival")
     if(!inherits(y, "Surv")){

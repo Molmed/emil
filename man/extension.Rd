@@ -17,7 +17,7 @@
     \code{function(x, y, ...)}
     \describe{
         \item{\code{x}}{
-            The descriptors (or variables)
+            The features (or variables)
             of the observations you want to train the model on. This is
             typically a matrix or data frame where each row corresponds
             to an observation. In case it is more natural to
@@ -31,11 +31,11 @@
 
             See the functions \code{\link{pre_pamr}} and
             \code{\link{fit_pamr}} for an example of a function
-            that does not take its descriptors in the default way.
+            that does not take its data in the default way.
         }
         \item{\code{y}}{
             A response vector. This is the outcome
-            you want to model, e.g. the variable of interest in a
+            you want to model, e.g. the feature of interest in a
             regression, class label in a classification problem, or
             anything else that a fitted model will produce when given
             data to make predictions from.
@@ -65,7 +65,7 @@
             A fitted model produced by the model fitting function described above.
         }
         \item{\code{x}}{
-            Descriptors of observations to make predictions on.
+            Observations to make predictions on (describing features only).
         }
         \item{\code{...}}{
             Parameters to the prediction functions. These are ignored by
@@ -85,11 +85,11 @@
     See \code{\link{error_fun}}.
 }
 
-\section{Calculating variable importance scores}{
+\section{Calculating feature importance scores}{
 
-    Estimating the importance of each descriptor (or variable)
+    Estimating the importance of each feature (or variable)
     can often be as important as making predictions. Functions
-    for calculating or extracting variable importance scores
+    for calculating or extracting feature importance scores
     from fitted models should be defined as follows:
 
     \code{function(object, ...)}
@@ -106,7 +106,7 @@
     }
 
     The function should return a vector of length p or a p-by-c
-    data frame where p is the number of descriptors in the data
+    data frame where p is the number of features in the data
     set and c is the number of classes.
 }
 \section{Code style guidelines}{

@@ -21,17 +21,24 @@ x <- iris[-5]
 y <- iris$Species
 cv <- resample("crossvalidation", y, nfold=3, nreplicate=2)
 procedure <- modeling_procedure("lda")
-modeling_fun <- function(..., xx=x, .verbose=FALSE)
-    evaluate(procedure, xx, y, resample=cv, ..., .verbose=.verbose)
+modeling_fun <- function(proc=procedure, ..., xx=x, .verbose=FALSE)
+    evaluate(proc, xx, y, resample=cv, ..., .verbose=.verbose)
 
 test_that("Standard usage", {
-    perf <- modeling_fun(.save=list(fit=TRUE, prediction=TRUE, importance=FALSE))
+    result <- modeling_fun(.save=c(model=TRUE, prediction=TRUE, importance=FALSE))
 
-    expect_that(perf, is_a("modeling_result"))
-    expect_that(length(perf), is_equivalent_to(length(cv)))
-    expect_that(names(perf), is_equivalent_to(names(cv)))
-    expect_that(subtree(perf, TRUE, "error"), is_a("numeric"))
-    expect_true(all(sapply(perf, function(p) all(c("fit", "prediction") %in% names(p)))))
+    expect_that(result, is_a("modeling_result"))
+    expect_that(length(result), is_equivalent_to(length(cv)))
+    expect_that(names(result), is_equivalent_to(names(cv)))
+    expect_that(subtree(result, TRUE, "error"), is_a("numeric"))
+    expect_true(all(sapply(result, function(p) all(c("model", "prediction") %in% names(p)))))
+
+    expect_false(is_multi_procedure(result))
+    double_procedure <- list(LDA = modeling_procedure("lda"),
+                             QDA = modeling_procedure("qda"))
+    result <- modeling_fun(proc = double_procedure)
+    expect_true(is_multi_procedure(result))
+    expect_true(all(sapply(result, function(r) identical(names(r), names(double_procedure)))))
 })
 
 test_that("Parallelization", {
@@ -42,16 +49,16 @@ test_that("Parallelization", {
             list(pid=Sys.getpid(), time=Sys.time())
         })
         modeling_fun <- function(..., resample=cv[1:4])
-            batch_model(procedure, x, y, resample=resample, ...)
+            evaluate(procedure, x, y, resample=resample, ...)
 
         seq.time <- system.time( seq.perf <- modeling_fun() )
         if(.Platform$OS.type == "windows"){
             cl <- makePSOCKcluster(2)
             clusterExport(cl, c("procedure", "x", "y", "modeling_fun", "listify",
-                "get_debug_flags", "set_debug_flags", "is_blank", "is.tuned",
-                "is.tunable", "error.rate", "log.message", "indent",
-                "pre.split", "index_fit", "index_test", "na_fill", "fill",
-                "nice.require"))
+                "get_debug_flags", "set_debug_flags", "is_blank", "is_tuned",
+                "is_tunable", "error_rate", "log_message", "indent",
+                "pre_split", "index_fit", "index_test", "na_fill", "fill",
+                "nice_require"))
             par.time <- system.time(
                 par.perf <- parLapply(cl, cv[1:4], function(fold) modeling_fun(resample=fold))
             )
@@ -73,10 +80,10 @@ test_that("Parallelization", {
 test_that("Checkpointing", {
     if(file.access(".", 2) == 0){
         tmp.dir <- tempdir()
-        perf <- modeling_fun()
+        result <- modeling_fun()
         check.perf <- modeling_fun(.checkpoint_dir=tmp.dir)
 
-        expect_that(check.perf, is_identical_to(perf))
+        expect_that(check.perf, is_identical_to(result))
         expect_true(file.exists(tmp.dir))
 
         unlink(tmp.dir, recursive=TRUE)
@@ -86,7 +93,7 @@ test_that("Checkpointing", {
 test_that("Error handling", {
     x[1] <- NA
     expect_error(modeling_fun(xx=x, .return_error=FALSE))
-    perf <- modeling_fun(xx=x, .return_error=TRUE, .verbose=-1) # Test verbosity too
-    expect_true(all(sapply(perf, inherits, "error")))
+    result <- modeling_fun(xx=x, .return_error=TRUE, .verbose=-1) # Test verbosity too
+    expect_true(all(sapply(result, inherits, "error")))
 })
 

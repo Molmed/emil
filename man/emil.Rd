@@ -18,30 +18,31 @@ original publication included as the package's vignette (to be added).
                 functions.}
             \item{\code{\link{modeling_procedure}}}{Manages
                 algorithms used for fitting models, making predictions, and
-                extracting variable importance scores.}
+                extracting feature importance scores.}
             \item{\code{\link{error_fun}}}{Performance estimation
-                functions used to tune variables and evaluate performance
+                functions used to tune parameters and evaluate performance
                 of modeling procedures.}
         }
     }
     \subsection{Solving modeling problems}{
         \describe{
-            \item{\code{\link{evaluate}}}{Evaluate
-                the performance of a procedure using resampling.}
             \item{\code{\link{fit}}}{Fit a model (according to a procedure).}
             \item{\code{\link{tune}}}{Tune parameters of a procedure.}
-            \item{\code{\link[=predict.modeling_procedure]{predict}}}{Use a
+            \item{\code{\link[=predict.model]{predict}}}{Use a
                 fitted model to predict the response of observations.}
-            \item{\code{\link{importance}}}{Extract variable importance scores of a
-                fitted model.}
-            \item{\code{\link{batch_model}}}{A semi-internal function
-                that carries out most of the work. Parameters passed along
-                from the above functions to this function are documented
-                here.}
+            \item{\code{\link{evaluate}}}{Evaluate
+                the performance of a procedure using resampling.}
+            \item{\code{\link{learning_curve}}}{Learning curve analysis.}
         } 
     }
     \subsection{Managing the results of modeling problems}{
         \describe{
+            \item{\code{\link{get_prediction}}}{Extract predictions from 
+                resampled modeling results.}
+            \item{\code{\link{get_tuning}}}{Extract feature importance scores of a
+                fitted model or resampled modeling results.}
+            \item{\code{\link{get_importance}}}{Extract feature importance scores of a
+                fitted model or resampled modeling results.}
             \item{\code{\link{subtree}}}{Extracts results
                 from the output of \code{\link{evaluate}}. It is
                 essentially a recursive version of \code{\link{lapply}} and
@@ -51,8 +52,6 @@ original publication included as the package's vignette (to be added).
                 Can be used to subset modeling results, reorganize or summarize
                 to help interpretation or prepare for plotting.}
         }
-        No functions for plotting is included in the current version of the
-        package, except for \code{\link{image.resample}}.
     }
 }
 
@@ -99,18 +98,21 @@ original publication included as the package's vignette (to be added).
             \item{\code{\link[=fit_randomForest]{randomForest}}}{Random
                 forest.}
         }
+        It is also possible to incorporate any method from the \sQuote{caret}
+        package by using the function \code{\link{fit_caret}}.
     }
     \subsection{Performance estimation methods}{
         See \code{\link{error_fun}} for information on usage and implementation
         of custom methods. Since the framework is designed to minimize the error
-        when tuning variables, some measures are negated, e.g. \code{\link{neg_auc}}.
+        when tuning parameters, some measures are negated, e.g. \code{\link{neg_auc}}.
 
         For classification problems:
             \describe{
                 \item{\code{\link{error_rate}}}{Fraction of predictions that were
                     incorrect.}
             \item{\code{\link{weighted_error_rate}}}{See its own documentation.}
-            \item{\code{\link{neg_auc}}}{Negative area under ROC curve.}
+            \item{\code{\link{neg_auc}}}{Negative area under ROC curve.
+                To plot the ROC curves see \code{\link{roc_curve}}.}
             \item{\code{\link{neg_gmpa}}}{Negative geometric mean of class-specific
                 prediction accuracy. Good for problems with imbalanced class sizes.}
         }

@@ -5,7 +5,7 @@
 #'
 #' @param x Dataset, numerical matrix with observations as rows.
 #' @param y Class labels, factor.
-#' @param prediction Whether to calculate permuted OOB error as a variable
+#' @param prediction Whether to calculate permuted OOB error as a feature
 #'   prediction measure, see \code{\link[randomForest]{predict.randomForest}}.
 #'   Set to \code{FALSE} to speed up computation.
 #' @param ... Sent to \code{\link[randomForest]{randomForest}}.
@@ -35,7 +35,7 @@ fit_randomForest <- function(x, y, prediction=FALSE, ...){
 #' @return When used for classification, a list with elements:
 #' \itemize{
 #'     \item{\code{prediction}: Factor of predicted class memberships.}
-#'     \item{\code{prob}: Data frame of predicted class probabilities.}
+#'     \item{\code{probability}: Data frame of predicted class probabilities.}
 #' }
 #'
 #' When used for regression, a list with the element:
@@ -50,14 +50,14 @@ predict_randomForest <- function(object, x, ...){
     nice_require("randomForest")
     if(is.factor(object$y)){
         list(prediction = predict(object, newdata=x, type="response"),
-             prob = predict(object, newdata=x, type="prob"))
+             probability = as.data.frame(predict(object, newdata=x, type="prob")))
     } else {
         list(prediction = predict(object, newdata=x, type="response"))
     }
 }
 
 
-#' Variable importance of random forest.
+#' Feature importance of random forest.
 #' 
 #' @param object Fitted randomForest classifier
 #' @param type Importance can be assessed in two ways:
@@ -75,7 +75,7 @@ predict_randomForest <- function(object, x, ...){
 #' @export
 importance_randomForest <- function(object, type=1, ...){
     if(is_blank(object$prediction))
-        stop("To calculate variable importance of random forsests you must set the fitting parameter `prediction=TRUE`, see `?fit_randomForest`.")
+        stop("To calculate feature importance of random forsests you must set the fitting parameter `prediction=TRUE`, see `?fit_randomForest`.")
     object$prediction
 }
 

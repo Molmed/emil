@@ -3,7 +3,7 @@
 #' This function studies the change in permformance as the sizes of the fitting
 #' and test sets are varied. In case the studied modeling procedures cannot
 #' produce models on the smallest fitting sets, please use
-#' \code{.return_error=TRUE} (see \code{\link{batch_model}}.
+#' \code{.return_error=TRUE} (see \code{\link{evaluate}}.
 #' 
 #' @param procedure \code{\link{modeling_procedure}}.
 #' @param x Dataset descriptors.
@@ -44,7 +44,7 @@ learning_curve <- function(procedure, x, y, fraction, nfold=100, ..., .verbose=T
 
     resamples <- lapply(fraction, function(f) resample("holdout", y, fraction=f, nfold=nfold))
     counter <- 0
-    log_message(indent(.verbose, 0), "Learning curve analysis")
+    log_message(.verbose, "Learning curve analysis")
     result <- lapply(resamples, function(r){
         counter <<- counter + 1
         log_message(indent(.verbose, 1), "Test set fraction %i of %i (%.4g)",
@@ -66,29 +66,29 @@ learning_curve <- function(procedure, x, y, fraction, nfold=100, ..., .verbose=T
 #' @return A \code{\link[ggplot2]{ggplot}} object.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-plot.learning_curve <- function(x, y, ..., summaries=list(Mean = mean, `95-percentile`=function(x) quantile(x, .95))){
+plot.learning_curve <- function(x, y, ..., summaries=list(mean = mean, `95-percentile`=function(x) quantile(x, .95))){
     nice_require(c("dplyr", "ggplot2"))
 
     if(is_multi_procedure(x$result[[1]])){
         plot.data <- x$result %>%
-            select(Fraction = TRUE, Fold = TRUE, Method = TRUE, Performance = "error")
+            select(fraction = TRUE, fold = TRUE, method = TRUE, performance = "error")
     } else {
         plot.data <- x$result %>%
-            select(Fraction = TRUE, Fold = TRUE, Performance = "error") %>%
-            mutate(Method = NA)
+            select(fraction = TRUE, fold = TRUE, performance = "error") %>%
+            mutate(method = NA)
     }
-    plot.data$Fraction <- x$fraction[plot.data$Fraction]
+    plot.data$fraction <- x$fraction[plot.data$fraction]
 
     data.summary <- do.call(rbind, Map(function(method, fun){
-        data.frame(Summaries=method,
-            summarise(group_by(plot.data, Fraction, Method),
-                      Performance = fun(Performance)))
+        data.frame(summaries=method,
+            summarise(group_by(plot.data, fraction, method),
+                      performance = fun(performance)))
     }, names(summaries), summaries))
-    p <- ggplot(plot.data, aes(x=1-Fraction, y=Performance)) + 
+    p <- ggplot(plot.data, aes(x=1-fraction, y=performance)) + 
         geom_point(colour="grey") +
-        geom_line(data=data.summary, aes(colour=Summaries)) +
+        geom_line(data=data.summary, aes(colour=summaries)) +
         xlab("Relative training set size")
     if(is_multi_procedure(x$result[[1]]))
-        p <- p + facet_wrap(~Method)
+        p <- p + facet_wrap(~method)
     p
 }

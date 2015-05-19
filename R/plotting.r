@@ -63,6 +63,7 @@ nice_box <- function(lend=2, ljoin=1, ...) box(lend=lend, ljoin=ljoin, ...)
 get_color <- function(x, ...){
     UseMethod("get_color")
 }
+#' @method get_color default
 #' @param s Saturation. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
 #'   increases, and \code{-1 <= s < 0} decreases.
 #' @param v Value. \code{s = 0} leaves it unchanged, \code{0 < s <= 1}
@@ -92,6 +93,7 @@ get_color.default <- function(x, s, v, alpha, ...){
     
     structure(do.call(hsv, col), names=names(x))
 }
+#' @method get_color factor
 #' @param levels If \code{TRUE} a palette with one color per level of \code{x}
 #'   is returned. If \code{FALSE} one color per element in \code{x} is returned.
 #' @param col Color palette with one color per class or the name of the color
@@ -116,3 +118,4 @@ get_color.factor <- function(x, levels=FALSE, col="Set1", ...){
         structure(col[as.integer(x)], names=names(x))
     }
 }
+

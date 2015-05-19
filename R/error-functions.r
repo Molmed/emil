@@ -10,9 +10,9 @@
 #'
 #' Custom performance estimation functions should be implemented as follows:
 #' 
-#' \code{function(true, prediction)}
+#' \code{function(truth, prediction)}
 #' \describe{
-#'     \item{\code{true}}{A vector of true responses.}
+#'     \item{\code{truth}}{A vector of true responses.}
 #'     \item{\code{prediction}}{Prediction returned from the prediction function.}
 #' }
 #' 
@@ -25,7 +25,7 @@
 #' it did occur or has not yet occurred at a specific time point.
 #' See neg_harrell_c for an example of the latter.
 #' 
-#' @param true The true response values, be it class labels, numeric values or
+#' @param truth The true response values, be it class labels, numeric values or
 #'   survival outcomes.
 #' @param prediction A prediction object.
 #' @name error_fun
@@ -36,12 +36,12 @@
 
 #' @rdname error_fun
 #' @export
-error_rate <- function(true, prediction){
-    if(!is.factor(true) || !is.factor(prediction$prediction))
+error_rate <- function(truth, prediction){
+    if(!is.factor(truth) || !is.factor(prediction$prediction))
         stop("Incorrect class of input variables.")
-    if(!identical(levels(true), levels(prediction$prediction)))
-        stop("Levels of predicted labels do not match levels of the true labels.")
-    mean(true != prediction$prediction)
+    if(!identical(levels(truth), levels(prediction$prediction)))
+        stop("Levels of predicted labels do not match levels of the truth labels.")
+    mean(truth != prediction$prediction)
 }
 
 #' Weighted error rate
@@ -68,42 +68,42 @@ weighted_error_rate <- function(x){
             stop("In multi-class-problems you must manually supply a cost matrix.")
         x <- matrix(c(0, rev(length(x)/table(x)*.5), 0), 2)
     }
-    function(true, prediction){
-        mean(rep(x, table(true, prediction$prediction)))
+    function(truth, prediction){
+        mean(rep(x, table(truth, prediction$prediction)))
     }
 }
 
 #' @rdname error_fun
 #' @export
-neg_auc <- function(true, prediction){
-    if(!is.factor(true) || !is.numeric(prediction$prob))
+neg_auc <- function(truth, prediction){
+    if(!is.factor(truth) || !is.numeric(prediction$probability))
         stop("Incorrect class of input variables.")
-    if(length(levels(true)) != 2)
+    if(length(levels(truth)) != 2)
         stop("AUC can only be calculated on binary classification problems.")
-    if(any(table(true) == 0))
+    if(any(table(truth) == 0))
         stop("There needs to be at least one example of each class to calculate AUC.")
-    true <- true == levels(true)[2]
-    thres <- rev(c(-Inf, sort(unique(prediction$prob[,2]))))
+    truth <- truth == levels(truth)[2]
+    thres <- rev(c(-Inf, sort(unique(prediction$probability[,2]))))
     conf <- sapply(thres, function(thr){
-        thr.prediction <- prediction$prob[,2] > thr
-        c(sum(!true & !thr.prediction, na.rm=TRUE),
-          sum( true & !thr.prediction, na.rm=TRUE),
-          sum(!true &  thr.prediction, na.rm=TRUE),
-          sum( true &  thr.prediction, na.rm=TRUE))
+        thr.prediction <- prediction$probability[,2] > thr
+        c(sum(!truth & !thr.prediction, na.rm=TRUE),
+          sum( truth & !thr.prediction, na.rm=TRUE),
+          sum(!truth &  thr.prediction, na.rm=TRUE),
+          sum( truth &  thr.prediction, na.rm=TRUE))
     })
     -trapz(conf[3,]/(conf[1,]+conf[3,]), conf[4,]/(conf[2,]+conf[4,]))
 }
 
 #' @rdname error_fun
 #' @export
-rmse <- function(true, prediction){
-    sqrt(mean((true-prediction$prediction)^2))
+rmse <- function(truth, prediction){
+    sqrt(mean((truth-prediction$prediction)^2))
 }
 
 #' @rdname error_fun
 #' @export
-mse <- function(true, prediction){
-    mean((true-prediction$prediction)^2)
+mse <- function(truth, prediction){
+    mean((truth-prediction$prediction)^2)
 }
 
 #' Negative geometric mean of class specific predictive accuracy
@@ -113,7 +113,7 @@ mse <- function(true, prediction){
 #' parameters by optimizing error rate. Blagus and Lusa (2013) suggested to
 #' remedy the problem by using this performance measure instead.
 #' 
-#' @param true See \code{\link{error_fun}}.
+#' @param truth See \code{\link{error_fun}}.
 #' @param prediction See \code{\link{error_fun}}.
 #' @return A numeric scalar.
 #' @seealso \code{\link{error_fun}}
@@ -124,16 +124,16 @@ mse <- function(true, prediction){
 #' doi:10.1186/1471-2105-14-64
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-neg_gmpa <- function(true, prediction){
-    -exp(mean(log( tapply(prediction$prediction == true, true, mean) )))
+neg_gmpa <- function(truth, prediction){
+    -exp(mean(log( tapply(prediction$prediction == truth, truth, mean) )))
 }
 
 #' @rdname error_fun
 #' @export
-neg_harrell_c <- function(true, prediction){
-    stopifnot(inherits(true, "Surv"))
+neg_harrell_c <- function(truth, prediction){
+    stopifnot(inherits(truth, "Surv"))
     nice_require("Hmisc", "is required for calculating Harrell's C")
-    -Hmisc::rcorr.cens(prediction$risk, true)[1]
+    -Hmisc::rcorr.cens(prediction$risk, truth)[1]
 }
 
 
