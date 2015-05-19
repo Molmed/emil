@@ -38,28 +38,25 @@ subtree(result, TRUE, "error")
 # between numeric(1) and NULL as in the previous example).
 subtree(result, TRUE, "error", error_value=as.numeric(NA), warn=-1)
 
-# Sum up variable importance for all classes within each fold and extract.
+# Sum up feature importance for all classes within each fold and extract.
 # Note that the lengths (= 4) must match between the folds for the automatic
 # simplification to work.
 subtree(result, TRUE, "importance", function(x){
     if(is.null(x)){
-        rep(NA, 4)
+        rep(NA, 3)
     } else {
-        apply(x, 1, sum)
+        colMeans(x[2:4])
     }
 })
 
-# The equivalent 'select' command would be
+# The equivalent 'select' command would be ...
 require(tidyr)
-imp <- result %>% select(Fold = TRUE, "importance", function(x){
+imp <- result %>% select(fold = TRUE, "importance", function(x){
     if(is.null(x)) return(NULL)
-    x %>%
-        as.data.frame %>%
-        mutate(Feature = rownames(x)) %>%
-        gather(Species, Importance, -Feature)
+    x %>% gather(Species, Importance, -feature)
 })
 require(ggplot2)
 ggplot(imp, aes(x=Species, y=Importance)) +
     geom_abline(yintercept=0, slope=0, color="hotpink") +
-    geom_boxplot() + facet_wrap(~Feature)
+    geom_boxplot() + facet_wrap(~feature)
 

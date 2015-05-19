@@ -27,36 +27,36 @@ test_that("dplyr integration", {
     result <- evaluate(procedures, x, y, resample=cv)
 
     # Normal subsetting
-    r <- result %>% dplyr::select(Fold = TRUE, Method = TRUE, Error = "error")
+    r <- result %>% dplyr::select(fold = TRUE, method = TRUE, error = "error")
     expect_is(r, "data.frame")
-    expect_identical(names(r), c("Fold", "Method", "Error"))
+    expect_identical(names(r), c("fold", "method", "error"))
 
-    r <- result %>% dplyr::select(Fold = TRUE, Method=c("lda", "nsc"), Error = "error")
-    expect_identical(levels(r$Method), "lda") # But not nsc!
+    r <- result %>% dplyr::select(fold = TRUE, method=c("lda", "nsc"), error = "error")
+    expect_identical(levels(r$method), "lda") # But not nsc!
 
-    r <- result %>% dplyr::select(Fold = TRUE, "lda", Error = "error")
-    expect_identical(names(r), c("Fold", "Error"))
+    r <- result %>% dplyr::select(fold = TRUE, "lda", error = "error")
+    expect_identical(names(r), c("fold", "error"))
     
     # Resampling
-    r <- result %>% dplyr::select(Fold = cv, "lda", "prediction", Class="prediction")
+    r <- result %>% dplyr::select(fold = cv, "lda", "prediction", class="prediction")
     expect_is(r, "data.frame")
     expect_is(r$id, "character")
-    expect_equal(dim(r %>% spread(Fold, Class)), c(nrow(iris), 1+length(cv)))
+    expect_equal(dim(r %>% spread(fold, class)), c(nrow(iris), 1+length(cv)))
 
-    r <- result %>% dplyr::select(Fold = cv[1:3], "lda", "prediction", Class="prediction")
+    r <- result %>% dplyr::select(fold = cv[1:3], "lda", "prediction", class="prediction")
     expect_equal(levels(r$Fold), names(cv)[1:3])
 
     # Functions
-    r1 <- result %>% dplyr::select(Fold = TRUE, Method = TRUE, Error = "error")
-    r2 <- result %>% dplyr::select(Fold = TRUE, Method = TRUE, Accuracy = function(x) 1-x$error)
-    expect_equal(r1$Error, 1-r2$Accuracy)
+    r1 <- result %>% dplyr::select(fold = TRUE, method = TRUE, error = "error")
+    r2 <- result %>% dplyr::select(fold = TRUE, method = TRUE, accuracy = function(x) 1-x$error)
+    expect_equal(r1$error, 1-r2$accuracy)
 
-    r <- result %>% dplyr::select(Fold = TRUE, Method = TRUE,
-        function(x) data.frame(Error=x$error, Accuarcy = 1-x$error))
-    expect_true(all(r$Error + r$Accuracy == 1))
+    r <- result %>% dplyr::select(fold = TRUE, method = TRUE,
+        function(x) data.frame(error=x$error, accuarcy = 1-x$error))
+    expect_true(all(r$error + r$accuracy == 1))
 })
 
-test_that("Subtree", {
+test_that("subtree", {
     l <- list(A=list(a=1:3, b=4:6),
               B=list(a=7:9, b=0:1))
     expect_that(subtree(l, TRUE, "a"), is_a("matrix"))

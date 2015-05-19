@@ -9,6 +9,6 @@ cv <- resample("crossvalidation", iris$Species, nrep=1, nfold=3)
 result <- evaluate(procedure, my.data[-5], my.data$Species, resample=cv)
 
 # Study the performance
-select(result, Fold=TRUE, Method=TRUE, Error="error")
+select(result, fold=TRUE, method=TRUE, error="error")
 roc <- roc_curve(result, my.data$Species, cv)
 plot(roc)

@@ -1,6 +1,6 @@
 #' Resampling schemes
 #' 
-#' Performance evaluation and variable tuning use resampling methods to
+#' Performance evaluation and parameter tuning use resampling methods to
 #' estimate the performance of models. These are defined by resampling
 #' schemes, which are data frames where each column corresponds to a
 #' division of the data set into mutually exclusive training and test sets.
@@ -28,7 +28,7 @@
 #' \describe{
 #'     \item{\code{folds}}{A data frame with the folds of the scheme that
 #'         conforms to the description in the 'Value' section below.}
-#'     \item{\code{param}}{A list with the parameters necessary to generate
+#'     \item{\code{parameter}}{A list with the parameters necessary to generate
 #'         such a resampling scheme. These are needed when creating subschemes
 #'         needed for parameter tuning, see \code{\link{subresample}}.}
 #' }
@@ -62,7 +62,7 @@ resample <- function(method, y, ..., subset=TRUE){
     if(all(grepl("^V\\prediction+$", names(x$folds))))
         names(x$folds) <- sprintf("fold%i", seq_along(x$folds))
     x$folds[T] <- Map(function(f, n) structure(f, class=c(method, "fold", class(f)),
-                      param=x$param, fold.name=n), x$folds, names(x$folds))
+                      parameter=x$parameter, fold.name=n), x$folds, names(x$folds))
     if(!is.null(names(y))) rownames(x$folds) <- names(y)
     x$folds
 }
@@ -92,7 +92,7 @@ subresample <- function(fold, y=length(fold)){
     } else {
         do.call(resample,
             c(list(method = class(fold)[1], y = y),
-              attr(fold, "param"),
+              attr(fold, "parameter"),
               list(subset = as.logical(fold))))
     }
 }
@@ -148,7 +148,7 @@ resample_holdout <- function(y=NULL, fraction=.5, nfold=5, balanced=is.factor(y)
         idx
     }))
     names(ho) <- sprintf("fold%i", seq_along(ho))
-    list(folds=ho, param=list(fraction=fraction, nfold=nfold, balanced=balanced))
+    list(folds=ho, parameter=list(fraction=fraction, nfold=nfold, balanced=balanced))
 }
 
 #' @param nreplicate Number of fold sets to generate.
@@ -185,8 +185,8 @@ resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.facto
         apply(idx, 2, function(i) !1:n %in% i)
     }))
     folds[!subset,] <- NA
-    names(folds) <- sprintf("fold%i:%i", rep(1:nreplicate, each=nfold), rep(1:nfold, nreplicate))
-    list(folds=folds, param=list(nfold=nfold, nreplicate=nreplicate, balanced=balanced))
+    names(folds) <- sprintf("fold%i.%i", rep(1:nreplicate, each=nfold), rep(1:nfold, nreplicate))
+    list(folds=folds, parameter=list(nfold=nfold, nreplicate=nreplicate, balanced=balanced))
 }
 
 
@@ -248,9 +248,9 @@ image.resample <- function(x, col, ...){
 #' @export
 image.crossvalidation <- function(x, col, ...){
     image.resample(x, col, ...)
-    param <- attr(x[[1]], "param")
-    if(param$nreplicate > 1){
-        l <- 1:(param$nreplicate-1)*param$nfold + .5
+    parameter <- attr(x[[1]], "parameter")
+    if(parameter$nreplicate > 1){
+        l <- 1:(parameter$nreplicate-1)*parameter$nfold + .5
         segments(l, par("usr")[3], l, par("usr")[4])
     }
 }

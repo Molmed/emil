@@ -1,7 +1,7 @@
 #' Print a timestamped and indented log message
 #'
 #' To suppress messages below a given indentation level set the global
-#' \code{\link{option}} setting \code{emil.max.indent}, as in the example below.
+#' \code{\link{option}} setting \code{emil_max_indent}, as in the example below.
 #'
 #' @param indent Indentation level. Messages with \code{indent=0} are
 #'   suppressed.
@@ -24,7 +24,7 @@
 #'         log_message(indent(verbose, i), "Down")
 #' }
 #'
-#' options(emil.max.indent = 2)
+#' options(emil_max_indent = 2)
 #' for(i in 1:3)
 #'     log_message(i, "Down")
 #' @author Christofer \enc{Bäcklin}{Backlin}
@@ -45,6 +45,10 @@ log_message <- function(indent=1, ..., time=TRUE, domain="R-emil", appendLF=TRUE
             appendLF = appendLF)
         }
     }
+    if(indent > 4 && is.null(getOption("emil_max_indent"))){
+        notify_once("deep_indent", "Use `options(emil_max_indent = 4)` to hide excessive logging.",
+                    fun=warning)
+    }
 }
 
 #' Increase indentation
@@ -56,7 +60,7 @@ log_message <- function(indent=1, ..., time=TRUE, domain="R-emil", appendLF=TRUE
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 indent <- function(base, indent){
-    if(base > 0 && base + indent <= getOption("emil.max.indent", Inf)){
+    if(base > 0 && base + indent <= getOption("emil_max_indent", Inf)){
         base + indent
     } else {
         0
@@ -88,8 +92,13 @@ notify_once <- function(id, ..., fun=log_message){
 }
 #' @rdname notify_once
 #' @export
-reset_notification <- function(if_top_level=TRUE){
-    if(!if_top_level || identical(parent.frame(), globalenv()))
-    options(emil_notification = NULL)
+reset_notification <- function(id, if_top_level=TRUE){
+    if(!if_top_level || identical(parent.frame(), globalenv())){
+        if(missing(id) || is.null(id)){
+            options(emil_notification = NULL)
+        } else {
+            options(emil_notification = setdiff(getOption("emil_notification"), id))
+        }
+    }
 }
 

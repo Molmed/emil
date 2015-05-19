@@ -19,7 +19,7 @@
 pre_pamr <- function(data){
     if(ncol(data$fit$x) == 1){
         notify_once(id = "pamr_univariate",
-                    "PAMR not designed to handle univariate data. An all-zero dummy variable added as a workaround.",
+                    "PAMR not designed to handle univariate data. An all-zero dummy feature added as a workaround.",
                     fun = message)
     }
     data$fit$x <- structure(class = "pamr.data", .Data = list(
@@ -181,7 +181,7 @@ predict_pamr <- function(object, x, threshold, thres_fun, ...){
 }
 
 
-#' Variable importance of nearest shrunken centroids.
+#' Feature importance of nearest shrunken centroids.
 #' 
 #' Calculated as the absolute difference between the overall centroid and a
 #' class-wise shrunken centroid (which is the same for both classes except sign).
@@ -195,8 +195,7 @@ predict_pamr <- function(object, x, threshold, thres_fun, ...){
 #' @param thres_fun Threshold selection function. Only needed if you want to
 #'   override the function set during model fitting.
 #' @param ... Sent to \code{\link[pamr]{pamr.predict}}.
-#' @return A matrix of variable importance scores where the rows represent
-#'   variables and the columns represent classes.
+#' @return A data frame of feature importance scores.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{fit_pamr}},
 #'   \code{\link{predict_pamr}}, \code{\link{modeling_procedure}}
@@ -216,6 +215,6 @@ importance_pamr <- function(object, threshold, thres_fun=max, ...){
     cen <- sweep(sweep(pamr::pamr.predict(object$fit, , threshold, type="centroid", ...),
                        1, object$fit$centroid.overall, "-"),
                  1, object$fit$sd, "/")
-    as.data.frame(cen)
+    data.frame(feature = rownames(cen), cen, row.names=NULL)
 }
 

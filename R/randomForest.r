@@ -5,7 +5,7 @@
 #'
 #' @param x Dataset, numerical matrix with observations as rows.
 #' @param y Class labels, factor.
-#' @param prediction Whether to calculate permuted OOB error as a variable
+#' @param prediction Whether to calculate permuted OOB error as a feature
 #'   prediction measure, see \code{\link[randomForest]{predict.randomForest}}.
 #'   Set to \code{FALSE} to speed up computation.
 #' @param ... Sent to \code{\link[randomForest]{randomForest}}.
@@ -57,7 +57,7 @@ predict_randomForest <- function(object, x, ...){
 }
 
 
-#' Variable importance of random forest.
+#' Feature importance of random forest.
 #' 
 #' @param object Fitted randomForest classifier
 #' @param type Importance can be assessed in two ways:
@@ -75,7 +75,7 @@ predict_randomForest <- function(object, x, ...){
 #' @export
 importance_randomForest <- function(object, type=1, ...){
     if(is_blank(object$prediction))
-        stop("To calculate variable importance of random forsests you must set the fitting parameter `prediction=TRUE`, see `?fit_randomForest`.")
+        stop("To calculate feature importance of random forsests you must set the fitting parameter `prediction=TRUE`, see `?fit_randomForest`.")
     object$prediction
 }
 

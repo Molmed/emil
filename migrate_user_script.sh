@@ -31,6 +31,7 @@ sed -i 's/\bmodeling\.result\b/modeling_result/g' $1
 sed -i 's/\bna\.fill\b/na_fill/g' $1
 sed -i 's/\bnice\.require\b/nice_require/g' $1
 sed -i 's/\bnrep\b/nreplicate/g' $1
+sed -i 's/\bparam\b/parameter/g' $1
 sed -i 's/\bprob\b/probability/g' $1
 sed -i 's/\bpre\.impute\.knn\b/pre_impute_knn/g' $1
 sed -i 's/\bpre\.impute\.median\b/pre_impute_median/g' $1

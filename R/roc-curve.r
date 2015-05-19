@@ -16,26 +16,28 @@ roc_curve <- function(result, y, resample, class=levels(y), statistic="probabili
     stopifnot(is.factor(y))
     if(is.numeric(class)) class <- levels(y)[class]
     roc_fun <- function(stat){
-        y_sorted <- y[stat$id][order(stat$Statistic)] == as.character(stat$Class[1])
+        y_sorted <- y[stat$id][order(stat$statistic)] == as.character(stat$class[1])
         data.frame(
-            Sensitivity = c(rev(cumsum(rev(y_sorted)))/sum(y_sorted), 0),
-            Specificity = c(0, cumsum(!y_sorted)/sum(!y_sorted))
+            sensitivity = c(rev(cumsum(rev(y_sorted)))/sum(y_sorted), 0),
+            specificity = c(0, cumsum(!y_sorted)/sum(!y_sorted))
         )
     }
     if(is_multi_procedure(result)){
-        stat_table <- select(result, Fold=resample, Method=TRUE, "prediction",
-                             statistic, Statistic = class)
+        stat_table <- select(result, fold=resample, method=TRUE, "prediction",
+                             statistic, statistic = class)
+        if(!is.factor(stat_table$method))
+            stat_table$method <- factor(stat_table$method)
     } else {
-        stat_table <- select(result, Fold=resample, "prediction",
-                             statistic, Statistic = class)
+        stat_table <- select(result, fold=resample, "prediction",
+                             statistic, statistic = class)
     }
     if(length(class) > 1){
-        stat_table %<>% tidyr::gather_("Class", "Statistic", class)
+        stat_table %<>% tidyr::gather_("class", "statistic", class)
     } else {
-        stat_table %<>% mutate(Class = factor(class))
+        stat_table %<>% mutate(class = factor(class))
     }
     stat_table %<>%
-        group_by_(.dots=intersect(c("Fold", "Method", "Class"), colnames(stat_table))) %>%
+        group_by_(.dots=intersect(c("fold", "method", "class"), colnames(stat_table))) %>%
         do(roc_fun(.))
     structure(stat_table %>% as.data.frame,
               class=c("roc_curve", "data.frame"))
@@ -70,11 +72,11 @@ plot.roc_curve <- function(x, ...){
     nice_require("ggplot2")
     p <- ggplot(x) + 
         geom_segment(x=0, y=0, xend=1, yend=1, linetype="dashed", size=.3) +
-        facet_wrap(~Class)
-    if("Method" %in% colnames(x)){
-        p + geom_path(aes(x=1-Specificity, y=Sensitivity,
-                                   colour=Method, group=paste(Method, Fold)))
+        facet_wrap(~class)
+    if("method" %in% colnames(x)){
+        p + geom_path(aes(x=1-specificity, y=sensitivity,
+                          colour=method, group=paste(method, fold)))
     } else {
-        p + geom_path(aes(x=1-Specificity, y=Sensitivity, group=Fold))
+        p + geom_path(aes(x=1-specificity, y=sensitivity, group=fold))
     }
 }

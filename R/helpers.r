@@ -29,7 +29,9 @@ is_blank <- function(x, false_triggers=FALSE){
 #' @export
 is_multi_procedure <- function(result){
     belongs_to_method <- function(r){
-        identical(sort(names(r)), c("error", "importance", "model", "prediction"))
+        !is.null(names(r)) &&
+        identical(sort(names(r)),
+                  c("error", "importance", "model", "prediction"))
     }
     if(inherits(result, "modeling_result")){
         if(all(sapply(result, belongs_to_method))){
@@ -40,6 +42,25 @@ is_multi_procedure <- function(result){
         }
     }
     stop("Invalid modeling result.")
+}
+
+#' Get names for modeling procedures
+#' 
+#' @param procedure List of modeling procedures.
+#' @return A character vector of suitable non-duplicate names.
+#' @author Christofer \enc{Bäcklin}{Backlin}
+name_procedure <- function(procedure){
+    if(inherits(procedure, "modeling_procedure"))
+        stop("`name_procedure` only takes lists of modeling procedures.")
+    if(is.null(names(procedure))){
+        name <- subtree(procedure, TRUE, "method", error_value=NA, warn=-1)
+        name <- ifelse(is.na(name), "model", name)
+    } else {
+        name <- names(procedure)
+    }
+    ave(name, name, FUN=function(x){
+        if(length(x) == 1) x else sprintf("%s (%i)", x, seq_along(x))
+    })
 }
 
 
@@ -133,5 +154,4 @@ trapz <- function(x,y){
     if(n != length(y)) stop("x and y must have same length")
     sum((y[-1]+y[-n])/2 * (x[-1] - x[-n]))
 }
-
 

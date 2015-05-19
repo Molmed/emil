@@ -25,7 +25,8 @@
 #'   list (\code{FALSE}).
 #' @return A subset of the list tree.
 #' @example examples/subtree.r
-#' @seealso \code{\link{select}}
+#' @seealso \code{\link{select}}, \code{\link{get_prediction}},
+#'   \code{\link{get_importance}}, \code{\link{get_tuning}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
@@ -133,21 +134,21 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #' result <- evaluate(procedures, x, y, resample=cv)
 #' 
 #' # Get the foldwise error for the NSC method
-#' result %>% select(Fold = TRUE, "nsc", Error = "error")
+#' result %>% select(fold = TRUE, "nsc", error = "error")
 #'
 #' # Compare both methods 
 #' require(tidyr)
 #' result %>%
-#'     select(Fold = TRUE, Method = TRUE, Error = "error") %>%
-#'     spread(Method, Error)
+#'     select(fold = TRUE, method = TRUE, error = "error") %>%
+#'     spread(method, error)
 #' result %>%
-#'     select(Fold = TRUE, Method = TRUE, Error = "error") %>%
-#'     group_by(Method) %>% summarize(MeanError = mean(Error))
+#'     select(fold = TRUE, method = TRUE, error = "error") %>%
+#'     group_by(method) %>% summarize(mean_error = mean(error))
 #'
 #' # Investigate the variability in estimated class 2 probability across folds
 #' result %>%
-#'     select(Fold = cv, "nsc", "prediction", Probability = function(x) x$probability[,2]) %>%
-#'     spread(Fold, Probability)
+#'     select(fold = cv, "nsc", "prediction", probability = function(x) x$probability[,2]) %>%
+#'     spread(fold, probability)
 #' @seealso subtree
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @rdname select
@@ -223,7 +224,7 @@ select_list <- function(.data, .dots, id=NULL){
             }
             d <- Map(function(x, i) select_list(x, .dots[-1], id=r[index_test(i)]),
                      .data, .dots[[1]])
-            d <- data.frame(Fold = factor(rep(names(.dots[[1]]), sapply(d, nrow)),
+            d <- data.frame(fold = factor(rep(names(.dots[[1]]), sapply(d, nrow)),
                                           names(.dots[[1]])),
                             rbindlist(d))
         } else {
@@ -247,16 +248,142 @@ get_prediction <- function(result, resample, format=c("long", "wide")){
     stopifnot(inherits(result, "modeling_result"))
     format <- match.arg(format)
     if(is_multi_procedure(result)){
-        prediction <- select(result, Fold=resample, Method=TRUE, "prediction",
-                             Prediction="prediction")
+        prediction <- select(result, fold=resample, method=TRUE, "prediction",
+                             prediction="prediction")
     } else {
-        prediction <- select(result, Fold=resample, "prediction",
-                             Prediction="prediction")
+        prediction <- select(result, fold=resample, "prediction",
+                             prediction="prediction")
     }
     if(format == "wide"){
-        tidyr::spread(prediction, Fold, Prediction)
+        tidyr::spread(prediction, fold, prediction)
     } else {
         prediction
     }
 }
 
+
+#' Feature (variable) importance of a fitted model
+#'
+#' Note that different methods calculates feature importance in different
+#' ways and that they are not directly comparable.
+#'
+#' When extending the emil framework with your own method, the importance
+#' function should return a data frame where one column is called "feature" and
+#' the remaining columns are named after the classes.
+#'
+#' @param object Fitted model.
+#' @param format Table format of the output. See
+#'   \url{http://en.wikipedia.org/wiki/Wide_and_narrow_data} for more info.
+#' @param ... Sent on to the procedure's feature importance scoring function.
+#' @return A vector of length p or an p-x-c matrix of feature importance
+#'   scores where p is the number of descriptors and c is the number of classes.
+#' @examples
+#' procedure <- modeling_procedure("pamr")
+#' model <- fit(procedure, x=iris[-5], y=iris$Species)
+#' get_importance(model)
+#' 
+#' cv <- resample("crossvalidation", iris$Species, nreplicate=2, nfold=3)
+#' result <- evaluate(procedure, iris[-5], iris$Species, resample=cv,
+#'                    .save=c(importance=TRUE))
+#' get_importance(result)
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @seealso \code{\link{emil}}
+#' @export
+get_importance <- function(object, format, ...){
+    UseMethod("get_importance")
+}
+#' @method get_importance model
+#' @export
+get_importance.model <- function(object, format=c("wide", "long"), ...){
+    format <- match.arg(format)
+    imp <- object$procedure$importance_fun(object$fit, ...)
+    if(format == "long"){
+        nice_require("tidyr")
+        tidyr::gather_(imp, "class", "importance", setdiff(colnames(imp), "feature"))
+    } else {
+        imp
+    }
+}
+#' @method get_importance modeling_result
+#' @export
+get_importance.modeling_result <- function(object, format=c("wide", "long"), ...){
+    format <- match.arg(format)
+    if(format == "long") nice_require("tidyr")
+    reset_notification(id = "importance_missing")
+    gatherer <- function(x){
+        if(is.null(x$importance)){
+            if(is.null(x$model)){
+                stop("Could not extract importance since neither models nor importance was saved during evaluation.")
+            }
+            notify_once("importance_missing", 
+                "Feature importance was not calculated during the evaluation. Calculating now.",
+                fun=message)
+            get_importance(x$model, "wide")
+        } else {
+            x$importance
+        }
+    }
+    if(is_multi_procedure(object)){
+        imp <- select(object, fold=TRUE, method=TRUE, gatherer)
+    } else {
+        imp <- select(object, fold=TRUE, gatherer)
+    }
+    if(format == "long"){
+        tidyr::gather_(imp, "class", "importance", -feature)
+    } else {
+        imp
+    }
+}
+
+#' Extract parameter tuning statistics
+#' 
+#' @param object Fitted model or modeling procedure
+#' @return A data frame of tuning statistics in long format.
+#' @examples
+#' procedure <- modeling_procedure("randomForest",
+#'     parameter = list(mtry = c(1, 3),
+#'                      nodesize = c(4, 10)))
+#' model <- fit(procedure, x=iris[-5], y=iris$Species)
+#' get_tuning(model)
+#' 
+#' options(emil_max_indent=4)
+#' cv <- resample("holdout", iris$Species, nfold=5)
+#' result <- evaluate(procedure, iris[-5], iris$Species, resample=cv,
+#'                    .save=c(model=TRUE))
+#' get_tuning(result)
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+get_tuning <- function(object){
+    UseMethod("get_tuning")
+}
+#' @method get_tuning model
+#' @export
+get_tuning.model <- function(object){
+    nice_require("tidyr")
+    cbind(do.call(rbind, lapply(object$procedure$tuning$parameter, as.data.frame)),
+          object$procedure$tuning$error)
+}
+#' @method get_tuning modeling_result
+#' @export
+get_tuning.modeling_result <- function(object){
+    tuning.folds <- names(object)
+    if(is_multi_procedure(object)){
+        method <- if(is.null(names(object[[1]]))){
+            seq_along(object[[1]])
+        } else {
+            names(object[[1]])
+        }
+        names(method) <- method
+        tuning <- lapply(method, function(m){
+            parameter <- names(object[[1]][[m]]$model$procedure$tuning$parameter[[1]])
+            tuning <- select(object, fold=TRUE, method=m, "model", get_tuning.model) %>%
+                gather_("parameter", "value", parameter)
+        })
+        tuning <- do.call(rbind, tuning)
+    } else {
+        parameter <- names(object[[1]]$model$procedure$tuning$parameter[[1]])
+        tuning <- select(object, fold=TRUE, "model", get_tuning.model) %>%
+            gather_("parameter", "value", parameter)
+    }
+    tuning %>% gather_("tuning_fold", "error", tuning.folds)
+}

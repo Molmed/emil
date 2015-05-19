@@ -6,7 +6,7 @@
 #' To use an out-of-the box algorithm with default values, only the
 #' \code{method} argument needs to be set. See \code{\link{emil}} for a
 #' list of available methods. To deviate from the defaults, e.g. by tuning
-#' variables or using a custom function for model fitting, set the appropriate
+#' parameters or using a custom function for model fitting, set the appropriate
 #' parameters as described below.
 #' For a guide on how to implement a custom method see the documentaion page
 #' \code{\link{extension}}.
@@ -14,12 +14,12 @@
 #' @param method The name of the modeling method. Only needed to identify
 #'   plug-in functions, i.e. if you supply them yourself there is no need to
 #'   set \code{method}.
-#' @param param A list of model parameters. These will be fed to the fitting
+#' @param parameter A list of model parameters. These will be fed to the fitting
 #'   function after the dataset (\code{x} and \code{y} parameters). To tune a
 #'   parameter, supply the candidate values in a vector or list.
 #' 
 #'   When tuning more than one parameter, all combinations of parameter values
-#'   will be tested, if the elements of \code{param} are named. To manually
+#'   will be tested, if the elements of \code{parameter} are named. To manually
 #'   specify which parameter value combinations to try, leave the the elements
 #'   unnamed (see example 3 and 4).
 #'   
@@ -30,31 +30,31 @@
 #'   make it a list of length 1 containing the list to be used (see example 6).
 #' @param fit_fun The function to be used for model fitting.
 #' @param predict_fun The function to be used for model prediction.
-#' @param importance_fun The function to be used for calculating or extracting variable
-#'   prediction scores.
+#' @param importance_fun The function to be used for calculating or extracting 
+#'   feature importances. See \code{\link{get_importance}} for details.
 #' @param error_fun Performance measure used to evaluate procedures
 #'   and to tune parameters. See \code{\link{error_fun}} for details.
 #' @return An object of class \code{modeling_procedure}.
 #' @example examples/modeling_procedure.r
 #' @seealso \code{\link{emil}}, \code{\link{evaluate}},
 #'   \code{\link{fit}}, \code{\link{tune}},
-#'   \code{\link[=predict.model]{predict}}, \code{\link{importance}}
+#'   \code{\link[=predict.model]{predict}}, \code{\link{get_importance}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-modeling_procedure <- function(method, param=list(), error_fun=NULL, fit_fun, predict_fun, importance_fun){
-    if(any(sapply(list(NA, FALSE), identical, param))){
-        warning("`param` must be supplied as a list. Assuming you really want `list()` i.e. to not set any parameters.")
-        param <- list()
+modeling_procedure <- function(method, parameter=list(), error_fun=NULL, fit_fun, predict_fun, importance_fun){
+    if(any(sapply(list(NA, FALSE), identical, parameter))){
+        warning("`parameter` must be supplied as a list. Assuming you really want `list()` i.e. to not set any parameters.")
+        parameter <- list()
     }
-    if(!is.null(names(param))){
-        param <- apply(do.call(expand.grid, lapply(param, seq_along)), 1, function(i){
-            Map("[[", param, i)
+    if(!is.null(names(parameter))){
+        parameter <- apply(do.call(expand.grid, lapply(parameter, seq_along)), 1, function(i){
+            Map("[[", parameter, i)
         })
     }
     procedure <- structure(class = "modeling_procedure", .Data = list(
         method = if(missing(method)) NULL else method,
-        param = if(length(param) == 0) list() else if(length(param) == 1) param[[1]] else NULL,
-        tuning = if(length(param) < 2) NULL else list(param = param, error = NULL),
+        parameter = if(length(parameter) == 0) list() else if(length(parameter) == 1) parameter[[1]] else NULL,
+        tuning = if(length(parameter) < 2) NULL else list(parameter = parameter, error = NULL),
         fit_fun =
             if(missing(fit_fun)){
                 tryCatch(get(sprintf("fit_%s", method)), error=function(err) err)
@@ -97,14 +97,14 @@ print.modeling_procedure <- function(x, ...){
 
    model fitting function:       %s
    prediction function:          %s
-   variable importance function: %s
+   feature importance function:  %s
    individual error function:    %s
    
    number of parameter sets to tune over: %i
    tuned: %s\n",
         if(is.null(x$method)) "Custom" else paste0("`", x$method, "`"),
         yn(x$fit_fun), yn(x$predict_fun), yn(x$importance_fun), yn(x$error_fun),
-        if(is.null(x$tuning$param)) 1 else length(x$tuning$param),
+        if(is.null(x$tuning$parameter)) 1 else length(x$tuning$parameter),
         if(is_tunable(x)) if(is_tuned(x)) "yes" else "no" else "not needed"
     ))
 }
@@ -118,10 +118,7 @@ print.modeling_procedure <- function(x, ...){
 #'
 #' This function is the core of the framework, carrying out most of the work.
 #' It fits and evaluates models according to a resampling scheme, and extracts
-#' variable importance scores.
-#' Note that the typical user does not have to call this function
-#' directly, but should use \code{\link{fit}}, \code{\link{tune}} or
-#' \code{\link{evaluate}} instead.
+#' feature importance scores.
 #' 
 #' @param procedure Modeling procedure, or list of modeling procedures, as
 #'   produced by \code{\link{modeling_procedure}}.
@@ -161,7 +158,7 @@ print.modeling_procedure <- function(x, ...){
 #'           \code{\link{error_fun}} for more information.}
 #'       \item{\code{fit}}{Fitted model.}
 #'       \item{\code{prediction}}{Predictions given by the model.}
-#'       \item{\code{importance}}{Variable importance scores.}
+#'       \item{\code{importance}}{Feature importance scores.}
 #'       \item{\code{tune}}{Results from the parameter tuning. See
 #'           \code{\link{tune}} for details.}
 #'   }
@@ -171,9 +168,11 @@ print.modeling_procedure <- function(x, ...){
 #' @export
 evaluate <- function(procedure, x, y,
     resample=emil::resample("crossvalidation", y, nfold=2, nreplicate=2), pre_process=pre_split,
-    .save=c(model=FALSE, prediction=TRUE, importance=FALSE),
+    .save=c(model=TRUE, prediction=TRUE, importance=FALSE),
     .cores=1, .checkpoint_dir=NULL, .return_error=.cores > 1,
-    .verbose=FALSE){
+    .verbose=TRUE){
+
+    log_message(.verbose, "Evaluating modeling performance")
 
     if(inherits(procedure, "modeling_procedure")){
         multi.procedure <- FALSE
@@ -191,7 +190,7 @@ evaluate <- function(procedure, x, y,
     }
     make.na <- is.na(y) & !Reduce("&", lapply(resample, is.na))
     if(any(make.na)){
-        log_message(.verbose, "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
+        log_message(indent(.verbose, 1), "%i observations will be excluded from the modeling due to missing values.", sum(make.na))
         resample[make.na,] <- NA
     }
 
@@ -258,7 +257,7 @@ evaluate <- function(procedure, x, y,
         modeling_fun <- function(f, ...){
             Map_fun(function(...){
                 tryCatch(f(...), error = function(err){
-                    log_message(indent(.verbose, 1), "An error occurred, skipping fold.")
+                    log_message(indent(.verbose, 2), "An error occurred, skipping fold.")
                     err
                 })
             }, ...)
@@ -290,23 +289,22 @@ evaluate <- function(procedure, x, y,
         }
 
         # Print status message
-        if(inherits(resample, "crossvalidation")){
-            log_message(.verbose, sub("^fold(\\prediction+):(\\prediction+)$", "Replicate \\1, fold \\2:", fold.name),
-                      appendLF=FALSE)
+        fold.message <- if(inherits(resample, "crossvalidation")){
+            sub("^fold(\\d+).(\\d+)$", "Replicate \\1, fold \\2", fold.name)
         } else if(inherits(resample, "holdout")){
-            log_message(.verbose, sub("^fold(\\prediction+)$", "Fold \\1:", fold.name),
-                      appendLF=FALSE)
+            sub("^fold(\\d+)$", "Fold \\1", fold.name)
         } else {
-            log_message(.verbose, fold.name, appendLF=FALSE)
+            fold.name
         }
 
         # Check for checkpoint files
         if(!is.null(checkpoint.file) && file.exists(checkpoint.file)){
-            if(.verbose) message(" Already completed.")
+            fold.message <- paste(fold.message, "already completed.")
             en <- new.env()
             load(checkpoint.file, envir=en)
             return(en$res)
-        } else if(.verbose) cat("\n")
+        }
+        log_message(indent(.verbose, 1), fold.message)
 
         # Disable further messages if run in parallel
         if(.cores > 1) .verbose <- 0
@@ -317,11 +315,11 @@ evaluate <- function(procedure, x, y,
             # not produce any unnecessary in-memory copies of the dataset.
             tune.subset <- subresample(fold, y)
             fold.procedure <- tune(procedure, x, y, resample=tune.subset,
-                pre_process=pre_process, .save=NULL, .verbose=indent(.verbose, 1))
+                pre_process=pre_process, .save=NULL, .verbose=indent(.verbose, 2))
         } else {
             fold.procedure <- procedure
         }
-        log_message(indent(.verbose, 1), "Extracting fitting and testing datasets.")
+        log_message(indent(.verbose, 2), "Extracting fitting and testing datasets.")
         if(is.function(pre_process)){
             sets <- pre_process(x, y, fold)
         } else if(is.list(pre_process)){
@@ -334,16 +332,20 @@ evaluate <- function(procedure, x, y,
             stop("Invalid pre-processing.")
         }
 
-        log_message(indent(.verbose, 1), "Fitting models and making predictions.")
-        res <- lapply(fold.procedure, function(p){
-            model <- fit(p, sets$fit$x, sets$fit$y, .verbose=indent(.verbose, 1))
+        res <- lapply(seq_along(fold.procedure), function(i){
+            # Rather than doing all models at once we do one at a time in case
+            # they require a lot of memory. The [[-workaround is to keep the
+            # procedure names printing in the correct way.
+            model <- fit(fold.procedure[i], sets$fit$x, sets$fit$y,
+                         .verbose=indent(.verbose, 2))[[1]]
             prediction <- predict(model, sets$test$x, .verbose=indent(.verbose, 1))
-            list(error = p$error_fun(sets$test$y, prediction),
+            list(error = fold.procedure[[i]]$error_fun(sets$test$y, prediction),
                  model = if(.save["model"]) model else NULL,
                  prediction = if(.save["prediction"]) prediction else NULL,
-                 importance = if(.save["importance"]) importance(model)
+                 importance = if(.save["importance"]) get_importance(model)
              )
         })
+        names(res) <- names(fold.procedure)
 
         # Estimate run time
         if(.cores == 1 && is.null(checkpoint.file)){
@@ -352,9 +354,9 @@ evaluate <- function(procedure, x, y,
                 os <- object.size(res)
                 os.i <- trunc(log(os)/log(1024))
                 if(os.i == 0){
-                    log_message(.verbose, "Result size is %i B.", os, time=FALSE)
+                    log_message(indent(.verbose, 1), "Result size is %i B.", os, time=FALSE)
                 } else {
-                    log_message(.verbose, "Result size is %.2f %s.",
+                    log_message(indent(.verbose, 1), "Result size is %.2f %s.",
                         exp(log(os) - os.i * log(1024)), c("KiB", "MiB", "GiB", "TiB", "PiB", "EiB")[os.i],
                         time=FALSE)
                 }
@@ -371,7 +373,7 @@ evaluate <- function(procedure, x, y,
                 } else {
                     "%H:%M, %b %prediction, %Y"
                 }
-                log_message(.verbose,
+                log_message(indent(.verbose, 1),
                           "Estimated completion time %sis %s.",
                           if("tune" %in% sapply(sys.calls(), function(x) as.character(x)[1]))
                               "of tuning " else "",
@@ -408,8 +410,7 @@ evaluate <- function(procedure, x, y,
 #' Fit a model
 #'
 #' Fits a model according to a modeling procedure. If the procedure contains
-#' untuned variables they it will automatically be tuned prior to fitting. Note
-#' however that the tuning statistics will not be return.
+#' untuned parameters they will automatically be tuned prior to fitting.
 #' 
 #' @param procedure Modeling procedure, or list of modeling procedures, as
 #'   produced by \code{\link{modeling_procedure}}.
@@ -425,7 +426,7 @@ evaluate <- function(procedure, x, y,
 #' mod <- fit(procedure, x=iris[-5], y=iris$Species)
 #' @seealso \code{\link{emil}}, \code{\link{modeling_procedure}},
 #'   \code{\link{evaluate}}, \code{\link{tune}},
-#'   \code{\link[=predict.model]{predict}}, \code{\link{importance}}
+#'   \code{\link[=predict.model]{predict}}, \code{\link{get_importance}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 fit <- function(procedure, x, y, ..., .verbose=TRUE){
@@ -435,7 +436,6 @@ fit <- function(procedure, x, y, ..., .verbose=TRUE){
     } else {
         multi.procedure <- TRUE
     }
-    log_message(.verbose, "Fitting model%s", if(length(procedure) > 1) "s" else "")
 
     missing.fun <- unlist(lapply(procedure, function(p)
         if(!is.function(p$fit_fun)) sprintf("fit_%s", p$method) else NULL))
@@ -447,14 +447,14 @@ fit <- function(procedure, x, y, ..., .verbose=TRUE){
     need.tuning <- !sapply(procedure, is_tuned)
     if(any(need.tuning)){
         procedure[need.tuning] <- tune(procedure[need.tuning], x=x, y=y, ...,
-            .verbose=indent(.verbose, 1))
-        log_message(indent(.verbose, 1), "Fitting final models.")
+            .verbose=.verbose)
     }
-    res <- lapply(procedure, function(p){
-        structure(list(fit = do.call(function(...) p$fit_fun(x, y, ...), p$param),
+    res <- Map(function(p, mn){
+        log_message(.verbose, "Fitting %s", mn)
+        structure(list(fit = do.call(function(...) p$fit_fun(x, y, ...), p$parameter),
                        procedure = p),
                   class="model")
-    })
+    }, procedure, name_procedure(procedure))
     if(multi.procedure) res else res[[1]]
 }
 
@@ -472,12 +472,12 @@ fit <- function(procedure, x, y, ..., .verbose=TRUE){
 #'   suppress all messages.
 #' @return A tuned modeling procedures or a list of such.
 #' @examples
-#' procedure <- modeling_procedure("randomForest", param=list(mtry=1:4))
+#' procedure <- modeling_procedure("randomForest", parameter=list(mtry=1:4))
 #' tuned.procedure <- tune(procedure, x=iris[-5], y=iris$Species)
 #' mod <- fit(tuned.procedure, x=iris[-5], y=iris$Species)
 #' @seealso \code{\link{emil}}, \code{\link{modeling_procedure}},
 #'   \code{\link{evaluate}}, \code{\link{fit}},
-#'   \code{\link[=predict.model]{predict}}, \code{\link{importance}}
+#'   \code{\link[=predict.model]{predict}}, \code{\link{get_importance}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 tune <- function(procedure, ..., .verbose=FALSE){
@@ -495,27 +495,30 @@ tune <- function(procedure, ..., .verbose=FALSE){
         for(i in which(discard.tuning))
             procedure[[i]]$tuning <- NULL
     }
-    tune.procedure <- unlist(lapply(procedure[do.tuning], function(p){
-        lapply(p$tuning$param, function(pp){
-            p$param <- pp
+    tune.procedure <- lapply(procedure[do.tuning], function(p){
+        lapply(p$tuning$parameter, function(pp){
+            p$parameter <- pp
             p["tuning"] <- list(NULL)
             p
         })
-    }), recursive=FALSE)
+    })
+    tune.name <- lapply(tune.procedure, name_procedure)
+    tune.procedure <- unlist(tune.procedure, recursive=FALSE)
+    names(tune.procedure) <- unlist(tune.name)
     tune.procedure <- set_debug_flag(tune.procedure, rep(debug.flags,
-        each=sapply(procedure, function(p) length(p$tuning$param) )))
+        each=sapply(procedure, function(p) length(p$tuning$parameter) )))
 
     tuning <- evaluate(tune.procedure, ..., .verbose=indent(.verbose, 1))
     procedure.id <- rep(which(do.tuning),
-                   sapply(procedure[do.tuning], function(p) length(p$tuning$param)))
+                   sapply(procedure[do.tuning], function(p) length(p$tuning$parameter)))
     for(i in which(do.tuning)){
         procedure[[i]]$tuning$error <-
             sapply(tuning, function(tun) unlist(subtree(tun, procedure.id == i, "error")))
         rownames(procedure[[i]]$tuning$error) <- NULL
         mean.err <- apply(procedure[[i]]$tuning$error, 1, mean)
-        best.param <- which(mean.err == min(mean.err))
-        if(length(best.param) > 1) best.param <- sample(best.param, 1)
-        procedure[[i]]$param <- procedure[[i]]$tuning$param[[best.param]]
+        best.parameter <- which(mean.err == min(mean.err))
+        if(length(best.parameter) > 1) best.parameter <- sample(best.parameter, 1)
+        procedure[[i]]$parameter <- procedure[[i]]$tuning$parameter[[best.parameter]]
         procedure[[i]]$tuning$result <- lapply(tuning, "[", procedure.id == i)
     }
     procedure <- set_debug_flag(procedure, debug.flags)
@@ -525,7 +528,7 @@ tune <- function(procedure, ..., .verbose=FALSE){
 #' @return Logical indicating if the procedure(s) are tuned.
 #' @export
 is_tuned <- function(procedure)
-    !is_tunable(procedure) || !is.null(procedure$param)
+    !is_tunable(procedure) || !is.null(procedure$parameter)
 #' @rdname tune
 #' @return Logical indicating if the has tunable parameters.
 #' @export
@@ -540,58 +543,6 @@ detune <- function(procedure){
     lapply(procedure[debug.flags], debug)
     procedure
 }
-
-
-# #' Performance estimation of modeling procedures
-# #' 
-# #' This function performs the important task of evaluating the performance of
-# #' a modeling procedure with resampling, including tuning and pre-processing
-# #' to not bias the results by information leakage.
-# #' 
-# #' (a)param procedure Modeling procedure, or list of modeling procedures, as
-# #'   produced by \code{\link{modeling_procedure}}.
-# #' (a)param x Dataset, observations as rows and descriptors as columns.
-# #' (a)param y Response vector.
-# #' (a)param ... Sent to \code{\link{tune}} and \code{\link{evaluate}}.
-# #' (a)param .save See \code{\link{evaluate}}.
-# #' (a)param .verbose Whether to print an activity log. Set to \code{-1} to
-# #'   suppress all messages.
-# #' (a)return A list of fitted models.
-# #' (a)examples
-# #' procedure <- modeling_procedure("lda")
-# #' cv <- resample("crossvalidation", y=iris$Species, nfold=5, nreplicate=3)
-# #' perf <- evaluate(procedure, x=iris[-5], y=iris$Species, resample=cv)
-# #' err <- subtree(perf, TRUE, "error")
-# #' (a)seealso \code{\link{emil}}, \code{\link{modeling_procedure}},
-# #'   \code{\link{fit}}, \code{\link{tune}}
-# #'   \code{\link[=predict.model]{predict}}, \code{\link{importance}}
-# #' (a)author Christofer \enc{Bäcklin}{Backlin}
-# #' (a)export
-# evaluate <- function(procedure, x, y, ...,
-#     .save=c(model=FALSE, prediction=TRUE, importance=FALSE, tuning=TRUE),
-#     .verbose=TRUE){
-# 
-#     reset_notification()
-#     log_message(.verbose, "Evaluating modeling performance:")
-#     if(inherits(procedure, "modeling_procedure")){
-#         multi.procedure <- FALSE
-#         procedure <- listify(procedure)
-#     } else {
-#         multi.procedure <- TRUE
-#     }
-#     do.tuning <- sapply(procedure, is_tunable)
-#     discard.tuning <- do.tuning & sapply(procedure, is_tuned)
-#     if(any(discard.tuning)){
-#         log_message(indent(.verbose, 1),
-#             "Discarding previous tuning of %i modeling procedures.",
-#             sum(discard.tuning))
-#         for(i in which(discard.tuning))
-#             procedure[[i]]$tuning <- NULL
-#     }
-# 
-#     return(evaluate(if(multi.procedure) procedure else procedure[[1]], x, y, ...,
-#            .save=.save, .verbose=indent(.verbose, 1)))
-# }
 
 
 #' Predict the response of unknown observations
@@ -610,7 +561,7 @@ detune <- function(procedure){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{modeling_procedure}},
 #'   \code{\link{evaluate}},\code{\link{fit}}, \code{\link{tune}},
-#'   \code{\link{importance}}
+#'   \code{\link{get_importance}}
 #' @export
 predict.model <- function(object, x, ..., .verbose=FALSE){
     if(.verbose < 0){
