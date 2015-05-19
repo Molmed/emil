@@ -4,7 +4,12 @@ Type: Package
 Title: Evaluation of Modeling without Information Leakage
 Version: 2.0.1
 Date: 2015-05-19
-Author: Christofer Backlin, Mats Gustafsson
+Authors@R: c(
+    person("Christofer", "Backlin", role = c("aut", "cre"), email = "christofer.backlin@medsci.uu.se"),
+    person("Mats", "Gustafsson", role = "aut")
+    )
+Author: Christofer Backlin [aut, cre],
+    Mats Gustafsson [aut],
 Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
 Description: A toolbox for designing and evaluating predictive models with
     resampling methods. The aim of this package is to provide a simple and
@@ -36,3 +41,5 @@ Suggests:
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes
+URL: http://molmed.github.io/emil
+BugReports: https://github.com/Molmed/emil/issues

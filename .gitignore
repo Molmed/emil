@@ -8,6 +8,7 @@ old
 *.bak
 *.Rd
 *-Ex.R
+pack.r
 ideas.txt
 pack.r
 pack.R
