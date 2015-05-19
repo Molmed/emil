@@ -45,7 +45,6 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
         if(is.numeric(y)) family <- "gaussian" else
         stop("Could not auto detect glmnet family, see `?fit.glmnet`.")
     }
-    if(inherits(y, "Surv")) y <- survival::as.Surv(y)
 
     if(length(lambda) > 1 || length(lambda) != 1){
         if(missing(nfolds)){

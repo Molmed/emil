@@ -32,7 +32,7 @@ fit_cforest <- function(x, y, formula=y~., ctrl_fun=party::cforest_unbiased, ...
         stop("cforest cannot handle competing events.")
     }
     if(any(is.na(y))) stop("`y` contains missing values")
-    party::cforest(formula, data.frame(y=y, as.data.frame(x)), controls=party::ctrl_fun(...))
+    party::cforest(formula, data.frame(y=y, as.data.frame(x)), controls=ctrl_fun(...))
 }
 
 

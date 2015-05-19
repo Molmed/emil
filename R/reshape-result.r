@@ -387,3 +387,25 @@ get_tuning.modeling_result <- function(object){
     }
     tuning %>% gather_("tuning_fold", "error", tuning.folds)
 }
+
+#' Extract prediction performance
+#' 
+#' @param result Modeling result, as returned by \code{\link{evaluate}}.
+#' @param format Table format of the output. See
+#'   \url{http://en.wikipedia.org/wiki/Wide_and_narrow_data} for more info.
+#' @return Data frame.
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+get_performance <- function(result, format=c("wide", "long")){
+    if(is_multi_procedure(result)){
+        p <- select(result, fold=TRUE, method=TRUE, error="error")
+        if(format == "wide"){
+            spread_(p, "method", "error")
+        } else {
+            p
+        }
+    } else {
+        select(result, fold=TRUE, error="error")
+    }
+}
+
