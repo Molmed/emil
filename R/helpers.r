@@ -20,7 +20,6 @@ is_blank <- function(x, false_triggers=FALSE){
     (false_triggers && all(!x))
 }
 
-
 #' Detect if modeling results contains multiple procedures
 #' 
 #' @param result Modeling results, as returned by \code{\link{evaluate}}.
@@ -63,7 +62,6 @@ name_procedure <- function(procedure){
     })
 }
 
-
 #' Replace values with something else
 #'
 #' @param x Variable containing NAs.
@@ -92,7 +90,6 @@ fill <- function(x, pattern, replacement, invert=FALSE){
 na_fill <- function(x, replacement){
     fill(x, is.na, replacement)
 }
-
 
 #' Load a package and offer to install if missing
 #' 
@@ -129,7 +126,6 @@ nice_require <- function(pkg, reason){
     }
 }
 
-
 #' Trapezoid rule numerical integration
 #' 
 #' Only intended for internal use.
@@ -155,3 +151,23 @@ trapz <- function(x,y){
     sum((y[-1]+y[-n])/2 * (x[-1] - x[-n]))
 }
 
+#' List all available methods
+#' 
+#' This function searches all attached packages for methods compatible with the
+#' emil framework.
+#' 
+#' @param pos Location to search in, see \code{\link{ls}}.
+#' @return A data frame.
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+emil_list_method <- function(pos=search()){
+    method <- lapply(pos, function(p){
+        grep("^(fit|predict|importance)_", ls(p), value=TRUE)
+    })
+    data.frame(location = rep(pos, sapply(method, length)),
+               method = unlist(method)) %>%
+        extract_("method", c("plugin", "method"), c("^(fit|predict|importance)_(.*)$")) %>%
+        mutate_(plugin = "factor(plugin, c('fit', 'predict', 'importance'))", dummy = TRUE) %>%
+        spread_("plugin", "dummy") %>%
+        mutate_(fit = "!is.na(fit)", predict = "!is.na(predict)", importance = "!is.na(importance)")
+}

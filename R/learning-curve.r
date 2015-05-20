@@ -17,16 +17,10 @@
 #' @param .verbose Whether to print an activity log. Set to \code{-1} to
 #'   also suppress output generated from the procedure's functions.
 #' @examples
-#' \dontrun{
 #' procedure <- lapply(c(Linear="lda", Quadratic="qda"), modeling_procedure)
-#' lc1 <- learning_curve(procedure, iris[-5], iris$Species, fraction=7:1/10)
-#' 
-#' options(emil.max.indent=3)
-#' lc2 <- learning_curve(procedure, iris[-5], iris$Species, .return_error=TRUE)
-#'
-#' require(emilPlots)
-#' plot(lc1)
-#' }
+#' options(emil_max_indent=3)
+#' lc <- learning_curve(procedure, iris[-5], iris$Species, fraction=7:1/10)
+#' plot(lc)
 #' @references Richard O Duda, Peter E Hart, and David G Stork. Pattern
 #'   Classification. Wiley, 2nd edition, 2000. ISBN 978-0-471-05669-0.
 #' @author Christofer \enc{Bäcklin}{Backlin}
@@ -59,15 +53,14 @@ learning_curve <- function(procedure, x, y, fraction, nfold=100, ..., .verbose=T
 #'
 #' @method plot learning_curve
 #' @param x Results from \code{\link{learning_curve}}.
-#' @param y Ignored, kept for S3 consistency.
 #' @param ... Ignored, kept for S3 consistency.
 #' @param summaries Named list of summary functions that can reduce a vector of
 #'   performance estimates to a single quantity.
 #' @return A \code{\link[ggplot2]{ggplot}} object.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-plot.learning_curve <- function(x, y, ..., summaries=list(mean = mean, `95-percentile`=function(x) quantile(x, .95))){
-    nice_require(c("dplyr", "ggplot2"))
+plot.learning_curve <- function(x, ..., summaries=list(mean = mean, `95-percentile`=function(x) quantile(x, .95))){
+    nice_require("ggplot2")
 
     if(is_multi_procedure(x$result[[1]])){
         plot.data <- x$result %>%
@@ -75,18 +68,18 @@ plot.learning_curve <- function(x, y, ..., summaries=list(mean = mean, `95-perce
     } else {
         plot.data <- x$result %>%
             select(fraction = TRUE, fold = TRUE, performance = "error") %>%
-            mutate(method = NA)
+            mutate_(method = NA)
     }
     plot.data$fraction <- x$fraction[plot.data$fraction]
 
     data.summary <- do.call(rbind, Map(function(method, fun){
         data.frame(summaries=method,
-            summarise(group_by(plot.data, fraction, method),
-                      performance = fun(performance)))
+            summarise_(group_by_(plot.data, "fraction", "method"),
+                      performance = ~fun(performance)))
     }, names(summaries), summaries))
-    p <- ggplot(plot.data, aes(x=1-fraction, y=performance)) + 
+    p <- ggplot(plot.data, aes_string(x="1-fraction", y="performance")) + 
         geom_point(colour="grey") +
-        geom_line(data=data.summary, aes(colour=summaries)) +
+        geom_line(data=data.summary, aes_string(colour="summaries")) +
         xlab("Relative training set size")
     if(is_multi_procedure(x$result[[1]]))
         p <- p + facet_wrap(~method)

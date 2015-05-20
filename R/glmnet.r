@@ -83,7 +83,7 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     } else {
         # Train single glmnet
         return(c(list(family = family, alpha = alpha, lambda = lambda, lambda.min = lambda),
-            glmnet.fit = glmnet(x, y, family=family, alpha=alpha, lambda=lambda, ...)))
+            glmnet.fit = glmnet::glmnet(x, y, family=family, alpha=alpha, lambda=lambda, ...)))
     }
 }
 

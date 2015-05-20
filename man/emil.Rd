@@ -83,6 +83,7 @@ original publication included as the package's vignette (to be added).
         }
     }
     \subsection{Modeling methods}{
+        The following modeling methods are included in the emil package.
         See \code{\link{modeling_procedure}} for information on usage
         and \code{\link{extension}} for information on
         implementation of custom methods.
@@ -100,6 +101,9 @@ original publication included as the package's vignette (to be added).
         }
         It is also possible to incorporate any method from the \sQuote{caret}
         package by using the function \code{\link{fit_caret}}.
+        
+        To search for emil compatible methods in all attached packages use the
+        \code{\link{emil_list_method}} function.
     }
     \subsection{Performance estimation methods}{
         See \code{\link{error_fun}} for information on usage and implementation
@@ -124,6 +128,16 @@ original publication included as the package's vignette (to be added).
         For survival analysis problem:
         \describe{
             \item{\code{\link{neg_harrell_c}}}{Negative Harrell's concordance index.}
+        }
+    }
+    \subsection{Plotting}{
+        Plotting is not the one of the main aims of the package and the methods
+        that do exist mainly serves as examples for how to write your own.
+        These exists for:
+        \itemize{
+            \item \link[=learning_curve]{Learning curve analyses}.
+            \item \link[=image.resample]{Resampling schemes}.
+            \item \link[=roc_curve]{ROC-curves}.
         }
     }
 }

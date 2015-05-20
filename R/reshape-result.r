@@ -255,7 +255,7 @@ get_prediction <- function(result, resample, format=c("long", "wide")){
                              prediction="prediction")
     }
     if(format == "wide"){
-        tidyr::spread(prediction, fold, prediction)
+        tidyr::spread_(prediction, "fold", "prediction")
     } else {
         prediction
     }
@@ -329,7 +329,7 @@ get_importance.modeling_result <- function(object, format=c("wide", "long"), ...
         imp <- select(object, fold=TRUE, gatherer)
     }
     if(format == "long"){
-        tidyr::gather_(imp, "class", "importance", -feature)
+        tidyr::gather_(imp, "class", "importance")
     } else {
         imp
     }
