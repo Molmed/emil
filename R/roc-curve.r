@@ -34,11 +34,11 @@ roc_curve <- function(result, y, resample, class=levels(y), statistic="probabili
     if(length(class) > 1){
         stat_table %<>% tidyr::gather_("class", "statistic", class)
     } else {
-        stat_table %<>% mutate(class = factor(class))
+        stat_table %<>% mutate_(class = "factor(class)")
     }
     stat_table %<>%
         group_by_(.dots=intersect(c("fold", "method", "class"), colnames(stat_table))) %>%
-        do(roc_fun(.))
+        do_(~roc_fun(.))
     structure(stat_table %>% as.data.frame,
               class=c("roc_curve", "data.frame"))
 }
@@ -70,13 +70,13 @@ as.data.frame.roc_curve <- function(x, ...){
 #' @export
 plot.roc_curve <- function(x, ...){
     nice_require("ggplot2")
-    p <- ggplot(x) + 
+    p <- ggplot(x, aes_string(x="1-specificity", y="sensitivity",
+                              group="paste(class, fold, method)")) + 
         geom_segment(x=0, y=0, xend=1, yend=1, linetype="dashed", size=.3) +
-        facet_wrap(~class)
+        geom_path(aes_string(colour="class"))
     if("method" %in% colnames(x)){
-        p + geom_path(aes(x=1-specificity, y=sensitivity,
-                          colour=method, group=paste(method, fold)))
+        p + facet_wrap(~method)
     } else {
-        p + geom_path(aes(x=1-specificity, y=sensitivity, group=fold))
+        p
     }
 }

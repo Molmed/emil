@@ -251,7 +251,6 @@ pre_impute_mean <- function(data){
 #'   \code{x} vary between folds. Otherwise you are just wasting time.
 #'   
 #' @examples
-#' require(dplyr)
 #' x <- iris[-5]
 #' x[sample(nrow(x), 30), 3] <- NA
 #' my.dist <- dist(x)
@@ -263,7 +262,7 @@ pre_impute_mean <- function(data){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 pre_impute_knn <- function(data, k=.05, distance_matrix){
-    na.ind <- as.data.table(na_index(data))
+    na.ind <- na_index(data)
     if(is.null(na.ind)) return(data)
 
     if(k < 1) k <- max(1, round(.05*length(index_fit(data$fold))))
@@ -271,19 +270,18 @@ pre_impute_knn <- function(data, k=.05, distance_matrix){
         stop("k is larger than number of fitting observations.")
 
     # Exclude features with fewer non-NAs than k
-    non.na.count <- na.ind %>%
-        filter(set == "fit") %>%
-        group_by(col) %>%
-        summarize(n = length(row)) %>%
-        transform(n = nrow(data$fit$x) - n)
-    impute_failed <- non.na.count[n < k, col]
+    na.count <- na.ind %>%
+        filter_("set == 'fit'") %>%
+        group_by_("col") %>%
+        summarize_(n = "length(row)")
+    impute_failed <- nrow(data$fit$x) - na.count$n < k
  
     if(any(impute_failed)){
         data <- pre_remove(data, impute_failed)
         warning(sprintf("Could not knn-impute %i features.", 
                         length(impute_failed)))
-        na.ind <- na.ind[!col %in% impute_failed]
-        na.ind[,col := col - findInterval(na.ind$col, impute_failed)]
+        na.ind %<>% filter_(~!col %in% impute_failed)
+        na.ind$col <- na.ind$col - findInterval(na.ind$col, which(impute_failed))
     }
 
     # Check that the distance matrix is in order
@@ -291,8 +289,8 @@ pre_impute_knn <- function(data, k=.05, distance_matrix){
         stop("You must supply a distance matrix, see `?pre_impute_knn` for details.")
     if(is.character(distance_matrix) && distance_matrix == "auto"){
         distance_matrix <- matrix(nrow = length(data$fold), ncol = length(data$fold))
-        ind <- c(index_fit(fold, allow_oversample=FALSE),
-                 index_test(fold))
+        ind <- c(index_fit(data$fold, allow_oversample=FALSE),
+                 index_test(data$fold))
         distance_matrix[ind, ind] <- as.matrix(dist(rbind(data$fit$x, data$test$x)))
     } else if(!is.matrix(distance_matrix)){
         distance_matrix <- as.matrix(distance_matrix)
@@ -308,12 +306,12 @@ pre_impute_knn <- function(data, k=.05, distance_matrix){
         mean(x[!is.na(x)][1:k])
     }, NN, na.ind$col)
 
-    if(na.ind[,any(set == "fit")])
-        data$fit$x[as.matrix(na.ind[set == "fit", list(row, col)])] <-
-            na.ind[set == "fit", fill]
-    if(na.ind[,any(set == "test")])
-        data$test$x[as.matrix(na.ind[set == "test", list(row, col)])] <-
-            na.ind[set == "test", fill]
+    if(any(na.ind$set == "fit"))
+        data$fit$x[as.matrix(na.ind[na.ind$set == "fit", c("row", "col")])] <-
+            na.ind$fill[na.ind$set == "fit"]
+    if(any(na.ind$set == "test"))
+        data$test$x[as.matrix(na.ind[na.ind$set == "test", c("row", "col")])] <-
+            na.ind$fill[na.ind$set == "test"]
     data
 }
 
