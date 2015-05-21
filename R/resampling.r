@@ -57,6 +57,7 @@
 #'   \code{\link{image.resample}}, \code{\link{index_fit}}
 #' @export
 resample <- function(method, y, ..., subset=TRUE){
+    if(inherits(y, "Surv")) y <- factor(dichotomize(y))
     x <- get(sprintf("resample_%s", method))(y, ..., subset=subset)
     class(x$folds) <- c(method, "resample", "data.frame")
     if(all(grepl("^V\\prediction+$", names(x$folds))))

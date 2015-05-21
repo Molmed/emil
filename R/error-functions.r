@@ -23,7 +23,7 @@
 #' all classes rather than one label, or the risks that the observations will
 #' experience the event of interest, to be compared to the actual outcome that
 #' it did occur or has not yet occurred at a specific time point.
-#' See neg_harrell_c for an example of the latter.
+#' See \code{\link{neg_harrell_c}} for an example of the latter.
 #' 
 #' @param truth The true response values, be it class labels, numeric values or
 #'   survival outcomes.
@@ -133,18 +133,13 @@ neg_gmpa <- function(truth, prediction){
 neg_harrell_c <- function(truth, prediction){
     stopifnot(inherits(truth, "Surv"))
     nice_require("Hmisc", "is required for calculating Harrell's C")
-    -Hmisc::rcorr.cens(prediction$risk, truth)[1]
+    risk <- prediction$prediction
+    risk <- ifelse(is.infinite(risk), 1.1*max(abs(risk[!is.infinite(risk)]))*sign(risk), risk)
+    -Hmisc::rcorr.cens(risk, truth)[1]
 }
 
-
-
-error_convergence <- function(x){
-    if("error" %in% x[[1]]){
-        # Single procedure
-        err <- subtree(x, TRUE, "error")
-    } else {
-        err <- subtree(x, TRUE, TRUE, "error")
-    }
-
+#' @rdname error_fun
+#' @export
+brier_score <- function(truth, prediction){
+    stop("Not yet implemented")  
 }
-

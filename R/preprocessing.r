@@ -71,16 +71,17 @@ pre_split <- function(x, y, fold){
 #'   and testing sets.
 #' @param y_fun Function to be applied to the response of the training and test
 #'   sets (independently).
+#' @param ... Sent to internal methods, see the code of each function.
 #' @rdname pre_process
 #' @export
-pre_convert <- function(data, x_fun, y_fun){
+pre_convert <- function(data, x_fun, y_fun, ...){
     if(!missing(x_fun)){
-        data$fit$x <- x_fun(data$fit$x)
-        data$test$x <- x_fun(data$test$x)
+        data$fit$x <- x_fun(data$fit$x, ...)
+        data$test$x <- x_fun(data$test$x, ...)
     }
     if(!missing(y_fun)){
-        data$fit$y <- y_fun(data$fit$y)
-        data$test$y <- y_fun(data$test$y)
+        data$fit$y <- y_fun(data$fit$y, ...)
+        data$test$y <- y_fun(data$test$y, ...)
     }
     data
 }
@@ -160,8 +161,8 @@ pre_remove_correlated <- function(data, cutoff){
 
 #' @rdname pre_process
 #' @export
-pre_pca <- function(data){
-    pca <- prcomp(data$fit$x)
+pre_pca <- function(data, ...){
+    pca <- prcomp(data$fit$x, ...)
     data$fit$x <- pca$x
     data$test$x <- predict(pca, data$test$x)
     data

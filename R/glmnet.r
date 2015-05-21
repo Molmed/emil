@@ -1,7 +1,6 @@
-#' Fit GLM with LASSO, Ridge or elastic net regularization.
+#' Fit elastic net model
 #' 
-#' Fits generalized linear models with regularization using the \code{glmnet}
-#' package implementation.
+#' Using the \code{glmnet} package implementation.
 #' 
 #' The \code{alpha} parameter of \code{\link[glmnet]{glmnet}} controls the type of
 #' penalty. Use \code{0} (default) for lasso only, \code{1} for ridge only, or
@@ -20,10 +19,10 @@
 #' @param alpha Regularization parameter, see \code{\link[glmnet]{glmnet}}.
 #' @param lambda Regularization parameter, see \code{\link[glmnet]{glmnet}}.
 #' @param ... Sent to \code{\link[glmnet]{cv.glmnet}}.
-#' @return Fitted GLM.
+#' @return Fitted elastic net model.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_glmnet}},
-#'   \code{\link{modeling_procedure}}
+#'   \code{\link{importance_glmnet}}, \code{\link{modeling_procedure}}
 #' @export
 fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     nice_require("glmnet", "is required to fit elastic net models")
@@ -34,8 +33,6 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
                     fun = message)
         x <- as.matrix(x)
     }
-    if(!is.factor(y))
-        stop("The glmnet wrapper is only implemented for classification (factor response) so far.")
     if(missing(family)){
         if(inherits(y, "Surv")) family <- "cox" else
         if(is.factor(y))
@@ -43,47 +40,44 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
             family <- "multinomial" else
         if(is.integer(y) & all(y >= 0)) family <- "poisson" else
         if(is.numeric(y)) family <- "gaussian" else
-        stop("Could not auto detect glmnet family, see `?fit.glmnet`.")
+        stop("Could not auto detect glmnet family, see `?fit_glmnet`.")
     }
-
-    if(length(lambda) > 1 || length(lambda) != 1){
+    if(family == "mgaussian")
+        stop("The glmnet wrapper is not implemented for multivariate response so far.")
+    
+    if(length(lambda) != 1){
         if(missing(nfolds)){
             nfolds <- if(missing(foldid)) 10 else max(foldid)
         }
         if(missing(foldid)){
-            foldid <- apply(resample("crossvalidation", y, nfold=nfolds, nreplicate=1) == 0, 1, which)
+            foldid <- apply(
+                sapply(
+                    resample("crossvalidation", y, nfold=nfolds, nreplicate=1),
+                    as.integer
+                ) == 0, 1, which)
+            if(!is.integer(foldid))
+                stop("Could not create `foldid`, check the contents of `y`.")
         }
     }
 
-    if(length(alpha) > 1){
-        # Tune alpha, and lambda if needed
-        fits <- lapply(alpha, function(a){
-            fit <- glmnet::cv.glmnet(x, y, family=family,
-                nfolds=nfolds, foldid=foldid, alpha=a, lambda=lambda, ...)
-            fit$glmnet.fit$beta <- NULL # This can be very large, and we don't need it
-            fit
-        })
-        cvm <- subtree(fits, T, "cvm")
-        alpha.i <- which.min(sapply(cvm, min))
-        vars <- c("lambda", "cvm", "cvsd", "cvup", "cvlo", "nzero")
-        names(vars) <- vars
-        return(out <- c(
-            list(family = family, alpha = alpha, alpha.min = alpha[alpha.i]),
-            lapply(vars, function(x) subtree(fits, T, x)),
-            list(name = fits[[1]]$name,
-                 glmnet.fit = glmnet::glmnet(x, y, family=family, alpha=alpha[alpha.i], lambda=lambda, ...)),
-            fits[[alpha.i]][c("lambda.min", "lambda.1se")]))
-
-    } else if(length(lambda) != 1){
+    details <- list(y.class = class(y),
+                    y.levels = levels(y) # NULL if not applicable
+    )
+    if(length(lambda) != 1){
         # Tune only lambda
-        return(c(list(family = family, alpha = alpha),
-            glmnet::cv.glmnet(x, y, family=family, nfolds=nfolds, foldid=foldid,
-                alpha=alpha, lambda=lambda, ...)))
-
+        #return(c(list(family = family),
+        c(details,
+          glmnet::cv.glmnet(x, y, family=family, nfolds=nfolds, foldid=foldid,
+                            alpha=alpha, lambda=lambda, ...)
+        )
+        #))
     } else {
         # Train single glmnet
-        return(c(list(family = family, alpha = alpha, lambda = lambda, lambda.min = lambda),
-            glmnet.fit = glmnet::glmnet(x, y, family=family, alpha=alpha, lambda=lambda, ...)))
+        c(details,
+          glmnet.fit = glmnet::glmnet(x, y, family=family,
+                                      alpha=alpha, lambda=lambda, ...),
+          list(lambda = lambda, lambda.min = lambda)
+        )
     }
 }
 
@@ -97,14 +91,17 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
 #' @param x New data to be predicted.
 #' @param s Regularization parameter lambda.
 #' @param ... Sent to \code{\link[glmnet]{predict.glmnet}}.
-#' @return A list with elements:
-#' \itemize{
-#'     \item{\code{prediction}: Factor of predicted class memberships.}
-#'     \item{\code{probability}: Data frame of predicted class probabilities.}
+#' @return A list with a subset of the following elements:
+#' \describe{
+#'     \item{\code{prediction}}{The response of the modeling problem, i.e. a
+#'         factor for classification, problems, a numeric for regressions, and a
+#'         relative risk for survival analyses.}
+#'     \item{\code{probability}}{Data frame of predicted class probabilities.}
+#'     \item{\code{link}}{Link function values.}
 #' }
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{fit_glmnet}},
-#'   \code{\link{modeling_procedure}}
+#'   \code{\link{importance_glmnet}}, \code{\link{modeling_procedure}}
 #' @export
 predict_glmnet <- function(object, x, s, ...){
     nice_require("glmnet", "is required to make precdictions with an elastic net model")
@@ -115,13 +112,55 @@ predict_glmnet <- function(object, x, s, ...){
             stop("The glmnet model has not been tuned.")
         }
     }
-    p <- predict(object$glmnet.fit, x, s=s, type="response", ...)
-    switch(object$family,
-        binomial = { p <- matrix(c(1-p, p), ncol=2, dimnames=list(rownames(p), object$glmnet.fit$classnames)) },
-        multinomial = { p <- p[T,T,1,drop=TRUE] }
-    )
-    list(prediction = factor(predict(object$glmnet.fit, x, s=s, type="class", ...),
-                       levels=object$glmnet.fit$classnames),
-         probability = as.data.frame(p))
+    predictor <- function(type=c("link", "class", "response"), ...){
+        predict(object$glmnet.fit, x, s=s, type=match.arg(type), ...)
+    }
+    if(inherits(object$glmnet.fit, c("lognet", "multnet"))){
+        # Classification
+        p <- list(prediction = predictor("class", ...),
+                  probability = as.data.frame(predictor("response", ...)))
+        if(!is.null(object$y.class)){
+            p$prediction %<>% factor(object$y.class)
+            colnames(p$probability) <- object$y.class
+        }
+        p
+    } else if(inherits(object$glmnet.fit, "elnet")){ 
+        # Regression
+        list(prediction = unlist(predictor()))
+    } else if(inherits(object$glmnet.fit, "mrelnet")){
+        stop("The glmnet wrapper is not implemented for multivariate response so far.")
+    } else if(inherits(object$glmnet.fit, c("coxnet", "fishnet"))){
+        # Cox regression (for survival analysis)
+        # Non-negative counts regression
+        list(prediction = predictor("response"),
+             link = predictor("link"))
+    }
 }
 
+#' Feature importance extractor for elastic net models
+#'
+#' @param object Fitted elastic net model, as produced by
+#'   \code{\link{fit_glmnet}}.
+#' @param s Regularization parameter lambda.
+#' @param ... Sent to \code{\link[glmnet]{predict.glmnet}}.
+#' @return A feature imortance data frame.
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @seealso \code{\link{emil}}, \code{\link{fit_glmnet}},
+#'   \code{\link{predict_glmnet}}, \code{\link{modeling_procedure}}
+#' @export
+importance_glmnet <- function(object, s, ...){
+    if(missing(s)){
+        if("lambda.min" %in% names(object)){
+            s <- object$lambda.min
+        } else {
+            stop("The glmnet model has not been tuned.")
+        }
+    }
+    imp <- predict(object$glmnet.fit, s=s, type="coef", ...)
+    if(is.list(imp))
+        imp <- do.call(cbind, imp)
+    imp <- as.matrix(imp[-1,])
+    if(!is.null(object$y.level))
+        colnames(imp) <- object$y.level
+    data.frame(feature = rownames(imp), imp, row.names=NULL)
+}
