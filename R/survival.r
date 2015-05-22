@@ -127,11 +127,10 @@ pvalue.survdiff <- function(x, log_p=FALSE, ...){
 #' @export
 dichotomize <- function(x, time, to_factor){
     ev <- if(missing(time)){
-        x[,"status"]
+        ifelse(is.na(x[,"time"]), NA, x[,"status"])
     } else {
-        ifelse(x[,"status"] %in% 0,
-               ifelse(x[,"time"] < time, NA, 0),
-               ifelse(x[,"time"] > time, 0, x[,"status"]))
+        ifelse(x[,"time"] > time, 0,
+               ifelse(x[,"status"] == 0, NA, x[,"status"]))
     }
     if(missing(to_factor))
         to_factor <- attr(x, "type") %in% c("mright", "mcounting")

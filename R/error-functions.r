@@ -138,8 +138,3 @@ neg_harrell_c <- function(truth, prediction){
     -Hmisc::rcorr.cens(risk, truth)[1]
 }
 
-#' @rdname error_fun
-#' @export
-brier_score <- function(truth, prediction){
-    stop("Not yet implemented")  
-}
