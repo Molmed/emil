@@ -1,7 +1,7 @@
 #' Fit conditional inference forest
 #' 
 #' A \code{\link[party]{cforest}} is a random forest based on conditional inference
-#' trees, using the implementation in the \code{party} package.
+#' trees, using the implementation in the \pkg{party} package.
 #' These trees can be used for classification, regression or survival
 #' analysis, but only the survival part has been properly tested so far.
 #' 

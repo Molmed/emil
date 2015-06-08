@@ -154,7 +154,7 @@ trapz <- function(x,y){
 #' List all available methods
 #' 
 #' This function searches all attached packages for methods compatible with the
-#' emil framework.
+#' \pkg{emil} framework.
 #' 
 #' @param pos Location to search in, see \code{\link{ls}}.
 #' @return A data frame.
@@ -170,4 +170,28 @@ emil_list_method <- function(pos=search()){
         mutate_(plugin = "factor(plugin, c('fit', 'predict', 'importance'))", dummy = TRUE) %>%
         spread_("plugin", "dummy") %>%
         mutate_(fit = "!is.na(fit)", predict = "!is.na(predict)", importance = "!is.na(importance)")
+}
+
+#' Convert subsetting vectors.
+#'
+#' @param y Response vector.
+#' @param subset A subsetting vector on arbitrary form.
+#' @return A subsetting vector.
+#' @examples
+#' y <- runif(20)
+#' ind <- sort(sample(20, 10))
+#' identical(y[ind], y[logical_subset(ind)])
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @noRd
+positive_integer_subset <- function(y, subset){
+    # Not quite sure why this line is needed,
+    # but if not present the function will use subset=TRUE if subset is missing!
+    # Must be some funky evaluation problem...
+    stopifnot(!missing(y) && !missing(subset))
+    seq_along(y)[subset]
+}
+#' @noRd
+logical_subset <- function(y, subset){
+    stopifnot(!missing(y) && !missing(subset))
+    seq_along(y) %in% seq_along(y)[subset]
 }

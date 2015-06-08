@@ -1,6 +1,6 @@
 #' Fit quadratic discriminant.
 #'
-#' Wrapper for the MASS package implementation.
+#' Wrapper for the \pkg{MASS} package implementation.
 #'
 #' @param x Dataset, numerical matrix with observations as rows.
 #' @param y Class labels, factor.
@@ -18,7 +18,7 @@ fit_qda <- function(x, y, ...){
 
 #' Prediction using already trained classifier.
 #'
-#' Wrapper for the MASS package implementation.
+#' Wrapper for the \pkg{MASS} package implementation.
 #'
 #' @param object Fitted classifier as produced by \code{\link{evaluate}}.
 #' @param x Dataset of observations to be classified.

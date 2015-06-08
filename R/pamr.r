@@ -39,7 +39,7 @@ pre_pamr <- function(data){
 
 #' Fit nearest shrunken centroids model.
 #'
-#' Wrapped version of the \code{pamr} package implementation. Note that
+#' Wrapped version of the \pkg{pamr} package implementation. Note that
 #' this function uses internal cross-validation for determining the value
 #' of the shrinkage threshold.
 #'

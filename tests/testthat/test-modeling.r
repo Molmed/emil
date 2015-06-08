@@ -2,8 +2,9 @@ context("Modeling framework")
 
 test_that("modeling procedure", {
     proc1 <- modeling_procedure("randomForest")
-    proc2 <- modeling_procedure(fit_fun=identity, error_fun=rmse)
+    expect_identical(proc1, as.modeling_procedure("randomForest"))
 
+    proc2 <- modeling_procedure(fit_fun=identity, error_fun=rmse)
     expect_that(names(proc1), is_identical_to(names(proc2)))
 
     expect_that(proc1$fit_fun, is_a("function"))

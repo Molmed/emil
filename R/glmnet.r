@@ -1,6 +1,6 @@
 #' Fit elastic net model
 #' 
-#' Using the \code{glmnet} package implementation.
+#' Using the \pkg{glmnet} package implementation.
 #' 
 #' The \code{alpha} parameter of \code{\link[glmnet]{glmnet}} controls the type of
 #' penalty. Use \code{0} (default) for lasso only, \code{1} for ridge only, or
@@ -26,7 +26,6 @@
 #' @export
 fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     nice_require("glmnet", "is required to fit elastic net models")
-    nice_require("survival")
     if(is.data.frame(x)){
         notify_once(id = "glmnet 'x' is not matrix",
                     "glmnet only takes data sets in matrix form. The conversion in the fitting function introduces an extra copy of the data set in the memory.",
@@ -44,6 +43,7 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     }
     if(family == "mgaussian")
         stop("The glmnet wrapper is not implemented for multivariate response so far.")
+        #nice_require("survival")
     
     if(length(lambda) != 1){
         if(missing(nfolds)){
@@ -64,8 +64,7 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
                     y.levels = levels(y) # NULL if not applicable
     )
     if(length(lambda) != 1){
-        # Tune only lambda
-        #return(c(list(family = family),
+        # Tune lambda
         c(details,
           glmnet::cv.glmnet(x, y, family=family, nfolds=nfolds, foldid=foldid,
                             alpha=alpha, lambda=lambda, ...)
@@ -113,20 +112,26 @@ predict_glmnet <- function(object, x, s, ...){
         }
     }
     predictor <- function(type=c("link", "class", "response"), ...){
-        predict(object$glmnet.fit, x, s=s, type=match.arg(type), ...)
+        p <- predict(object$glmnet.fit, x, s=s, type=match.arg(type), ...)
+        if(ncol(p) == 1) as.vector(p)
+        else as.data.frame(p)
     }
     if(inherits(object$glmnet.fit, c("lognet", "multnet"))){
         # Classification
         p <- list(prediction = predictor("class", ...),
-                  probability = as.data.frame(predictor("response", ...)))
-        if(!is.null(object$y.class)){
-            p$prediction %<>% factor(object$y.class)
-            colnames(p$probability) <- object$y.class
+                  probability = predictor("response", ...))
+        if(inherits(object$glmnet.fit, "lognet")){
+            p$probability <- data.frame(V1=1-p$probability,
+                                        V2=p$probability)
+        }
+        if(!is.null(object$y.levels)){
+            p$prediction %<>% factor(object$y.levels)
+            colnames(p$probability) <- object$y.levels
         }
         p
     } else if(inherits(object$glmnet.fit, "elnet")){ 
         # Regression
-        list(prediction = unlist(predictor()))
+        list(prediction = predictor())
     } else if(inherits(object$glmnet.fit, "mrelnet")){
         stop("The glmnet wrapper is not implemented for multivariate response so far.")
     } else if(inherits(object$glmnet.fit, c("coxnet", "fishnet"))){
@@ -160,7 +165,26 @@ importance_glmnet <- function(object, s, ...){
     if(is.list(imp))
         imp <- do.call(cbind, imp)
     imp <- as.matrix(imp[-1,])
-    if(!is.null(object$y.level))
-        colnames(imp) <- object$y.level
+    colnames(imp) <- if(!is.null(object$y.level)){
+        object$y.level
+    } else if (ncol(imp) == 1){
+        "coefficient"
+    } else {
+        paste("coefficient", 1:ncol(imp), sep="")
+    }
     data.frame(feature = rownames(imp), imp, row.names=NULL)
 }
+
+
+fit_ridge_regression <- function(...){
+    fit_glmnet(..., alpha=0)
+}
+predict_ridge_regression <- predict_glmnet
+importance_ridge_regression <- importance_glmnet
+
+fit_lasso <- function(...){
+    fit_glmnet(..., alpha=1)
+}
+predict_lasso <- predict_glmnet
+importance_lasso <- importance_glmnet
+

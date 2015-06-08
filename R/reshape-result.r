@@ -4,7 +4,7 @@
 #' form of nested lists. This function can be used to subset or rearrange parts
 #' of the results into vectors, matrices or data frames.
 #' Also note the \code{\link[emil]{select}} function that provides an extension
-#' to the \code{dplyr} package for data manipulation.
+#' to the \pkg{dplyr} package for data manipulation.
 #' 
 #' This function can only be used to extract data, not to assign.
 #' 
@@ -90,10 +90,10 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
     ret
 }
 
-#' emil and dplyr integration
+#' \pkg{emil} and \pkg{dplyr} integration
 #' 
 #' Modeling results can be converted to tabular format and manipulated using
-#' dplyr and other Hadleyverse packages. This is accomplished by a class
+#' \pkg{dplyr} and other Hadleyverse packages. This is accomplished by a class
 #' specific \code{\link[dplyr]{select_}} function that differs somewhat in syntax
 #' from the default \code{\link[dplyr]{select_}}.
 #'
@@ -267,7 +267,7 @@ get_prediction <- function(result, resample, format=c("long", "wide")){
 #' Note that different methods calculates feature importance in different
 #' ways and that they are not directly comparable.
 #'
-#' When extending the emil framework with your own method, the importance
+#' When extending the \pkg{emil} framework with your own method, the importance
 #' function should return a data frame where one column is called "feature" and
 #' the remaining columns are named after the classes.
 #'
@@ -279,11 +279,11 @@ get_prediction <- function(result, resample, format=c("long", "wide")){
 #'   scores where p is the number of descriptors and c is the number of classes.
 #' @examples
 #' procedure <- modeling_procedure("pamr")
-#' model <- fit(procedure, x=iris[-5], y=iris$Species)
+#' model <- fit("pamr", x=iris[-5], y=iris$Species)
 #' get_importance(model)
 #' 
 #' cv <- resample("crossvalidation", iris$Species, nreplicate=2, nfold=3)
-#' result <- evaluate(procedure, iris[-5], iris$Species, resample=cv,
+#' result <- evaluate("pamr", iris[-5], iris$Species, resample=cv,
 #'                    .save=c(importance=TRUE))
 #' get_importance(result)
 #' @author Christofer \enc{Bäcklin}{Backlin}
@@ -334,6 +334,13 @@ get_importance.modeling_result <- function(object, format=c("wide", "long"), ...
         imp
     }
 }
+#' @method get_importance list
+#' @export
+get_importance.list <- function(object, format=c("wide", "long"), ...){
+    format <- match.arg(format)
+    lapply(object, get_importance, format=format, ...)
+    # FIXME to one table
+}
 
 #' Extract parameter tuning statistics
 #' 
@@ -347,8 +354,8 @@ get_importance.modeling_result <- function(object, format=c("wide", "long"), ...
 #' get_tuning(model)
 #' 
 #' options(emil_max_indent=4)
-#' cv <- resample("holdout", iris$Species, nfold=5)
-#' result <- evaluate(procedure, iris[-5], iris$Species, resample=cv,
+#' ho <- resample("holdout", iris$Species, nfold=5)
+#' result <- evaluate(procedure, iris[-5], iris$Species, resample=ho,
 #'                    .save=c(model=TRUE))
 #' get_tuning(result)
 #' @author Christofer \enc{Bäcklin}{Backlin}
@@ -359,9 +366,15 @@ get_tuning <- function(object){
 #' @method get_tuning model
 #' @export
 get_tuning.model <- function(object){
+    get_tuning(object$procedure)
+}
+#' @method get_tuning modeling_procedure
+#' @export
+get_tuning.modeling_procedure <- function(object){
+    stopifnot(is_tunable(object) && is_tuned(object))
     nice_require("tidyr")
-    cbind(do.call(rbind, lapply(object$procedure$tuning$parameter, as.data.frame)),
-          object$procedure$tuning$error)
+    cbind(do.call(rbind, lapply(object$tuning$parameter, as.data.frame)),
+          object$tuning$error)
 }
 #' @method get_tuning modeling_result
 #' @export
