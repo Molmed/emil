@@ -1,3 +1,16 @@
+#' Extractor function for modeling result
+#' 
+#' As opposed to the standard extractor function, this will keep the class.
+#' 
+#' @param x modeling result object, as produced by \code{\link{evaluate}}.
+#' @param ... Sent to \code{\link{`[`}}.
+#' @noRd
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+`[.modeling_result` <- function(x, ...){
+    structure(unclass(x)[...], class="modeling_result")
+}
+
 #' Extract a subset of a tree of nested lists
 #' 
 #' Modeling results produced by \code{\link{evaluate}} comes in the
@@ -239,23 +252,26 @@ select_list <- function(.data, .dots, id=NULL){
 #' @param result Modeling result, as returned by \code{\link{evaluate}} and
 #'   \code{\link{evaluate}}.
 #' @param resample Resampling scheme used to create the results.
+#' @param type The type of prediction to return. The possible types vary between
+#'   modeling procedure.
 #' @param format Table format of the output. See
 #'   \url{http://en.wikipedia.org/wiki/Wide_and_narrow_data} for more info.
 #' @return A data frame where the id column refers to the observations.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-get_prediction <- function(result, resample, format=c("long", "wide")){
+get_prediction <- function(result, resample, type="prediction", format=c("long", "wide")){
     stopifnot(inherits(result, "modeling_result"))
     format <- match.arg(format)
     if(is_multi_procedure(result)){
-        prediction <- select(result, fold=resample, method=TRUE, "prediction",
+        prediction <- select(result, fold=resample, method=TRUE, type,
                              prediction="prediction")
     } else {
-        prediction <- select(result, fold=resample, "prediction",
-                             prediction="prediction")
+        prediction <- select(result, fold=resample, type,
+                             prediction=type)
+        names(prediction)[ncol(prediction)] <- type
     }
     if(format == "wide"){
-        tidyr::spread_(prediction, "fold", "prediction")
+        tidyr::spread_(prediction, "fold", type)
     } else {
         prediction
     }
@@ -296,7 +312,7 @@ get_importance <- function(object, format, ...){
 #' @export
 get_importance.model <- function(object, format=c("wide", "long"), ...){
     format <- match.arg(format)
-    imp <- object$procedure$importance_fun(object$fit, ...)
+    imp <- object$procedure$importance_fun(object$model, ...)
     if(format == "long"){
         nice_require("tidyr")
         tidyr::gather_(imp, "class", "importance", setdiff(colnames(imp), "feature"))
