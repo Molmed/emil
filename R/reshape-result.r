@@ -389,8 +389,20 @@ get_tuning.model <- function(object){
 get_tuning.modeling_procedure <- function(object){
     stopifnot(is_tunable(object) && is_tuned(object))
     nice_require("tidyr")
-    cbind(do.call(rbind, lapply(object$tuning$parameter, as.data.frame)),
-          object$tuning$error)
+    parameter_frame <- tryCatch({
+        x <- Map(function(i, p) data.frame(parameter_set = i, as.data.frame(p)),
+            seq_along(object$tuning$parameter),
+            object$tuning$parameter)
+        if(any(sapply(x, nrow) > 1))
+            stop("Only scalar parameter values can be put in a tuning data frame.")
+        do.call(rbind, x)
+    }, error = function(...){
+        warning("Could not convert parameter values to a data frame, using a numeric index instead.")
+        data.frame(parameter_set = seq_along(object$tuning$parameter))
+    })
+    error_frame <- object$tuning$error %>%
+            spread_("fold", "error")
+    merge(parameter_frame, error_frame, by="parameter_set")
 }
 #' @method get_tuning modeling_result
 #' @export
@@ -426,6 +438,7 @@ get_tuning.modeling_result <- function(object){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 get_performance <- function(result, format=c("wide", "long")){
+    format <- match.arg(format)
     if(is_multi_procedure(result)){
         p <- select(result, fold=TRUE, method=TRUE, error="error")
         if(format == "wide"){

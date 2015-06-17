@@ -188,10 +188,31 @@ positive_integer_subset <- function(y, subset){
     # but if not present the function will use subset=TRUE if subset is missing!
     # Must be some funky evaluation problem...
     stopifnot(!missing(y) && !missing(subset))
+    UseMethod("positive_integer_subset", subset)
+}
+#' @method positive_integer_subset default
+#' @export
+positive_integer_subset.default <- function(y, subset){
     seq_along(y)[subset]
 }
+#' @method positive_integer_subset fold
+#' @export
+positive_integer_subset.fold <- function(y, subset){
+    index_fit(subset)
+}
+
 #' @noRd
 logical_subset <- function(y, subset){
     stopifnot(!missing(y) && !missing(subset))
+    UseMethod("logical_subset", subset)
+}
+#' @method logical_subset default
+#' @export
+logical_subset.default <- function(y, subset){
     seq_along(y) %in% seq_along(y)[subset]
+}
+#' @method logical_subset fold
+#' @export
+logical_subset.fold <- function(y, subset){
+    subset > 0
 }

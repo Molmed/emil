@@ -117,6 +117,7 @@ subresample <- function(fold, y){
 #' @seealso \code{\link{emil}}, \code{\link{resample}}
 #' @export
 index_fit <- function(fold, allow_oversample=TRUE){
+    stopifnot(inherits(fold, "fold"))
     if(allow_oversample){
         rep(seq_along(fold), na_fill(fold, 0))
     } else {
@@ -127,6 +128,7 @@ index_fit <- function(fold, allow_oversample=TRUE){
 #' @aliases index_test
 #' @export
 index_test <- function(fold){
+    stopifnot(inherits(fold, "fold"))
     which(fold %in% 0)
 }
 
@@ -163,14 +165,12 @@ resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.facto
         } else {
             levs <- if(is.factor(y)) levels(y) else unique(y)
             unlist(lapply(levs[order(table(y[subset]))], function(lev){
-                w <- which(y == lev)
-                w <- w[w %in% subset]
-                if(length(w) < 2) w else sample(w)
+                sample(intersect(which(y == lev), subset))
             }))
         }
         idx <- matrix(c(idx, rep(NA, ceiling(length(idx)/nfold)*nfold-length(idx))),
                       ncol=nfold, byrow=TRUE)
-        apply(idx, 2, function(i) !1:n %in% i)
+        apply(idx, 2, function(i) !seq_len(n) %in% i)
     }))
     names(fold_set) <- sprintf("fold%i.%i", rep(1:nreplicate, each=nfold), rep(1:nfold, nreplicate))
     list(fold_set = fold_set,

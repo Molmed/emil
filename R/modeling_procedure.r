@@ -52,7 +52,7 @@ modeling_procedure <- function(method, parameter=list(), error_fun=NULL, fit_fun
         })
     }
     procedure <- structure(class = "modeling_procedure", .Data = list(
-        method = if(missing(method)) NULL else method,
+        method = if(missing(method)) "custom" else method,
         parameter = if(length(parameter) == 0) list() else if(length(parameter) == 1) parameter[[1]] else NULL,
         tuning = if(length(parameter) < 2) NULL else list(parameter = parameter, error = NULL),
         fit_fun =
@@ -92,7 +92,7 @@ print.modeling_procedure <- function(x, ...){
         }
     }
     cat(sprintf(
-"%s modeling procedure.
+"`%s` modeling procedure.
 
    model fitting function:       %s
    prediction function:          %s
@@ -101,7 +101,7 @@ print.modeling_procedure <- function(x, ...){
    
    number of parameter sets to tune over: %i
    tuned: %s\n",
-        if(is.null(x$method)) "Custom" else paste0("`", x$method, "`"),
+        x$method,
         yn(x$fit_fun), yn(x$predict_fun), yn(x$importance_fun), yn(x$error_fun),
         if(is.null(x$tuning$parameter)) 1 else length(x$tuning$parameter),
         if(is_tunable(x)) if(is_tuned(x)) "yes" else "no" else "not needed"
@@ -121,12 +121,20 @@ as.modeling_procedure <- function(x, ...){
     UseMethod("as.modeling_procedure")
 }
 
+#' @method as.modeling_procedure modeling_procedure
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+#' @noRd
+as.modeling_procedure.modeling_procedure <- function(x, ...){
+    x
+}
+
 #' @method as.modeling_procedure default
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 #' @noRd
 as.modeling_procedure.default <- function(x, ...){
-    modeling_procedure(method = x, ...)
+    stop("Cannot convert an object of class [", paste(class(x), collapse=","), "] to modeling_procedure.")
 }
 
 #' @method as.modeling_procedure character
@@ -142,12 +150,12 @@ as.modeling_procedure.character <- function(x, ..., simplify=TRUE){
     }
 }
 
-#' Wrap a modeling procedure in a named list
+#' Wrap a modeling procedures in a named list
 #' 
 #' The functions \code{\link{fit}}, \code{\link{tune}}, and
 #' \code{\link{evaluate}} all work on lists of procedures rather than individual
-#' procedures. This functions wraps a single procedure in a list with correct 
-#' naming for pretty output.
+#' procedures. This functions uniforms the structure of such lists from the
+#' various form the user is allowed to input.
 #' 
 #' @param procedure Modeling procedure, as returned by
 #'   \code{\link{modeling_procedure}}.
@@ -155,13 +163,20 @@ as.modeling_procedure.character <- function(x, ..., simplify=TRUE){
 #' @noRd
 #' @author Christofer \enc{Bäcklin}{Backlin}
 multify <- function(procedure){
-    stopifnot(inherits(procedure, "modeling_procedure"))
-    procedure <- list(procedure)
-    names(procedure) <- if(!is.null(procedure[[1]]$method)){
-        procedure[[1]]$method
+    multi_procedure <- (is.list(procedure) &&
+                           !inherits(procedure, "modeling_procedure")) ||
+                       (!is.list(procedure) && length(procedure) > 1)
+    procedure <- if(inherits(procedure, "modeling_procedure")){
+        list(procedure)
     } else {
-        "model"
+        lapply(procedure, as.modeling_procedure)
     }
+    name <- names(procedure)
+    if(is.null(name)) name <- rep(NA, length(procedure))
+    name <- ifelse(name %in% c(NA, ""), sapply(procedure, "[[", "method"), name)
+
+    names(procedure) <- name
+    attr(procedure, "multiple") <- multi_procedure
     procedure
 }
 

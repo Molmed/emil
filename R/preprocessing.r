@@ -167,11 +167,19 @@ pre_remove_correlated <- function(data, cutoff){
     pre_remove(data, caret::findCorrelation(cor(data$fit$x), cutoff = .75))
 }
 
+#' @param ncomponent Number of PCA components to use. Missing all components
+#'   are used.
 #' @rdname pre_process
 #' @export
-pre_pca <- function(data, ...){
-    pca <- prcomp(data$fit$x, ...)
-    data$fit$x <- pca$x
+pre_pca <- function(data, ncomponent, ...){
+    if(missing(ncomponent)){
+        pca <- prcomp(data$fit$x, ..., retx = TRUE)
+        data$fit$x <- pca$x
+    } else {
+        pca <- prcomp(data$fit$x, ..., retx = FALSE)
+        pca$rotation <- pca$rotation[,1:ncomponent]
+        data$fit$x <- predict(pca, data$fit$x) %>% head
+    }
     data$test$x <- predict(pca, data$test$x)
     data
 }

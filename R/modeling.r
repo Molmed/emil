@@ -56,15 +56,7 @@ evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
 
     log_message(.verbose, "Evaluating modeling performance...")
 
-    if(is.list(procedure) && all(sapply(procedure, inherits, "modeling_procedure"))){
-        multi.procedure <- TRUE
-    } else if(inherits(procedure, "modeling_procedure")){
-        procedure <- multify(procedure)
-        multi.procedure <- FALSE
-    } else {
-        procedure <- as.modeling_procedure(procedure, simplify=FALSE)
-        multi.procedure <- length(procedure) > 1
-    }
+    procedure <- multify(procedure)
     
     # Get the real response vector since we will need it to prepare the analysis
     y_original <- y
@@ -211,7 +203,11 @@ evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
         }
         log_message(indent(.verbose, 2), "Extracting fitting and testing datasets.")
         if(is.function(pre_process)){
-            sets <- pre_process(x, y_original, fold)
+            if(".verbose" %in% names(formals(pre_process))){
+                sets <- pre_process(x, y_original, fold, .verbose = indent(.verbose, 2))
+            } else {
+                sets <- pre_process(x, y_original, fold)
+            }
         } else if(is.list(pre_process)){
             sets <- pre_process[[1]](x, y, fold)
             if(length(pre_process) > 1) for(i in 2:length(pre_process)){
@@ -256,15 +252,12 @@ evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
                 t2 <- t1 + difftime(Sys.time(), t1, units="sec")*ncol(resample)
                 fmt <- if(difftime(t2, t1, units="days") < 1){
                     "%H:%M"
-                } else if(difftime(t2, t1, units="days") < 2 &&
-                          # FIXME!!!
-                          as.integer(strftime(t2, "%prediction")) -
-                          as.integer(strftime(t1, "%prediction")) == 1){
+                } else if(difftime(t2, t1, units="days") < 2){
                     "%H:%M tomorrow"
                 } else if(difftime(t2, t1, units="days") < 365){
-                    "%H:%M, %b %prediction"
+                    "%H:%M, %b %d"
                 } else {
-                    "%H:%M, %b %prediction, %Y"
+                    "%H:%M, %b %d, %Y"
                 }
                 log_message(indent(.verbose, 1),
                           "Estimated completion time %sis %s.",
@@ -275,7 +268,7 @@ evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
         }
 
         # Save checkpoint file
-        if(!multi.procedure) res <- res[[1]]
+        if(!attr(procedure, "multiple")) res <- res[[1]]
         if(!is.null(checkpoint.file)){
             save(res, file=checkpoint.file)
         }
@@ -308,16 +301,8 @@ evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 fit <- function(procedure, x, y, ..., .verbose=getOption("emil_verbose", FALSE)){
-    log_message(.verbose, "Fitting models...")
-    if(is.list(procedure) && all(sapply(procedure, inherits, "modeling_procedure"))){
-        multi.procedure <- TRUE
-    } else if(inherits(procedure, "modeling_procedure")){
-        procedure <- multify(procedure)
-        multi.procedure <- FALSE
-    } else {
-        procedure <- as.modeling_procedure(procedure, simplify=FALSE)
-        multi.procedure <- length(procedure) > 1
-    }
+    #log_message(.verbose, "Fitting models...")
+    procedure <- multify(procedure)
 
     missing.fun <- unlist(lapply(procedure, function(p)
         if(!is.function(p$fit_fun)) sprintf("fit_%s", p$method) else NULL))
@@ -332,7 +317,7 @@ fit <- function(procedure, x, y, ..., .verbose=getOption("emil_verbose", FALSE))
             .verbose=indent(.verbose, 1))
     }
     res <- Map(function(p, mn){
-        log_message(indent(.verbose, 1), "Fitting %s", mn)
+        log_message(.verbose, "Fitting %s", mn)
         if(".verbose" %in% names(formals(p$fit_fun)))
             p$parameter$.verbose <- indent(.verbose, 1)
         model <- do.call(function(...) p$fit_fun(x=x, y=y, ...), p$parameter)
@@ -341,7 +326,7 @@ fit <- function(procedure, x, y, ..., .verbose=getOption("emil_verbose", FALSE))
     # Restore debug flags (for some reason Map removes them)
     for(i in seq_along(procedure))
         debug_flag(res[[i]]$procedure) <- debug_flag(procedure[[i]])
-    if(multi.procedure) res else res[[1]]
+    if(attr(procedure, "multiple")) res else res[[1]]
 }
 
 
@@ -368,15 +353,7 @@ fit <- function(procedure, x, y, ..., .verbose=getOption("emil_verbose", FALSE))
 #' @export
 tune <- function(procedure, ..., .verbose=getOption("emil_verbose", FALSE)){
     log_message(.verbose, "Tuning parameters...")
-    if(is.list(procedure) && all(sapply(procedure, inherits, "modeling_procedure"))){
-        multi.procedure <- TRUE
-    } else if(inherits(procedure, "modeling_procedure")){
-        procedure <- multify(procedure)
-        multi.procedure <- FALSE
-    } else {
-        procedure <- as.modeling_procedure(procedure, simplify=FALSE)
-        multi.procedure <- length(procedure) > 1
-    }
+    procedure <- multify(procedure)
 
     do.tuning <- sapply(procedure, is_tunable)
     discard.tuning <- do.tuning & sapply(procedure, is_tuned)
@@ -400,30 +377,39 @@ tune <- function(procedure, ..., .verbose=getOption("emil_verbose", FALSE)){
                    sapply(procedure[do.tuning], function(p) length(p$tuning$parameter)))
     for(i in which(do.tuning)){
         procedure[[i]]$tuning$error <-
-            sapply(tuning, function(tun) unlist(subtree(tun, procedure.id == i, "error")))
-        rownames(procedure[[i]]$tuning$error) <- NULL
-        mean.err <- apply(procedure[[i]]$tuning$error, 1, mean)
-        best.parameter <- which(mean.err == min(mean.err))
-        if(length(best.parameter) > 1) best.parameter <- sample(best.parameter, 1)
-        procedure[[i]]$parameter <- procedure[[i]]$tuning$parameter[[best.parameter]]
+            select(tuning, fold=TRUE, method = procedure.id == i, error = "error") %>%
+            mutate_(parameter_set = "as.integer(method)") %>%
+            select_("-method")
+        best_parameter <- procedure[[i]]$tuning$error %>%
+            group_by_("parameter_set") %>%
+            summarize_(mean_error = "mean(error)") %>%
+            filter_("mean_error == min(mean_error)") %>%
+            sample_n(1)
+        procedure[[i]]$parameter <-
+            procedure[[i]]$tuning$parameter[[best_parameter$parameter_set]]
         procedure[[i]]$tuning$result <- lapply(tuning, "[", procedure.id == i)
     }
-    if(multi.procedure) procedure else procedure[[1]]
+    if(attr(procedure, "multiple")) procedure else procedure[[1]]
 }
 #' @rdname tune
 #' @return Logical indicating if the procedure(s) are tuned.
 #' @export
-is_tuned <- function(procedure)
+is_tuned <- function(procedure){
+    stopifnot(inherits(procedure, "modeling_procedure"))
     !is_tunable(procedure) || !is.null(procedure$parameter)
+}
 #' @rdname tune
 #' @return Logical indicating if the has tunable parameters.
 #' @export
-is_tunable <- function(procedure)
+is_tunable <- function(procedure){
+    stopifnot(inherits(procedure, "modeling_procedure"))
     !is.null(procedure$tuning)
+}
 #' @rdname tune
 #' @return A list of untuned modeling procedures.
 #' @export
 detune <- function(procedure){
+    stopifnot(inherits(procedure, "modeling_procedure"))
     debug.flags <- sapply(procedure, function(p) is.function(p) && isdebugged(p))
     procedure$tuning <- NULL
     lapply(procedure[debug.flags], debug)
