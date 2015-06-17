@@ -178,7 +178,7 @@ pre_pca <- function(data, ncomponent, ...){
     } else {
         pca <- prcomp(data$fit$x, ..., retx = FALSE)
         pca$rotation <- pca$rotation[,1:ncomponent]
-        data$fit$x <- predict(pca, data$fit$x) %>% head
+        data$fit$x <- predict(pca, data$fit$x)
     }
     data$test$x <- predict(pca, data$test$x)
     data
