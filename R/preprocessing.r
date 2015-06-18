@@ -169,14 +169,15 @@ pre_remove_correlated <- function(data, cutoff){
 
 #' @param ncomponent Number of PCA components to use. Missing all components
 #'   are used.
+#' @param scale. Sent to \code{\link{prcomp}}.
 #' @rdname pre_process
 #' @export
-pre_pca <- function(data, ncomponent, ...){
+pre_pca <- function(data, ncomponent, scale. = TRUE, ...){
     if(missing(ncomponent)){
-        pca <- prcomp(data$fit$x, ..., retx = TRUE)
+        pca <- prcomp(data$fit$x, scale. = scale., ..., retx = TRUE)
         data$fit$x <- pca$x
     } else {
-        pca <- prcomp(data$fit$x, ..., retx = FALSE)
+        pca <- prcomp(data$fit$x, scale. = scale., ..., retx = FALSE)
         pca$rotation <- pca$rotation[,1:ncomponent]
         data$fit$x <- predict(pca, data$fit$x)
     }
