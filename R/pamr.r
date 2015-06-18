@@ -59,6 +59,7 @@ pre_pamr <- function(data){
 #'     \item{List with elements named \code{nreplicate} and \code{nfold}}
 #'     \item{\code{NA}, \code{NULL} or \code{FALSE} to suppress shrinkage tuning.}
 #'   }
+#' @param nfold Sent to \code{\link[pamr]{pamr.cv}}. Only used if \code{cv} is missing.
 #' @param threshold Shrinkage thresholds to try (referred to as 'lambda' in the
 #'   literature). Chosen and tuned automatically by default, but must be given
 #'   by the user if not tuned (see the \code{cv} argument) if you wish to use
@@ -71,7 +72,7 @@ pre_pamr <- function(data){
 #' @seealso \code{\link{emil}}, \code{\link{predict_pamr}},
 #'   \code{\link{importance_pamr}}, \code{\link{modeling_procedure}}
 #' @export
-fit_pamr <- function(x, y, error_fun, cv, threshold=NULL, ...,
+fit_pamr <- function(x, y, error_fun, cv, nfold, threshold=NULL, ...,
                      thres_fun = function(thr, err) median(thr[err == min(err)]),
                      slim=FALSE){
     nice_require("pamr")
@@ -106,7 +107,11 @@ fit_pamr <- function(x, y, error_fun, cv, threshold=NULL, ...,
             model <- pamr::pamr.train(x, threshold=threshold, ...)
             if(missing(threshold) || length(threshold) > 1){
                 if(missing(cv)){
-                    model.cv <- pamr::pamr.cv(model, x)
+                    model.cv <- if(missing(nfold)){
+                        pamr::pamr.cv(model, x)
+                    } else {
+                        pamr::pamr.cv(model, x, nfold = nfold)
+                    }
                 } else if(is_blank(cv)){
                     stop("You cannot skip cross-validation when multiple thresholds are given.")
                 } else {
