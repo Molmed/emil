@@ -2,15 +2,15 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.0.3.9023
-Date: 2015-06-18
+Version: 2.1.0
+Date: 2015-07-08
 Authors@R: c(
-    person("Christofer", "Backlin", role = c("aut", "cre"), email = "christofer.backlin@medsci.uu.se"),
+    person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
     )
 Author: Christofer Backlin [aut, cre],
     Mats Gustafsson [aut]
-Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
+Maintainer: Christofer Backlin <emil@christofer.backlin.se>
 Description: A toolbox for designing and evaluating predictive models with
     resampling methods. The aim of this package is to provide a simple and
     efficient general framework for working with any type of prediction
