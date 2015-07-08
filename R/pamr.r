@@ -56,7 +56,7 @@ pre_pamr <- function(data){
 #'   \itemize{
 #'     \item{Resampling scheme produced with \code{\link{resample}}
 #'       or \code{\link{resample_holdout}}.}
-#'     \item{List with elements named \code{nreplicate} and \code{nfold}}
+#'     \item{List with elements named \code{nrepeat} and \code{nfold}}
 #'     \item{\code{NA}, \code{NULL} or \code{FALSE} to suppress shrinkage tuning.}
 #'   }
 #' @param nfold Sent to \code{\link[pamr]{pamr.cv}}. Only used if \code{cv} is missing.
@@ -116,7 +116,7 @@ fit_pamr <- function(x, y, error_fun, cv, nfold, threshold=NULL, ...,
                     stop("You cannot skip cross-validation when multiple thresholds are given.")
                 } else {
                     if(!inherits(cv, c("crossvalidation", "holdout")))
-                        cv <- resample("crossvalidation", x$y, nreplicate=cv$nreplicate, nfold=cv$nfold)
+                        cv <- resample("crossvalidation", x$y, nrepeat=cv$nrepeat, nfold=cv$nfold)
                     if(nrow(cv) != length(x$y))
                         stop("Resampling set for shrinkage selection does not match dataset in size.")
                     model.cv <- pamr::pamr.cv(model, x,

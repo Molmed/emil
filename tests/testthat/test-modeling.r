@@ -20,7 +20,7 @@ test_that("modeling procedure", {
 
 x <- iris[-5]
 y <- iris$Species
-cv <- resample("crossvalidation", y, nfold=3, nreplicate=2)
+cv <- resample("crossvalidation", y, nfold=3, nrepeat=2)
 procedure <- modeling_procedure("lda")
 modeling_fun <- function(proc=procedure, ..., xx=x, .verbose=FALSE)
     evaluate(proc, xx, y, resample=cv, ..., .verbose=.verbose)

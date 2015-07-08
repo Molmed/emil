@@ -29,13 +29,13 @@ test_that("repeated holdout", {
 })
 
 test_that("cross-validation", {
-    cv <- resample("crossvalidation", y, nfold=5, nreplicate=3)
+    cv <- resample("crossvalidation", y, nfold=5, nrepeat=3)
 
     cv.tab <- lapply(cv, table, y)
     expect_true(all(sapply(cv.tab[-1], all.equal, cv.tab[[1]])))
 
     y[1] <- NA
-    cv <- resample("crossvalidation", y, nfold=5, nreplicate=3)
+    cv <- resample("crossvalidation", y, nfold=5, nrepeat=3)
     cv.tab <- lapply(cv, table, y)
     expect_that(range(sapply(cv.tab, "[", 1)), is_equivalent_to(1:2))
     expect_that(range(sapply(cv.tab, "[", 2)), is_equivalent_to(7:8))

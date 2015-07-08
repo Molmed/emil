@@ -12,9 +12,10 @@
 \section{Fitting models}{
 
     To write and use custom model fitting functions with the
-    emil framework, it must take the the following inputs
+    emil framework, it must take the the following inputs.
+    Optional
 
-    \code{function(x, y, ...)}
+    \code{function(x, y, p1, p2, p3, ..., .verbose)}
     \describe{
         \item{\code{x}}{
             The features (or variables)
@@ -40,10 +41,17 @@
             anything else that a fitted model will produce when given
             data to make predictions from.
         }
-        \item{\code{...}}{
-            Model parameters. These will all be tunable with the
+        \item{\code{p1}, \code{p2}, \code{p3}, \code{...}}{
+            (Optional) Method-specific model parameters.
+            These will all be tunable with the
             \code{\link{tune}} and \code{\link{evaluate}}
             functions.
+            Note that you can give them any name you want,
+            the names used here are just an example.
+        }
+        \item{\code{.verbose}}{
+            (Optional) Indentation level of log messages.
+            Feed this to \code{\link{log_message}}.
         }
     }
 
@@ -81,10 +89,6 @@
     estimated risks. It can also be on an arbitrary form as
     long as a compatible error function is used.
 }
-\section{Calculating performance}{
-    See \code{\link{error_fun}}.
-}
-
 \section{Calculating feature importance scores}{
 
     Estimating the importance of each feature (or variable)
@@ -108,6 +112,15 @@
     The function should return a vector of length p or a p-by-c
     data frame where p is the number of features in the data
     set and c is the number of classes.
+}
+\section{Calculating performance}{
+    See \code{\link{error_fun}}.
+}
+\section{Resampling schemes}{
+    See \code{\link{resample}}.
+}
+\section{Pre-processing functions}{
+    See \code{\link{pre_process}}.
 }
 \section{Code style guidelines}{
     Names of functions, arguments and variables should be written in underscore

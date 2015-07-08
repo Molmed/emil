@@ -1,4 +1,4 @@
-#' Fit elastic net model
+#' Fit elastic net, LASSO or ridge regression model
 #' 
 #' Using the \pkg{glmnet} package implementation.
 #' 
@@ -18,7 +18,7 @@
 #' @param foldid See \code{\link[glmnet]{cv.glmnet}}.
 #' @param alpha Regularization parameter, see \code{\link[glmnet]{glmnet}}.
 #' @param lambda Regularization parameter, see \code{\link[glmnet]{glmnet}}.
-#' @param ... Sent to \code{\link[glmnet]{cv.glmnet}}.
+#' @param ... Sent to \code{\link{fit_glmnet}} or \code{\link[glmnet]{cv.glmnet}}.
 #' @return Fitted elastic net model.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_glmnet}},
@@ -52,7 +52,7 @@ fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
         if(missing(foldid)){
             foldid <- apply(
                 sapply(
-                    resample("crossvalidation", y, nfold=nfolds, nreplicate=1),
+                    resample("crossvalidation", y, nfold=nfolds, nrepeat=1),
                     as.integer
                 ) == 0, 1, which)
             if(!is.integer(foldid))
@@ -175,16 +175,27 @@ importance_glmnet <- function(object, s, ...){
     data.frame(feature = rownames(imp), imp, row.names=NULL)
 }
 
-
+#' @rdname fit_glmnet
+#' @export
 fit_ridge_regression <- function(...){
     fit_glmnet(..., alpha=0)
 }
+#' @rdname predict_glmnet
+#' @export
 predict_ridge_regression <- predict_glmnet
+#' @rdname importance_glmnet
+#' @export
 importance_ridge_regression <- importance_glmnet
 
+#' @rdname fit_glmnet
+#' @export
 fit_lasso <- function(...){
     fit_glmnet(..., alpha=1)
 }
+#' @rdname predict_glmnet
+#' @export
 predict_lasso <- predict_glmnet
+#' @rdname importance_glmnet
+#' @export
 importance_lasso <- importance_glmnet
 

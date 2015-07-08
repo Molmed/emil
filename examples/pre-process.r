@@ -2,7 +2,7 @@
 x <- as.matrix(iris[-5])
 x[sample(600, 6)] <- NA
 y <- iris$Species
-cv <- resample("crossvalidation", y, nreplicate=3, nfold=4)
+cv <- resample("crossvalidation", y, nrepeat=3, nfold=4)
 procedure <- modeling_procedure("lda")
 
 # Simple dataset splitting

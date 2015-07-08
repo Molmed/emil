@@ -63,7 +63,7 @@ evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
     y <- get_response(x, y)
 
     if(missing(resample))
-        resample <- emil::resample("crossvalidation", y, nfold=2, nreplicate=2)
+        resample <- emil::resample("crossvalidation", y, nfold=2, nrepeat=2)
     if(inherits(resample, "fold")){
         multi.fold <- FALSE
         resample <- data.frame(resample)
@@ -172,7 +172,7 @@ evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
 
         # Print status message
         fold.message <- if(inherits(fold, "crossvalidation")){
-            sub("^fold(\\d+).(\\d+)$", "Replicate \\1, fold \\2", fold.name)
+            sub("^rep(\\d+)fold(\\d+)$", "Repeat \\1, fold \\2", fold.name)
         } else if(inherits(resample, "holdout")){
             sub("^fold(\\d+)$", "Fold \\1", fold.name)
         } else {

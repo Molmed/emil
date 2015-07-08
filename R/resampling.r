@@ -79,9 +79,9 @@ resample <- function(method, y, ..., subset=TRUE){
 #' Generate resampling subschemes
 #'
 #' A subscheme is a resampling scheme that only includes observations in the
-#' training set of an original scheme. This function
-#' automatically fetches the type and parameters of the prototype and use them
-#' to generate the subscheme.
+#' training set of a fold. This function
+#' automatically fetches the type and parameters of the prototype fold and use
+#' them to generate the subscheme.
 #'
 #' @param fold A resampling scheme or fold to use to define the sub scheme(s).
 #' @param y The observations used to create the resampling scheme. See
@@ -147,19 +147,19 @@ resample_holdout <- function(y, test_fraction=.5, nfold=5, balanced=is.factor(y)
     res
 }
 
-#' @param nreplicate Number of fold sets to generate.
+#' @param nrepeat Number of fold sets to generate.
 #' @examples
 #' y <- factor(runif(60) >= .5)
 #' cv <- resample("crossvalidation", y)
 #' image(cv, main="Cross-validation scheme")
 #' @rdname resample
 #' @export
-resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.factor(y), subset){
+resample_crossvalidation <- function(y, nfold=5, nrepeat=5, balanced=is.factor(y), subset){
     n <- length(y)
     stopifnot(n >= nfold)
     subset <- positive_integer_subset(y, subset)
 
-    fold_set <- as.data.frame(replicate(nreplicate, {
+    fold_set <- as.data.frame(replicate(nrepeat, {
         idx <- if(!balanced){
             sample(subset)
         } else {
@@ -172,9 +172,10 @@ resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.facto
                       ncol=nfold, byrow=TRUE)
         apply(idx, 2, function(i) !seq_len(n) %in% i)
     }))
-    names(fold_set) <- sprintf("fold%i.%i", rep(1:nreplicate, each=nfold), rep(1:nfold, nreplicate))
+    names(fold_set) <- sprintf("rep%ifold%i", rep(1:nrepeat, each=nfold),
+                               rep(1:nfold, nrepeat))
     list(fold_set = fold_set,
-         parameter = list(nfold=nfold, nreplicate=nreplicate, balanced=balanced))
+         parameter = list(nfold=nfold, nrepeat=nrepeat, balanced=balanced))
 }
 
 #' @param fit_fraction The size of the training set relative to the entire data
@@ -243,7 +244,7 @@ resample_bootstrap <- function(y, nfold=10, fit_fraction = if(replace) 1 else .6
 #' image(resample("holdout", 60, test_fraction=1/3, nfold=20))
 #'
 #' y <- gl(2, 30)
-#' image(resample("crossvalidation", y, nfold=3, nreplicate=8), col=y)
+#' image(resample("crossvalidation", y, nfold=3, nrepeat=8), col=y)
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{resample}}
 #' @export
@@ -287,8 +288,8 @@ image.resample <- function(x, col, ...){
 image.crossvalidation <- function(x, col, ...){
     image.resample(x, col, ...)
     parameter <- attr(x[[1]], "parameter")
-    if(parameter$nreplicate > 1){
-        l <- 1:(parameter$nreplicate-1)*parameter$nfold + .5
+    if(parameter$nrepeat > 1){
+        l <- 1:(parameter$nrepeat-1)*parameter$nfold + .5
         segments(l, par("usr")[3], l, par("usr")[4])
     }
 }

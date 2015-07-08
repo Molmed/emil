@@ -141,7 +141,7 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #' x <- iris[-5]
 #' y <- iris$Species
 #' names(y) <- sprintf("orchid%03i", seq_along(y))
-#' cv <- resample("crossvalidation", y, nfold=3, nreplicate=2)
+#' cv <- resample("crossvalidation", y, nfold=3, nrepeat=2)
 #' procedures <- list(nsc = modeling_procedure("pamr"),
 #'                    rf = modeling_procedure("randomForest"))
 #' result <- evaluate(procedures, x, y, resample=cv)
@@ -268,7 +268,7 @@ get_prediction <- function(result, resample, type="prediction", format=c("long",
     } else {
         prediction <- select(result, fold=resample, type,
                              prediction=type)
-        names(prediction)[ncol(prediction)] <- type
+        names(prediction)[names(prediction) == "prediction"] <- type
     }
     if(format == "wide"){
         tidyr::spread_(prediction, "fold", type)
@@ -298,7 +298,7 @@ get_prediction <- function(result, resample, type="prediction", format=c("long",
 #' model <- fit("pamr", x=iris[-5], y=iris$Species)
 #' get_importance(model)
 #' 
-#' cv <- resample("crossvalidation", iris$Species, nreplicate=2, nfold=3)
+#' cv <- resample("crossvalidation", iris$Species, nrepeat=2, nfold=3)
 #' result <- evaluate("pamr", iris[-5], iris$Species, resample=cv,
 #'                    .save=c(importance=TRUE))
 #' get_importance(result)

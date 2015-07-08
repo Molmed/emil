@@ -1,6 +1,6 @@
 x <- iris[-5]
 y <- iris$Species
-cv <- resample("crossvalidation", y, nfold = 4, nreplicate = 4)
+cv <- resample("crossvalidation", y, nfold = 4, nrepeat = 4)
 result <- evaluate("lda", x, y, resample=cv)
 
 # Multiple procedures fitted and tested simultaneously. 

@@ -158,9 +158,11 @@ trapz <- function(x,y){
 #' 
 #' @param pos Location to search in, see \code{\link{ls}}.
 #' @return A data frame.
+#' @examples
+#' list_method()
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-emil_list_method <- function(pos=search()){
+list_method <- function(pos=search()){
     method <- lapply(pos, function(p){
         grep("^(fit|predict|importance)_", ls(p), value=TRUE)
     })

@@ -1,8 +1,8 @@
 #' Learning curve analysis
 #' 
-#' This function studies the change in permformance as the sizes of the fitting
-#' and test sets are varied. In case the studied modeling procedures cannot
-#' produce models on the smallest fitting sets, please use
+#' This function studies the change in permformance as the sizes of the training
+#' set is varied. In case the studied modeling procedures cannot
+#' produce models on the smallest training sets, please use
 #' \code{.return_error=TRUE} (see \code{\link{evaluate}}.
 #' 
 #' @param procedure \code{\link{modeling_procedure}}.

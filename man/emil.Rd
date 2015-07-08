@@ -84,13 +84,17 @@ original publication included as the package's vignette (to be added).
     }
     \subsection{Modeling methods}{
         The following modeling methods are included in the emil package.
+        For a complete list of available methods in both the emil package and
+        other loaded packages, please use \code{\link{list_method}}.
         See \code{\link{modeling_procedure}} for information on usage
         and \code{\link{extension}} for information on
         implementation of custom methods.
         \describe{
             \item{\code{\link[=fit_cforest]{cforest}}}{Conditional inference
                 forest.}
+            \item{\code{\link[=fit_coxph]{coxph}}}{Cox proportional hazards model.}
             \item{\code{\link[=fit_glmnet]{glmnet}}}{Elastic net.}
+            \item{\code{\link[=fit_lasso]{lasso}}}{LASSO.}
             \item{\code{\link[=fit_lda]{lda}}}{Linear discriminant.}
             \item{\code{\link[=fit_lm]{lm}}}{Linear model.}
             \item{\code{\link[=fit_pamr]{pamr}}}{Nearest shrunken
@@ -98,12 +102,14 @@ original publication included as the package's vignette (to be added).
             \item{\code{\link[=fit_qda]{qda}}}{Quadratic discriminant.}
             \item{\code{\link[=fit_randomForest]{randomForest}}}{Random
                 forest.}
+            \item{\code{\link[=fit_ridge_regression]{ridge_regression}}}{Ridge regression.}
+            \item{\code{\link[=fit_rpart]{rpart}}}{Decision trees.}
         }
         It is also possible to incorporate any method from the \sQuote{caret}
         package by using the function \code{\link{fit_caret}}.
         
         To search for emil compatible methods in all attached packages use the
-        \code{\link{emil_list_method}} function.
+        \code{\link{list_method}} function.
     }
     \subsection{Performance estimation methods}{
         See \code{\link{error_fun}} for information on usage and implementation
