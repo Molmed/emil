@@ -3,7 +3,7 @@ context("Methods")
 test_that("pamr", {
     reset_notification()
     expect_message(fit <- fit_pamr(iris[-5], iris$Species,
-            cv=resample("crossvalidation", iris$Species, nfold=5, nreplicate=1)),
+            cv=resample("crossvalidation", iris$Species, nfold=5, nrepeat=1)),
         "Use.*pre_pamr.*pre-processing")
     expect_that(fit, is_a("list"))
 })

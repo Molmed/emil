@@ -1,7 +1,7 @@
 #' Extraction of p-value from a statistical test
 #'
 #' These calculations are written in such a way that they avoid rounding off errors
-#' that plague the \code{survival} and \code{cmprsk} packages. 
+#' that plague the \pkg{survival} and \pkg{cmprsk} packages. 
 #'
 #' @param x Test, i.e. a fitted object of a supported type.
 #' @param log_p Whether to return the logarithm of the p-value.
@@ -127,11 +127,10 @@ pvalue.survdiff <- function(x, log_p=FALSE, ...){
 #' @export
 dichotomize <- function(x, time, to_factor){
     ev <- if(missing(time)){
-        x[,"status"]
+        ifelse(is.na(x[,"time"]), NA, x[,"status"])
     } else {
-        ifelse(x[,"status"] %in% 0,
-               ifelse(x[,"time"] < time, NA, 0),
-               ifelse(x[,"time"] > time, 0, x[,"status"]))
+        ifelse(x[,"time"] > time, 0,
+               ifelse(x[,"status"] == 0, NA, x[,"status"]))
     }
     if(missing(to_factor))
         to_factor <- attr(x, "type") %in% c("mright", "mcounting")
@@ -183,4 +182,45 @@ plot.Surv <- function(x, y, segments=TRUE, flip=FALSE, legendpos="topright", ...
                col=seq_along(Surv_event_types(x)))
     }
 }
+
+#' Fit Cox proportional hazards model
+#' 
+#' @param x Dataset.
+#' @param y Response. Required if formula is missing.
+#' @param formula See \code{\link{coxph}}.
+#' @param ... Sent to \code{\link{coxph}}.
+#' @return Fitted Cox proportional hazards model.
+#' @examples
+#' require(survival)
+#' data(ovarian)
+#' model <- fit(
+#'     modeling_procedure(
+#'         method = "coxph",
+#'         parameter = list(formula = list(Surv(futime, fustat) ~ age))),
+#'     x = ovarian, y = NULL
+#' )
+#' predict(model, ovarian[11:16,])
+#' @seealso \code{\link{predict_coxph}}
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+fit_coxph <- function(x, y, formula = y ~ ., ...){
+    nice_require("survival")
+    if(any(grep("^strata(.*)$", attr(terms(formula), "term.labels"))))
+        stop("Only unstratified Cox proportional hazards regression is implemented.")
+    survival::coxph(formula, data=x, ...)
+}
+
+#' Predict using Cox proportional hazards model
+#' 
+#' @param object Fitted model, as returned by \code{\link{fit_coxph}}.
+#' @param x Observations whose response is to be predicted.
+#' @param ... Sent to \code{\link{predict.coxph}}.
+#' @seealso \code{\link{fit_coxph}}
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+predict_coxph <- function(object, x, ...){
+    nice_require("survival")
+    list(prediction = predict(object, x, ...))
+}
+
 

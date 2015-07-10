@@ -12,7 +12,7 @@
 #' chained (i.e. executed sequentially) after an initating call to
 #' \code{\link{pre_split}}.
 #' This can either be done using the \code{\link[=chain]{pipe operator}} defined
-#' in the magrittr package or by putting all pre-processing functions in a
+#' in the \pkg{magrittr} package or by putting all pre-processing functions in a
 #' regular list (see the examples).
 #' 
 #' Note that all transformations are defined based on the fitting data only
@@ -53,8 +53,16 @@ pre_split <- function(x, y, fold){
         fold <- structure(rep(TRUE, nrow(x)),
                           class=c("fit_only", "fold", "logical"))
     }
+    if(is.character(y) && length(y) == 1){
+        y_col <- match(y, colnames(x))
+        if(is.na(y_col))
+            stop(paste("The is no column named", y, "in `x`."))
+        y <- x[,y_col]
+        x <- x[,-y_col]
+    }
     structure(
-        list(fit = list(x = x[index_fit(fold),,drop=FALSE],
+        list(name = deparse(substitute(x)),
+             fit = list(x = x[index_fit(fold),,drop=FALSE],
                         y = y[index_fit(fold)]),
              test = list(x = x[index_test(fold),,drop=FALSE],
                          y = y[index_test(fold)]),
@@ -71,16 +79,17 @@ pre_split <- function(x, y, fold){
 #'   and testing sets.
 #' @param y_fun Function to be applied to the response of the training and test
 #'   sets (independently).
+#' @param ... Sent to internal methods, see the code of each function.
 #' @rdname pre_process
 #' @export
-pre_convert <- function(data, x_fun, y_fun){
+pre_convert <- function(data, x_fun, y_fun, ...){
     if(!missing(x_fun)){
-        data$fit$x <- x_fun(data$fit$x)
-        data$test$x <- x_fun(data$test$x)
+        data$fit$x <- x_fun(data$fit$x, ...)
+        data$test$x <- x_fun(data$test$x, ...)
     }
     if(!missing(y_fun)){
-        data$fit$y <- y_fun(data$fit$y)
-        data$test$y <- y_fun(data$test$y)
+        data$fit$y <- y_fun(data$fit$y, ...)
+        data$test$y <- y_fun(data$test$y, ...)
     }
     data
 }
@@ -158,11 +167,20 @@ pre_remove_correlated <- function(data, cutoff){
     pre_remove(data, caret::findCorrelation(cor(data$fit$x), cutoff = .75))
 }
 
+#' @param ncomponent Number of PCA components to use. Missing all components
+#'   are used.
+#' @param scale. Sent to \code{\link{prcomp}}.
 #' @rdname pre_process
 #' @export
-pre_pca <- function(data){
-    pca <- prcomp(data$fit$x)
-    data$fit$x <- pca$x
+pre_pca <- function(data, ncomponent, scale. = TRUE, ...){
+    if(missing(ncomponent)){
+        pca <- prcomp(data$fit$x, scale. = scale., ..., retx = TRUE)
+        data$fit$x <- pca$x
+    } else {
+        pca <- prcomp(data$fit$x, scale. = scale., ..., retx = FALSE)
+        pca$rotation <- pca$rotation[,1:ncomponent]
+        data$fit$x <- predict(pca, data$fit$x)
+    }
     data$test$x <- predict(pca, data$test$x)
     data
 }
@@ -358,3 +376,19 @@ impute_median <- function(x){
         (function(data) data$fit$x)
 }
 
+#' Print method for pre-processed data
+#' 
+#' @method print preprocessed_data
+#' @param x Pre-processed data, as produced by \code{\link{pre_split}}.
+#' @param ... Ignored, kept for S3 consistency.
+#' @return Nothing
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+print.preprocessed_data <- function(x, ...){
+    feature <- table(factor(x$feature_selection, c(FALSE, TRUE)))
+    cat("Pre-processed data set `", x$name, "` of ",
+        feature[2], " features",
+        if(feature[1] > 0) sprintf("(%i removed).\n", feature[1]) else ".\n",
+        nrow(x$fit$x), " observations for model fitting,\n",
+        nrow(x$test$x), " observations for model evaluation.\n", sep="")
+}

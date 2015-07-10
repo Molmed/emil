@@ -39,14 +39,14 @@ pre_pamr <- function(data){
 
 #' Fit nearest shrunken centroids model.
 #'
-#' Wrapped version of the \code{pamr} package implementation. Note that
+#' Wrapped version of the \pkg{pamr} package implementation. Note that
 #' this function uses internal cross-validation for determining the value
 #' of the shrinkage threshold.
 #'
 #' @param x Dataset, numerical matrix with observations as rows.
 #' @param y Class labels, factor.
 #' @param error_fun Error function for tuning.
-#' @param slim.fit Set to \code{TRUE} if you want to return the fitted
+#' @param slim Set to \code{TRUE} if you want to return the fitted
 #'   classifier but discard pamr's \code{cv.objects}, which can be large.
 #'   memory efficient. This means that the element \code{cv$cv.objects} 
 #'   containing the cross-validated fits will be dropped from the returned
@@ -56,9 +56,10 @@ pre_pamr <- function(data){
 #'   \itemize{
 #'     \item{Resampling scheme produced with \code{\link{resample}}
 #'       or \code{\link{resample_holdout}}.}
-#'     \item{List with elements named \code{nreplicate} and \code{nfold}}
+#'     \item{List with elements named \code{nrepeat} and \code{nfold}}
 #'     \item{\code{NA}, \code{NULL} or \code{FALSE} to suppress shrinkage tuning.}
 #'   }
+#' @param nfold Sent to \code{\link[pamr]{pamr.cv}}. Only used if \code{cv} is missing.
 #' @param threshold Shrinkage thresholds to try (referred to as 'lambda' in the
 #'   literature). Chosen and tuned automatically by default, but must be given
 #'   by the user if not tuned (see the \code{cv} argument) if you wish to use
@@ -71,9 +72,9 @@ pre_pamr <- function(data){
 #' @seealso \code{\link{emil}}, \code{\link{predict_pamr}},
 #'   \code{\link{importance_pamr}}, \code{\link{modeling_procedure}}
 #' @export
-fit_pamr <- function(x, y, error_fun, cv, threshold=NULL, ...,
+fit_pamr <- function(x, y, error_fun, cv, nfold, threshold=NULL, ...,
                      thres_fun = function(thr, err) median(thr[err == min(err)]),
-                     slim.fit=FALSE){
+                     slim=FALSE){
     nice_require("pamr")
     if(!(is.list(x) && all(c("x", "y") %in% names(x)) && ncol(x$x) == length(x$y))){
         notify_once(id = "pamr_preprocess",
@@ -103,37 +104,41 @@ fit_pamr <- function(x, y, error_fun, cv, threshold=NULL, ...,
     }
     invisible(capture.output(
         tryCatch({
-            fit <- pamr::pamr.train(x, threshold=threshold, ...)
+            model <- pamr::pamr.train(x, threshold=threshold, ...)
             if(missing(threshold) || length(threshold) > 1){
                 if(missing(cv)){
-                    fit.cv <- pamr::pamr.cv(fit, x)
+                    model.cv <- if(missing(nfold)){
+                        pamr::pamr.cv(model, x)
+                    } else {
+                        pamr::pamr.cv(model, x, nfold = nfold)
+                    }
                 } else if(is_blank(cv)){
                     stop("You cannot skip cross-validation when multiple thresholds are given.")
                 } else {
                     if(!inherits(cv, c("crossvalidation", "holdout")))
-                        cv <- resample("crossvalidation", x$y, nreplicate=cv$nreplicate, nfold=cv$nfold)
+                        cv <- resample("crossvalidation", x$y, nrepeat=cv$nrepeat, nfold=cv$nfold)
                     if(nrow(cv) != length(x$y))
                         stop("Resampling set for shrinkage selection does not match dataset in size.")
-                    fit.cv <- pamr::pamr.cv(fit, x,
+                    model.cv <- pamr::pamr.cv(model, x,
                         folds=lapply(cv, index_test))
-                    if(slim.fit){
-                        fit.cv$cv.objects <- NULL
+                    if(slim){
+                        model.cv$cv.objects <- NULL
                     }
-                    fit.cv$error <- sapply(seq_along(fit.cv$threshold), function(i)
-                        error_fun(fit.cv$y, list(prediction=fit.cv$yhat[[i]], probability=fit.cv$probability[,,i])))
+                    model.cv$error <- sapply(seq_along(model.cv$threshold), function(i)
+                        error_fun(model.cv$y, list(prediction=model.cv$yhat[[i]], probability=model.cv$probability[,,i])))
                 }
             } else {
                 if(!missing(cv) && !is_blank(cv))
                     notify_once(id = "pamr_ignoring_cv",
                                 "Ignoring threshold tuning since only one threshold value was given.",
                                 fun = message)
-                fit.cv <- NULL
+                model.cv <- NULL
             }
         }, error=function(...){
             stop(...)
         })
     ))
-    return(list(fit=fit, cv=fit.cv, thres_fun=thres_fun))
+    return(list(model=model, cv=model.cv, thres_fun=thres_fun))
 }
 
 
@@ -160,14 +165,14 @@ fit_pamr <- function(x, y, error_fun, cv, threshold=NULL, ...,
 #' @export
 predict_pamr <- function(object, x, threshold, thres_fun, ...){
     nice_require("pamr")
-    if(nrow(x) != nrow(object$fit$centroids)){
-        if(ncol(x) != nrow(object$fit$centroids))
+    if(nrow(x) != nrow(object$model$centroids)){
+        if(ncol(x) != nrow(object$model$centroids))
             stop("PAMR takes datasets with observations as columns and descriptors as rows.")
         x <- t(x)
     }
     if(missing(threshold)){
-        if(length(object$fit$threshold) == 1){
-            threshold <- object$fit$threshold
+        if(length(object$model$threshold) == 1){
+            threshold <- object$model$threshold
         } else {
             if(missing(thres_fun)){
                 thres_fun <- object$thres_fun
@@ -175,8 +180,8 @@ predict_pamr <- function(object, x, threshold, thres_fun, ...){
             threshold <- thres_fun(object$cv$threshold, object$cv$error)
         }
     }
-    list(prediction = pamr::pamr.predict(object$fit, x, type="class", threshold=threshold, ...),
-         probability = as.data.frame(pamr::pamr.predict(object$fit,
+    list(prediction = pamr::pamr.predict(object$model, x, type="class", threshold=threshold, ...),
+         probability = as.data.frame(pamr::pamr.predict(object$model,
                             x, type="posterior", threshold=threshold, ...)))
 }
 
@@ -203,8 +208,8 @@ predict_pamr <- function(object, x, threshold, thres_fun, ...){
 importance_pamr <- function(object, threshold, thres_fun=max, ...){
     nice_require("pamr")
     if(missing(threshold)){
-        if(length(object$fit$threshold) == 1){
-            threshold <- object$fit$threshold
+        if(length(object$model$threshold) == 1){
+            threshold <- object$model$threshold
         } else {
             if(missing(thres_fun)){
                 thres_fun <- object$thres_fun
@@ -212,9 +217,9 @@ importance_pamr <- function(object, threshold, thres_fun=max, ...){
             threshold <- thres_fun(object$cv$threshold, object$cv$error)
         }
     }
-    cen <- sweep(sweep(pamr::pamr.predict(object$fit, , threshold, type="centroid", ...),
-                       1, object$fit$centroid.overall, "-"),
-                 1, object$fit$sd, "/")
+    cen <- sweep(sweep(pamr::pamr.predict(object$model, , threshold, type="centroid", ...),
+                       1, object$model$centroid.overall, "-"),
+                 1, object$model$sd, "/")
     data.frame(feature = rownames(cen), cen, row.names=NULL)
 }
 

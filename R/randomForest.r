@@ -1,29 +1,22 @@
 #' Fit random forest.
 #'
-#' Directly calling the \code{randomForest} package implementation. See
+#' Directly calling the \pkg{randomForest} package implementation. See
 #' \code{\link[randomForest]{randomForest}} for parameter specification.
 #'
 #' @param x Dataset, numerical matrix with observations as rows.
 #' @param y Class labels, factor.
-#' @param prediction Whether to calculate permuted OOB error as a feature
-#'   prediction measure, see \code{\link[randomForest]{predict.randomForest}}.
-#'   Set to \code{FALSE} to speed up computation.
 #' @param ... Sent to \code{\link[randomForest]{randomForest}}.
 #' @return Fitted random forest.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_randomForest}},
 #'   \code{\link{importance_randomForest}}, \code{\link{modeling_procedure}}
 #' @export
-fit_randomForest <- function(x, y, prediction=FALSE, ...){
+fit_randomForest <- function(x, y, ...){
     nice_require("randomForest")
-    tryCatch(randomForest::randomForest(x, y, ..., prediction=prediction),
-             error=function(e){
-                 if(any(is.na(x))){
-                     stop("Random forest does not accept any missing values.")
-                 } else {
-                     stop(e)
-                 }
-             })
+    tryCatch(na.fail(x), error = function(...){
+        stop("Random forest does not accept any missing values.")
+    })
+    randomForest::randomForest(x, y, ...)
 }
 
 

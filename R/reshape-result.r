@@ -1,10 +1,23 @@
+#' Extractor function for modeling result
+#' 
+#' As opposed to the standard extractor function, this will keep the class.
+#' 
+#' @param x modeling result object, as produced by \code{\link{evaluate}}.
+#' @param ... Sent to \code{\link{`[`}}.
+#' @noRd
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+`[.modeling_result` <- function(x, ...){
+    structure(unclass(x)[...], class="modeling_result")
+}
+
 #' Extract a subset of a tree of nested lists
 #' 
 #' Modeling results produced by \code{\link{evaluate}} comes in the
 #' form of nested lists. This function can be used to subset or rearrange parts
 #' of the results into vectors, matrices or data frames.
 #' Also note the \code{\link[emil]{select}} function that provides an extension
-#' to the \code{dplyr} package for data manipulation.
+#' to the \pkg{dplyr} package for data manipulation.
 #' 
 #' This function can only be used to extract data, not to assign.
 #' 
@@ -90,10 +103,10 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
     ret
 }
 
-#' emil and dplyr integration
+#' \pkg{emil} and \pkg{dplyr} integration
 #' 
 #' Modeling results can be converted to tabular format and manipulated using
-#' dplyr and other Hadleyverse packages. This is accomplished by a class
+#' \pkg{dplyr} and other Hadleyverse packages. This is accomplished by a class
 #' specific \code{\link[dplyr]{select_}} function that differs somewhat in syntax
 #' from the default \code{\link[dplyr]{select_}}.
 #'
@@ -128,7 +141,7 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #' x <- iris[-5]
 #' y <- iris$Species
 #' names(y) <- sprintf("orchid%03i", seq_along(y))
-#' cv <- resample("crossvalidation", y, nfold=3, nreplicate=2)
+#' cv <- resample("crossvalidation", y, nfold=3, nrepeat=2)
 #' procedures <- list(nsc = modeling_procedure("pamr"),
 #'                    rf = modeling_procedure("randomForest"))
 #' result <- evaluate(procedures, x, y, resample=cv)
@@ -239,23 +252,26 @@ select_list <- function(.data, .dots, id=NULL){
 #' @param result Modeling result, as returned by \code{\link{evaluate}} and
 #'   \code{\link{evaluate}}.
 #' @param resample Resampling scheme used to create the results.
+#' @param type The type of prediction to return. The possible types vary between
+#'   modeling procedure.
 #' @param format Table format of the output. See
 #'   \url{http://en.wikipedia.org/wiki/Wide_and_narrow_data} for more info.
 #' @return A data frame where the id column refers to the observations.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-get_prediction <- function(result, resample, format=c("long", "wide")){
+get_prediction <- function(result, resample, type="prediction", format=c("long", "wide")){
     stopifnot(inherits(result, "modeling_result"))
     format <- match.arg(format)
     if(is_multi_procedure(result)){
-        prediction <- select(result, fold=resample, method=TRUE, "prediction",
+        prediction <- select(result, fold=resample, method=TRUE, type,
                              prediction="prediction")
     } else {
-        prediction <- select(result, fold=resample, "prediction",
-                             prediction="prediction")
+        prediction <- select(result, fold=resample, type,
+                             prediction=type)
+        names(prediction)[names(prediction) == "prediction"] <- type
     }
     if(format == "wide"){
-        tidyr::spread_(prediction, "fold", "prediction")
+        tidyr::spread_(prediction, "fold", type)
     } else {
         prediction
     }
@@ -267,7 +283,7 @@ get_prediction <- function(result, resample, format=c("long", "wide")){
 #' Note that different methods calculates feature importance in different
 #' ways and that they are not directly comparable.
 #'
-#' When extending the emil framework with your own method, the importance
+#' When extending the \pkg{emil} framework with your own method, the importance
 #' function should return a data frame where one column is called "feature" and
 #' the remaining columns are named after the classes.
 #'
@@ -279,11 +295,11 @@ get_prediction <- function(result, resample, format=c("long", "wide")){
 #'   scores where p is the number of descriptors and c is the number of classes.
 #' @examples
 #' procedure <- modeling_procedure("pamr")
-#' model <- fit(procedure, x=iris[-5], y=iris$Species)
+#' model <- fit("pamr", x=iris[-5], y=iris$Species)
 #' get_importance(model)
 #' 
-#' cv <- resample("crossvalidation", iris$Species, nreplicate=2, nfold=3)
-#' result <- evaluate(procedure, iris[-5], iris$Species, resample=cv,
+#' cv <- resample("crossvalidation", iris$Species, nrepeat=2, nfold=3)
+#' result <- evaluate("pamr", iris[-5], iris$Species, resample=cv,
 #'                    .save=c(importance=TRUE))
 #' get_importance(result)
 #' @author Christofer \enc{Bäcklin}{Backlin}
@@ -296,7 +312,7 @@ get_importance <- function(object, format, ...){
 #' @export
 get_importance.model <- function(object, format=c("wide", "long"), ...){
     format <- match.arg(format)
-    imp <- object$procedure$importance_fun(object$fit, ...)
+    imp <- object$procedure$importance_fun(object$model, ...)
     if(format == "long"){
         nice_require("tidyr")
         tidyr::gather_(imp, "class", "importance", setdiff(colnames(imp), "feature"))
@@ -334,6 +350,13 @@ get_importance.modeling_result <- function(object, format=c("wide", "long"), ...
         imp
     }
 }
+#' @method get_importance list
+#' @export
+get_importance.list <- function(object, format=c("wide", "long"), ...){
+    format <- match.arg(format)
+    lapply(object, get_importance, format=format, ...)
+    # FIXME to one table
+}
 
 #' Extract parameter tuning statistics
 #' 
@@ -347,8 +370,8 @@ get_importance.modeling_result <- function(object, format=c("wide", "long"), ...
 #' get_tuning(model)
 #' 
 #' options(emil_max_indent=4)
-#' cv <- resample("holdout", iris$Species, nfold=5)
-#' result <- evaluate(procedure, iris[-5], iris$Species, resample=cv,
+#' ho <- resample("holdout", iris$Species, nfold=5)
+#' result <- evaluate(procedure, iris[-5], iris$Species, resample=ho,
 #'                    .save=c(model=TRUE))
 #' get_tuning(result)
 #' @author Christofer \enc{Bäcklin}{Backlin}
@@ -359,9 +382,27 @@ get_tuning <- function(object){
 #' @method get_tuning model
 #' @export
 get_tuning.model <- function(object){
+    get_tuning(object$procedure)
+}
+#' @method get_tuning modeling_procedure
+#' @export
+get_tuning.modeling_procedure <- function(object){
+    stopifnot(is_tunable(object) && is_tuned(object))
     nice_require("tidyr")
-    cbind(do.call(rbind, lapply(object$procedure$tuning$parameter, as.data.frame)),
-          object$procedure$tuning$error)
+    parameter_frame <- tryCatch({
+        x <- Map(function(i, p) data.frame(parameter_set = i, as.data.frame(p)),
+            seq_along(object$tuning$parameter),
+            object$tuning$parameter)
+        if(any(sapply(x, nrow) > 1))
+            stop("Only scalar parameter values can be put in a tuning data frame.")
+        do.call(rbind, x)
+    }, error = function(...){
+        warning("Could not convert parameter values to a data frame, using a numeric index instead.")
+        data.frame(parameter_set = seq_along(object$tuning$parameter))
+    })
+    error_frame <- object$tuning$error %>%
+            spread_("fold", "error")
+    merge(parameter_frame, error_frame, by="parameter_set")
 }
 #' @method get_tuning modeling_result
 #' @export
@@ -397,6 +438,7 @@ get_tuning.modeling_result <- function(object){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 get_performance <- function(result, format=c("wide", "long")){
+    format <- match.arg(format)
     if(is_multi_procedure(result)){
         p <- select(result, fold=TRUE, method=TRUE, error="error")
         if(format == "wide"){

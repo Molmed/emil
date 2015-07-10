@@ -21,7 +21,7 @@ test_that("dplyr integration", {
     x <- iris[-5]
     y <- iris$Species
     names(y) <- sprintf("orchid%03i", seq_along(y))
-    cv <- resample("crossvalidation", y, nfold=3, nreplicate=2)
+    cv <- resample("crossvalidation", y, nfold=3, nrepeat=2)
     procedures <- list(lda = modeling_procedure("lda"),
                        qda = modeling_procedure("qda"))
     result <- evaluate(procedures, x, y, resample=cv)

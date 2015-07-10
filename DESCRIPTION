@@ -2,15 +2,15 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.0.2
-Date: 2015-05-20
+Version: 2.1.1
+Date: 2015-07-09
 Authors@R: c(
-    person("Christofer", "Backlin", role = c("aut", "cre"), email = "christofer.backlin@medsci.uu.se"),
+    person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
     )
 Author: Christofer Backlin [aut, cre],
     Mats Gustafsson [aut]
-Maintainer: Christofer Backlin <christofer.backlin@medsci.uu.se>
+Maintainer: Christofer Backlin <emil@christofer.backlin.se>
 Description: A toolbox for designing and evaluating predictive models with
     resampling methods. The aim of this package is to provide a simple and
     efficient general framework for working with any type of prediction
@@ -22,9 +22,14 @@ Depends:
 Imports:
     data.table,
     ggplot2,
+    graphics,
+    grDevices,
     lazyeval,
     magrittr,
-    tidyr
+    methods,
+    stats,
+    tidyr,
+    utils
 Suggests:
     caret,
     cmprsk,
@@ -36,6 +41,7 @@ Suggests:
     pamr,
     randomForest,
     RColorBrewer,
+    rpart,
     survival,
     testthat (>= 0.9.1)
 License: GPL (>=2)

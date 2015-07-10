@@ -35,9 +35,7 @@
 #' 
 #' @param method The resampling method to use, e.g. \code{"holdout"} or
 #'   \code{"crossvalidation"}.
-#' @param y Observations to be divided. Can either be supplied as the response
-#'   of the observations themselves, or as a scalar which is interpreted as the
-#'   number of objects.
+#' @param y Observations to be divided.
 #' @param ... Sent to the method specific function, e.g.
 #'   \code{"resample_holdout"}.
 #' @param nfold Number of folds.
@@ -57,23 +55,33 @@
 #'   \code{\link{image.resample}}, \code{\link{index_fit}}
 #' @export
 resample <- function(method, y, ..., subset=TRUE){
-    x <- get(sprintf("resample_%s", method))(y, ..., subset=subset)
-    class(x$folds) <- c(method, "resample", "data.frame")
-    if(all(grepl("^V\\prediction+$", names(x$folds))))
-        names(x$folds) <- sprintf("fold%i", seq_along(x$folds))
-    x$folds[T] <- Map(function(f, n) structure(f, class=c(method, "fold", class(f)),
-                      parameter=x$parameter, fold.name=n), x$folds, names(x$folds))
-    if(!is.null(names(y))) rownames(x$folds) <- names(y)
-    x$folds
-}
+    stopifnot(is.character(method))
+    if(inherits(y, "Surv")) y <- factor(dichotomize(y))
 
+    method_fun <- match.fun(sprintf("resample_%s", method))
+    res <- method_fun(y=y, ..., subset=subset)
+    res$fold_set[T] <- Map(function(f, n){
+        structure(f, class=c(method, "fold", class(f)),
+                  parameter=res$parameter, fold.name=n)
+    }, res$fold_set, names(res$fold_set))
+
+    class(res$fold_set) <- c(method, "resample", class(res$fold_set))
+    if(is.null(names(res$fold_set))){
+        names(res$fold_set) <- sprintf("fold%i", 1:ncol(res$fold_set))
+    }
+
+    if(!is.null(names(y))) rownames(res$fold_set) <- names(y)
+    y_remove <- is.na(y) | !logical_subset(y, subset)
+    if(any(y_remove)) res$fold_set[y_remove,] <- NA
+    res$fold_set
+}
 
 #' Generate resampling subschemes
 #'
 #' A subscheme is a resampling scheme that only includes observations in the
-#' training set of an original scheme. This function
-#' automatically fetches the type and parameters of the prototype and use them
-#' to generate the subscheme.
+#' training set of a fold. This function
+#' automatically fetches the type and parameters of the prototype fold and use
+#' them to generate the subscheme.
 #'
 #' @param fold A resampling scheme or fold to use to define the sub scheme(s).
 #' @param y The observations used to create the resampling scheme. See
@@ -81,11 +89,11 @@ resample <- function(method, y, ..., subset=TRUE){
 #' @return A resampling scheme.
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @examples
-#' cv <- resample("holdout", y=12, fraction=1/4, nfold=3)
-#' inner.cv <- subresample(cv, y=12)
+#' cv <- resample("holdout", y=1:12, test_fraction=1/4, nfold=3)
+#' inner.cv <- subresample(cv, y=1:12)
 #' @seealso \code{\link{emil}}, \code{\link{resample}}
 #' @export
-subresample <- function(fold, y=length(fold)){
+subresample <- function(fold, y){
     if(is.data.frame(fold)){
         # The user inputted a full scheme
         lapply(fold, subresample, y)
@@ -109,6 +117,7 @@ subresample <- function(fold, y=length(fold)){
 #' @seealso \code{\link{emil}}, \code{\link{resample}}
 #' @export
 index_fit <- function(fold, allow_oversample=TRUE){
+    stopifnot(inherits(fold, "fold"))
     if(allow_oversample){
         rep(seq_along(fold), na_fill(fold, 0))
     } else {
@@ -119,76 +128,106 @@ index_fit <- function(fold, allow_oversample=TRUE){
 #' @aliases index_test
 #' @export
 index_test <- function(fold){
+    stopifnot(inherits(fold, "fold"))
     which(fold %in% 0)
 }
 
 
-#' @param fraction Fraction of objects to hold out (0 < fraction < 1).
+#' @param test_fraction Fraction of objects to hold out (0 < test_fraction < 1).
 #' @examples
-#' resample("holdout", 50, fraction=1/3)
+#' resample("holdout", 1:50, test_fraction=1/3)
 #' resample("holdout", factor(runif(60) >= .5))
 #' @rdname resample
 #' @export
-resample_holdout <- function(y=NULL, fraction=.5, nfold=5, balanced=is.factor(y), subset){
-    # Convert subset to integer vector
-    n <- if(length(y) == 1 && is.numeric(y)) y else length(y)
-    subset <- if(is.logical(subset)){
-        (1:n) %in% (1:n)[subset & !is.na(y)]
-    } else {
-        subset[!subset %in% which(is.na(y))]
-    }
-
-    class.subset <- if(balanced) split(which(subset), y[subset]) else which(subset)
-    class.ho <- round(fraction * sapply(class.subset, length))
-
-    ho <- as.data.frame(replicate(nfold, {
-        idx <- rep(NA, n)
-        idx[subset] <- TRUE
-        idx[unlist(Map(sample, class.subset, class.ho))] <- FALSE
-        idx
-    }))
-    names(ho) <- sprintf("fold%i", seq_along(ho))
-    list(folds=ho, parameter=list(fraction=fraction, nfold=nfold, balanced=balanced))
+resample_holdout <- function(y, test_fraction=.5, nfold=5, balanced=is.factor(y), subset){
+    res <- resample_bootstrap(y, nfold=nfold, fit_fraction=1-test_fraction, replace=FALSE,
+                              balanced=balanced, subset=subset)
+    res$parameter <- list(test_fraction = test_fraction, nfold = nfold,
+                          balanced = balanced)
+    res
 }
 
-#' @param nreplicate Number of fold sets to generate.
+#' @param nrepeat Number of fold sets to generate.
 #' @examples
 #' y <- factor(runif(60) >= .5)
 #' cv <- resample("crossvalidation", y)
 #' image(cv, main="Cross-validation scheme")
 #' @rdname resample
 #' @export
-resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.factor(y), subset){
-    n <- if(length(y) == 1) y else length(y)
-    if(inherits(y, "Surv"))
-        y <- as.factor(y[,"status"])
-    if(n < nfold) stop("Number of objects cannot be smaller than number of groups")
-    if(inherits(y, "Surv")) y <- dichotomize(y, to_factor=TRUE)
+resample_crossvalidation <- function(y, nfold=5, nrepeat=5, balanced=is.factor(y), subset){
+    n <- length(y)
+    stopifnot(n >= nfold)
+    subset <- positive_integer_subset(y, subset)
 
-    # Convert subset to logical vector
-    subset <- (1:n) %in% (1:n)[subset]
-    subset[is.na(y)] <- FALSE
-    
-    folds <- as.data.frame(replicate(nreplicate, {
+    fold_set <- as.data.frame(replicate(nrepeat, {
         idx <- if(!balanced){
-            sample(which(subset))
+            sample(subset)
         } else {
             levs <- if(is.factor(y)) levels(y) else unique(y)
             unlist(lapply(levs[order(table(y[subset]))], function(lev){
-                w <- which(y == lev)
-                w <- w[w %in% (1:n)[subset]]
-                if(length(w) < 2) w else sample(w)
+                sample(intersect(which(y == lev), subset))
             }))
         }
         idx <- matrix(c(idx, rep(NA, ceiling(length(idx)/nfold)*nfold-length(idx))),
                       ncol=nfold, byrow=TRUE)
-        apply(idx, 2, function(i) !1:n %in% i)
+        apply(idx, 2, function(i) !seq_len(n) %in% i)
     }))
-    folds[!subset,] <- NA
-    names(folds) <- sprintf("fold%i.%i", rep(1:nreplicate, each=nfold), rep(1:nfold, nreplicate))
-    list(folds=folds, parameter=list(nfold=nfold, nreplicate=nreplicate, balanced=balanced))
+    names(fold_set) <- sprintf("rep%ifold%i", rep(1:nrepeat, each=nfold),
+                               rep(1:nfold, nrepeat))
+    list(fold_set = fold_set,
+         parameter = list(nfold=nfold, nrepeat=nrepeat, balanced=balanced))
 }
 
+#' @param fit_fraction The size of the training set relative to the entire data
+#'   set.
+#' @param replace Whether to sample with replacement.
+#' @rdname resample
+#' @export
+resample_bootstrap <- function(y, nfold=10, fit_fraction = if(replace) 1 else .632,
+                               replace=TRUE, balanced = is.factor(y), subset){
+    stopifnot(fit_fraction <= 1 || replace)
+    subset <- positive_integer_subset(y, subset)
+    n <- length(subset)
+    nsample <- round(fit_fraction*n)
+    if(balanced){
+        stopifnot(is.factor(y))
+        class_n <- table(y[subset])
+        class_idx <- split(subset, y[subset])
+        class_sample <- fit_fraction * class_n
+
+        class_min <- floor(class_sample)
+        class_count <- rep(0, length(class_sample))
+        class_rest <- class_sample-class_min
+        npick <- nsample - sum(class_min)
+        fold_sample <- structure(rep(list(class_min), nfold),
+                                 names = sprintf("fold%i", 1:nfold))
+        for(i in 1:nfold){
+            class_count <- class_count + class_rest
+            pick <- tail(order(class_count), npick)
+            fold_sample[[i]][pick] <- fold_sample[[i]][pick] + 1
+            class_count[pick] <- class_count[pick] - 1
+        }
+        fold_set <- lapply(fold_sample, function(fs){
+            Map(function(idx, n){
+                sample(idx, n, replace=replace)
+            }, class_idx, fs) %>%
+                unlist %>% factor(seq_along(y)) %>% table %>% unclass
+        }) %>%
+            as.data.frame %>%
+            return
+    } else {
+        fold_set <- replicate(nfold, {
+            sample(subset, nsample, replace=replace) %>%
+                unlist %>% factor(seq_along(y)) %>% table %>% unclass
+        }, simplify = FALSE) %>%
+            as.data.frame %>%
+            structure(names=sprintf("fold%i", 1:nfold)) %>%
+            return
+    }
+    list(fold_set = fold_set,
+         parameter = list(nfold=nfold, fit_fraction=fit_fraction,
+                          replace=replace, balanced=balanced))
+}
 
 #' Visualize resampling scheme
 #'
@@ -202,10 +241,10 @@ resample_crossvalidation <- function(y, nfold=5, nreplicate=5, balanced=is.facto
 #' @param ... Sent to \code{\link{plot}}.
 #' @return Nothing, produces a plot.
 #' @examples
-#' image(resample("holdout", 60, fraction=1/3, nfold=20))
+#' image(resample("holdout", 60, test_fraction=1/3, nfold=20))
 #'
 #' y <- gl(2, 30)
-#' image(resample("crossvalidation", y, nfold=3, nreplicate=8), col=y)
+#' image(resample("crossvalidation", y, nfold=3, nrepeat=8), col=y)
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{resample}}
 #' @export
@@ -249,8 +288,8 @@ image.resample <- function(x, col, ...){
 image.crossvalidation <- function(x, col, ...){
     image.resample(x, col, ...)
     parameter <- attr(x[[1]], "parameter")
-    if(parameter$nreplicate > 1){
-        l <- 1:(parameter$nreplicate-1)*parameter$nfold + .5
+    if(parameter$nrepeat > 1){
+        l <- 1:(parameter$nrepeat-1)*parameter$nfold + .5
         segments(l, par("usr")[3], l, par("usr")[4])
     }
 }

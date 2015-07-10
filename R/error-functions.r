@@ -23,11 +23,18 @@
 #' all classes rather than one label, or the risks that the observations will
 #' experience the event of interest, to be compared to the actual outcome that
 #' it did occur or has not yet occurred at a specific time point.
-#' See neg_harrell_c for an example of the latter.
+#' See \code{\link{neg_harrell_c}} for an example of the latter.
 #' 
 #' @param truth The true response values, be it class labels, numeric values or
 #'   survival outcomes.
 #' @param prediction A prediction object.
+#' @param allow_rejection If \code{FALSE} missing prediction values will produce
+#'   an error. If \code{TRUE} missing values will be given a cost specified by
+#'   the \code{rejection_cost} argument.
+#' @param rejection_cost See the argument \code{allow_rejection}. If missing a
+#'   rejection cost equivalent to the error rate obtained when assigning all
+#'   test observations to the most common class will be used.
+#' @param na.rm Whether to remove missing values or not.
 #' @name error_fun
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{neg_gmpa}},
@@ -36,12 +43,22 @@
 
 #' @rdname error_fun
 #' @export
-error_rate <- function(truth, prediction){
-    if(!is.factor(truth) || !is.factor(prediction$prediction))
+error_rate <- function(truth, prediction,
+                       allow_rejection=!missing(rejection_cost), rejection_cost){
+    if(inherits(prediction, "prediction"))
+        prediction <- prediction$prediction
+    if(!is.factor(truth) || !is.factor(prediction))
         stop("Incorrect class of input variables.")
-    if(!identical(levels(truth), levels(prediction$prediction)))
+    if(!identical(levels(truth), levels(prediction)))
         stop("Levels of predicted labels do not match levels of the truth labels.")
-    mean(truth != prediction$prediction)
+    error <- truth != prediction
+    if(!allow_rejection){
+        mean(na.fail(error))
+    } else {
+        if(missing(rejection_cost))
+            rejection_cost <- 1-max(prop.table(table(truth)))
+        mean(ifelse(is.na(error), rejection_cost, error))
+    }
 }
 
 #' Weighted error rate
@@ -68,24 +85,33 @@ weighted_error_rate <- function(x){
             stop("In multi-class-problems you must manually supply a cost matrix.")
         x <- matrix(c(0, rev(length(x)/table(x)*.5), 0), 2)
     }
-    function(truth, prediction){
-        mean(rep(x, table(truth, prediction$prediction)))
+    f <- function(truth, prediction){
+        if(inherits(prediction, "prediction"))
+            prediction <- prediction$prediction
+        mean(rep(x, table(truth, prediction)))
     }
+    parent.env(f) <- emptyenv()
+    f
 }
 
 #' @rdname error_fun
 #' @export
 neg_auc <- function(truth, prediction){
-    if(!is.factor(truth) || !is.numeric(prediction$probability))
+    probability <- if(inherits(prediction, "prediction")){
+        prediction$probability
+    } else {
+        prediction
+    }
+    if(!is.factor(truth) || !is.numeric(probability))
         stop("Incorrect class of input variables.")
     if(length(levels(truth)) != 2)
         stop("AUC can only be calculated on binary classification problems.")
     if(any(table(truth) == 0))
         stop("There needs to be at least one example of each class to calculate AUC.")
     truth <- truth == levels(truth)[2]
-    thres <- rev(c(-Inf, sort(unique(prediction$probability[,2]))))
+    thres <- rev(c(-Inf, sort(unique(probability[,2]))))
     conf <- sapply(thres, function(thr){
-        thr.prediction <- prediction$probability[,2] > thr
+        thr.prediction <- probability[,2] > thr
         c(sum(!truth & !thr.prediction, na.rm=TRUE),
           sum( truth & !thr.prediction, na.rm=TRUE),
           sum(!truth &  thr.prediction, na.rm=TRUE),
@@ -96,14 +122,18 @@ neg_auc <- function(truth, prediction){
 
 #' @rdname error_fun
 #' @export
-rmse <- function(truth, prediction){
-    sqrt(mean((truth-prediction$prediction)^2))
+rmse <- function(truth, prediction, na.rm=FALSE){
+    if(inherits(prediction, "prediction"))
+        prediction <- prediction$prediction
+    sqrt(mean((truth-prediction)^2, na.rm=na.rm))
 }
 
 #' @rdname error_fun
 #' @export
-mse <- function(truth, prediction){
-    mean((truth-prediction$prediction)^2)
+mse <- function(truth, prediction, na.rm=FALSE){
+    if(inherits(prediction, "prediction"))
+        prediction <- prediction$prediction
+    mean((truth-prediction)^2, na.rm=na.rm)
 }
 
 #' Negative geometric mean of class specific predictive accuracy
@@ -115,6 +145,7 @@ mse <- function(truth, prediction){
 #' 
 #' @param truth See \code{\link{error_fun}}.
 #' @param prediction See \code{\link{error_fun}}.
+#' @param na.rm Whether to remove missing values or not.
 #' @return A numeric scalar.
 #' @seealso \code{\link{error_fun}}
 #' @references
@@ -124,27 +155,24 @@ mse <- function(truth, prediction){
 #' doi:10.1186/1471-2105-14-64
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-neg_gmpa <- function(truth, prediction){
-    -exp(mean(log( tapply(prediction$prediction == truth, truth, mean) )))
+neg_gmpa <- function(truth, prediction, na.rm=FALSE){
+    if(inherits(prediction, "prediction"))
+        prediction <- prediction$prediction
+    -exp(mean(log( tapply(prediction == truth, truth, mean) ), na.rm=na.rm))
 }
 
 #' @rdname error_fun
 #' @export
-neg_harrell_c <- function(truth, prediction){
+neg_harrell_c <- function(truth, prediction, na.rm=FALSE){
     stopifnot(inherits(truth, "Surv"))
     nice_require("Hmisc", "is required for calculating Harrell's C")
-    -Hmisc::rcorr.cens(prediction$risk, truth)[1]
-}
-
-
-
-error_convergence <- function(x){
-    if("error" %in% x[[1]]){
-        # Single procedure
-        err <- subtree(x, TRUE, "error")
+    risk <- if(inherits(prediction, "prediction")){
+        prediction$prediction
     } else {
-        err <- subtree(x, TRUE, TRUE, "error")
+        prediction
     }
-
+    if(!na.rm) na.fail(prediction)
+    risk <- ifelse(is.infinite(risk), 1.1*max(abs(risk[!is.infinite(risk)]))*sign(risk), risk)
+    -Hmisc::rcorr.cens(risk, truth)[1]
 }
 
