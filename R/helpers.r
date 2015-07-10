@@ -1,3 +1,10 @@
+#' @import graphics
+#' @import grDevices
+#' @import methods
+#' @importFrom stats ave cor dist lm median model.frame model.response na.fail pchisq pnorm prcomp predict predict.lm quantile sd terms 
+#' @import utils
+NULL
+
 #' Wrapper for several methods to test if a variable is empty
 #'
 #' This is mainly an internal function but as other dependent packages also
