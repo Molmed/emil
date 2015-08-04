@@ -3,7 +3,7 @@ Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
 Version: 2.1.1.9000
-Date: 2015-07-09
+Date: 2015-08-04
 Authors@R: c(
     person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
