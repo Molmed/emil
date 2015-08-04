@@ -61,6 +61,21 @@ error_rate <- function(truth, prediction,
     }
 }
 
+#' Calculate the trivial error rate
+#' 
+#' Simply predicting the most common class for all test set observations can be
+#' a decievingly successful strategy in terms of error rate. This function shows
+#' what error rate such a strategy would result in.
+#' 
+#' @param truth True class labels.
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+trivial_error_rate <- function(truth){
+    stopifnot(is.factor(truth))
+    class_size <- prop.table(table(truth))
+    return(sum(class_size) - max(class_size))
+}
+
 #' Weighted error rate
 #' 
 #' If different types of errors are associated with different costs a weighted

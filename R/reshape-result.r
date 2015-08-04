@@ -3,7 +3,7 @@
 #' As opposed to the standard extractor function, this will keep the class.
 #' 
 #' @param x modeling result object, as produced by \code{\link{evaluate}}.
-#' @param ... Sent to \code{\link{`[`}}.
+#' @param ... Sent to \link{Extract}.
 #' @noRd
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export

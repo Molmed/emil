@@ -294,3 +294,35 @@ image.crossvalidation <- function(x, col, ...){
     }
 }
 
+#' Extract parts of a resampling scheme
+#' 
+#' @param x Resampling scheme or fold, as created by \code{\link{resample}}.
+#' @param ... Sent to a class specific extraction function, see \link{Extract}.
+#' @examples
+#' cv <- resample("crossvalidation", iris$Species)
+#' cv[1:4,]
+#' cv[, 2:7]
+#' cv[1:4, 2:7]
+#' cv[,1]
+#' cv[1:4, 1, drop=FALSE]
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+`[.resample` <- function(x, ...){
+    original_class <- class(x)
+    class(x) <- setdiff(original_class, "resample")
+    x <- x[...]
+    if(!inherits(x, "fold")){
+        class(x) <- original_class
+    }
+    x
+}
+#' @rdname `[.resample`
+#' @export
+`[.fold` <- function(x, ...){
+    attribute <- attributes(x)
+    class(x) <- setdiff(class(x), "fold")
+    x <- x[...]
+    attributes(x) <- attribute
+    x
+}
+
