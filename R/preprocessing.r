@@ -29,13 +29,14 @@
 #' \describe{
 #'     \item{\code{fit}}{Fitting set.}
 #'     \item{\code{test}}{Test set.}
-#'     \item{\code{feature_selection}}{Logical vector indicating which features were kept
-#'         (TRUE) and discarded (FALSE).}
+#'     \item{\code{feature_selection}}{Integer vector mapping the features of
+#'           the training and test sets to the original data sets.}
 #'     \item{\code{fold}}{The fold that was used to split the data.}
 #' }
 #'
 #' @example examples/pre-process.r
-#' @seealso \code{\link{emil}}, \code{\link{pre_impute_knn}}
+#' @seealso \code{\link{pre_factor_to_logical}}, \code{\link{emil}},
+#'   \code{\link{pre_impute_knn}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @name pre_process
 {}
@@ -66,8 +67,7 @@ pre_split <- function(x, y, fold){
                         y = y[index_fit(fold)]),
              test = list(x = x[index_test(fold),,drop=FALSE],
                          y = y[index_test(fold)]),
-             feature_selection = structure(rep(TRUE, ncol(x)),
-                                           names = colnames(x)),
+             feature_selection = structure(1:ncol(x), names = colnames(x)),
              fold = fold),
         class=c("preprocessed_data", "list"))
 }
@@ -115,7 +115,9 @@ pre_remove <- function(data, feature){
     }
     data$fit$x <- data$fit$x[, -feature, drop=FALSE]
     data$test$x <- data$test$x[, -feature, drop=FALSE]
-    data$feature_selection[feature] <- FALSE
+    data$feature_selection <- data$feature_selection[!data$feature_selection %in% feature]
+    stopifnot(ncol(data$fit$x) == length(data$feature_selection),
+              ncol(data$test$x) == length(data$feature_selection))
     data
 }
 
@@ -155,7 +157,8 @@ pre_scale <- function(data, y=FALSE, na.rm=TRUE, center=TRUE){
 #' @rdname pre_process
 #' @export
 pre_remove_constant <- function(data){
-    pre_remove(data, apply(data$fit$x, 2, sd) == 0)
+    fit_sd <- apply(data$fit$x, 2, sd, na.rm=TRUE)
+    pre_remove(data, is.na(fit_sd) | fit_sd == 0)
 }
 
 #' @param cutoff See \code{\link[caret]{findCorrelation}}.
@@ -185,22 +188,125 @@ pre_pca <- function(data, ncomponent, scale. = TRUE, ...){
     data
 }
 
+#' Convert factors to logical columns
+#' 
+#' Factors will be converted to one logical column per level (or one fewer if a
+#' base level is specified). Unordered factors are represented with
+#' \code{TRUE} in the column corresponding to the level of each observation and
+#' \code{FALSE} in the remaining columns.
+#' Ordered factors are represented with \code{TRUE} in the columns corresponding
+#' to the level of each observation or lower, and \code{FALSE} in columns
+#' corresponding higher levels.
+#' 
+#' @param data Pre-processed data set, as produced by \code{\link{pre_split}}.
+#' @param base_level Named character of the levels to consider as base level.
+#'   This level will not generate a column in the resulting data sets, but rather
+#'   be seen as the default if no other level was found. 
+#' @examples
+#' x <- mtcars[-1]
+#' x <- transform(x,
+#'     cyl = factor(cyl, ordered=TRUE),
+#'     vs = factor(vs),
+#'     gear = factor(gear)
+#' )
+#' y <- mtcars$mpg
+#' cv <- resample("crossvalidation", y)
+#' data <- pre_split(x, y, cv[[1]]) %>%
+#'     pre_factor_to_logical(base_level = c(cyl=4, vs=0))
+#' data$fit$x
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+pre_factor_to_logical <- function(data, base_level=character()){
+    stopifnot(is.data.frame(data$fit$x))
+    binary_fun <- function(x, base, name, warn=TRUE){
+        if(is.factor(x)){
+            if(is.ordered(x)){
+                newx <- lapply(as.integer(x), function(i){
+                    if(is.na(i)) rep(as.logical(NA), nlevels(x))
+                    else rep(c(TRUE, FALSE), c(i, nlevels(x)-i))
+                })
+            } else {
+                newx <- lapply(as.integer(x), function(i){
+                    if(is.na(i)) rep(as.logical(NA), nlevels(x))
+                    else rep(c(FALSE, TRUE, FALSE), c(i-1, 1, nlevels(x)-i))
+                })
+            }
+            newx <- as.data.frame(do.call(rbind, newx))
+            colnames(newx) <- levels(x)
+            if(base %in% levels(x)){
+                if(warn && is.ordered(x) && base != levels(x)[1]){
+                    warning(sprintf("Ignoring base level `%s` for column `%s` since ordered factors can only use the lowest level as base (`%s`).",
+                                    base, name, levels(x)[1]))
+                } else {
+                    newx <- newx[!levels(x) %in% base]
+                    if(ncol(newx) == 1)
+                        colnames(newx) <- paste(name, colnames(newx), sep=".")
+                }
+            } else if(warn && !is.na(base) && !base %in% levels(x)){
+                warning(sprintf("Invalid base level `%s` for column `%s`.",
+                                base, name, levels(x)[1]))
+            }
+            newx
+        } else {
+            if(warn && !is.na(base))
+                warning(sprintf("Ignoring base level `%s` for column `%s` since it is not a factor (%s).",
+                                base, name, class(x)[1]))
+            x
+        }
+    }
+    columns <- Map(binary_fun, data$fit$x, base_level[colnames(data$fit$x)],
+                   colnames(data$fit$x), MoreArgs=list(warn=TRUE))
+    data$feature_selection <- rep(data$feature_selection,
+        vapply(columns, function(x) if(is.data.frame(x)) ncol(x) else 1L, integer(1)))
+    data$fit$x <- do.call(cbind, columns)
+    names(data$feature_selection) <- colnames(data$fit$x)
+    rm(columns)
+    if(nrow(data$test$x) > 0){
+        data$test$x <- do.call(cbind, 
+            Map(binary_fun, data$test$x, base_level[colnames(data$test$x)],
+                colnames(data$test$x), MoreArgs=list(warn=FALSE)))
+    } else {
+        data$test$x <- data$fit$x[FALSE,]
+    }
+    stopifnot(identical(colnames(data$fit$x), colnames(data$test$x)))
+    data
+}
+
 #' Support function for identifying missing values
 #' 
 #' @param data Fitting and testing data sets, as returned by
 #'   \code{\link{pre_split}}.
 #' @return Data frame containing row and column indices of missing values or
 #'   \code{NULL} if the data doesn't contain any.
+#' @examples
+#' x <- as.matrix(iris[-5])
+#' y <- iris$Species
+#' x[sample(length(x), 10)] <- NA
+#' cv <- resample("crossvalidation", y)
+#' sets <- pre_split(x, y, cv[[1]])
+#' sets <- pre_remove(sets, 3L)
+#' na_index(sets)
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 na_index <- function(data){
     # `unname` is needed to avoid problems with duplicate names
     fit.na  <- which(is.na(unname(data$fit$x)), arr.ind=TRUE)
+    if(any(fit.na)){
+        fit.na <- data.frame(set = "fit", fit.na)
+        fit.na$original_row <- index_fit(data$fold)[fit.na$row]
+        fit.na$original_col <- data$feature_selection[fit.na$col]
+    } else {
+        fit.na <- NULL
+    }
     test.na <- which(is.na(unname(data$test$x)), arr.ind=TRUE)
-    rbind(
-        if(any(fit.na)) data.frame(set = "fit", fit.na) else NULL,
-        if(any(test.na)) data.frame(set = "test", test.na) else NULL
-    )
+    if(any(test.na)){
+        test.na <- data.frame(set = "test", test.na)
+        test.na$original_row <- index_test(data$fold)[test.na$row]
+        test.na$original_col <- data$feature_selection[test.na$col]
+    } else {
+        test.na <- NULL
+    }
+    rbind(fit.na, test.na)
 }
 
 #' Basic imputation
@@ -226,7 +332,7 @@ pre_impute <- function(data, fun, ...){
 
     na.ind %<>%
         split(na.ind$set) %>%
-        lapply(function(x) as.matrix(x[-1]))
+        lapply(function(x) as.matrix(x[,c("row", "col")]))
     if(!is.null(na.ind$fit))  data$fit$x[na.ind$fit]   <- m[na.ind$fit[,"col"]]
     if(!is.null(na.ind$test)) data$test$x[na.ind$test] <- m[na.ind$test[,"col"]]
 
@@ -318,7 +424,7 @@ pre_impute_knn <- function(data, k=.05, distance_matrix){
 
     # Perform the imputation
     diag(distance_matrix) <- NA
-    NN <- as.data.frame(apply(distance_matrix[na.ind$row, index_fit(data$fold)], 1, order))
+    NN <- as.data.frame(apply(distance_matrix[na.ind$original_row, index_fit(data$fold)], 1, order))
     na.ind$fill <- mapply(function(i, col){
         x <- data$fit$x[i, col]
         mean(x[!is.na(x)][1:k])
@@ -387,8 +493,7 @@ impute_median <- function(x){
 print.preprocessed_data <- function(x, ...){
     feature <- table(factor(x$feature_selection, c(FALSE, TRUE)))
     cat("Pre-processed data set `", x$name, "` of ",
-        feature[2], " features",
-        if(feature[1] > 0) sprintf("(%i removed).\n", feature[1]) else ".\n",
+        ncol(x$fit$x), " features\n",
         nrow(x$fit$x), " observations for model fitting,\n",
         nrow(x$test$x), " observations for model evaluation.\n", sep="")
 }

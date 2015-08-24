@@ -18,6 +18,7 @@ do
 	sed -i 's/\.save=list/.save=c/g' $myfile
 	sed -i 's/\bbatch\.model\b/evaluate/g' $myfile
 	sed -i 's/"crossval"/"crossvalidation"/g' $myfile
+	sed -i 's/\bdistmat\b/distance_matrix/g' $myfile
 	sed -i 's/\bemil\.fit\./fit_/g' $myfile
 	sed -i 's/\bemil\.predict\./predict_/g' $myfile
 	sed -i 's/\bemil\.vimp\./importance_/g' $myfile
