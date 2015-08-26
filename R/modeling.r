@@ -350,6 +350,7 @@ fit <- function(procedure, x, y, ..., .verbose=getOption("emil_verbose", FALSE))
 #'   \code{\link{evaluate}}, \code{\link{fit}},
 #'   \code{\link[=predict.model]{predict}}, \code{\link{get_importance}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom dplyr group_by_ filter_ mutate_ sample_n
 #' @export
 tune <- function(procedure, ..., .verbose=getOption("emil_verbose", FALSE)){
     log_message(.verbose, "Tuning parameters...")

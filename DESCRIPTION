@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.2.0.9000
-Date: 2015-08-24
+Version: 2.2.0.9001
+Date: 2015-08-26
 Authors@R: c(
     person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
@@ -17,10 +17,9 @@ Description: A toolbox for designing and evaluating predictive models with
     problem, be it classification, regression or survival analysis, that is
     easy to extend and adapt to your specific setting. Some commonly used
     methods for classification, regression and survival analysis are included.
-Depends:
-    dplyr
 Imports:
     data.table,
+    dplyr,
     ggplot2,
     graphics,
     grDevices,

@@ -27,31 +27,31 @@ test_that("dplyr integration", {
     result <- evaluate(procedures, x, y, resample=cv)
 
     # Normal subsetting
-    r <- result %>% dplyr::select(fold = TRUE, method = TRUE, error = "error")
+    r <- result %>% select(fold = TRUE, method = TRUE, error = "error")
     expect_is(r, "data.frame")
     expect_identical(names(r), c("fold", "method", "error"))
 
-    r <- result %>% dplyr::select(fold = TRUE, method=c("lda", "nsc"), error = "error")
+    r <- result %>% select(fold = TRUE, method=c("lda", "nsc"), error = "error")
     expect_identical(levels(r$method), "lda") # But not nsc!
 
-    r <- result %>% dplyr::select(fold = TRUE, "lda", error = "error")
+    r <- result %>% select(fold = TRUE, "lda", error = "error")
     expect_identical(names(r), c("fold", "error"))
     
     # Resampling
-    r <- result %>% dplyr::select(fold = cv, "lda", "prediction", class="prediction")
+    r <- result %>% select(fold = cv, "lda", "prediction", class="prediction")
     expect_is(r, "data.frame")
     expect_is(r$id, "character")
     expect_equal(dim(r %>% spread(fold, class)), c(nrow(iris), 1+length(cv)))
 
-    r <- result %>% dplyr::select(fold = cv[1:3], "lda", "prediction", class="prediction")
+    r <- result %>% select(fold = cv[1:3], "lda", "prediction", class="prediction")
     expect_equal(levels(r$Fold), names(cv)[1:3])
 
     # Functions
-    r1 <- result %>% dplyr::select(fold = TRUE, method = TRUE, error = "error")
-    r2 <- result %>% dplyr::select(fold = TRUE, method = TRUE, accuracy = function(x) 1-x$error)
+    r1 <- result %>% select(fold = TRUE, method = TRUE, error = "error")
+    r2 <- result %>% select(fold = TRUE, method = TRUE, accuracy = function(x) 1-x$error)
     expect_equal(r1$error, 1-r2$accuracy)
 
-    r <- result %>% dplyr::select(fold = TRUE, method = TRUE,
+    r <- result %>% select(fold = TRUE, method = TRUE,
         function(x) data.frame(error=x$error, accuarcy = 1-x$error))
     expect_true(all(r$error + r$accuracy == 1))
 })

@@ -424,7 +424,7 @@ pre_impute_knn <- function(data, k=.05, distance_matrix){
 
     # Perform the imputation
     diag(distance_matrix) <- NA
-    NN <- as.data.frame(apply(distance_matrix[na.ind$original_row, index_fit(data$fold)], 1, order))
+    NN <- as.data.frame(apply(distance_matrix[na.ind$original_row, index_fit(data$fold), drop=FALSE], 1, order))
     na.ind$fill <- mapply(function(i, col){
         x <- data$fit$x[i, col]
         mean(x[!is.na(x)][1:k])

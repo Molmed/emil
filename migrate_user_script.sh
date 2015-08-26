@@ -15,7 +15,7 @@ do
 	sed -i 's/\.checkpoint\.dir\b/.checkpoint_dir/g' $myfile
 	sed -i 's/\.parallel\.cores\b/.cores/g' $myfile
 	sed -i 's/\.return\.errors\b/.return_error/g' $myfile
-	sed -i 's/\.save=list/.save=c/g' $myfile
+	sed -i 's/\.save\(\s*=\s*\)list/.save\1c/g' $myfile
 	sed -i 's/\bbatch\.model\b/evaluate/g' $myfile
 	sed -i 's/"crossval"/"crossvalidation"/g' $myfile
 	sed -i 's/\bdistmat\b/distance_matrix/g' $myfile
@@ -26,7 +26,7 @@ do
 	sed -i 's/\bevaluate\.modeling\b/evaluate/g' $myfile
 	sed -i 's/\bfalse\.triggers\b/false_triggers/g' $myfile
 	sed -i 's/\bfit\.fun\b/fit_fun/g' $myfile
-	sed -i 's/fit=TRUE/model=TRUE/g' $myfile
+	sed -i 's/fit\(\s*=\s*\)TRUE/model\1TRUE/g' $myfile
 	sed -i 's/\bfrac\b/fraction/g' $myfile
 	sed -i 's/\bget\.debug\.flags\b/get_debug_flags/g' $myfile
 	sed -i 's/\bindex\.fit\b/index_fit/g' $myfile
@@ -49,6 +49,7 @@ do
 	sed -i 's/\bpred\b/prediction/g' $myfile
 	sed -i 's/\bpredict\.fun\b/predict_fun/g' $myfile
 	sed -i 's/\breset\.warn\.once\b/reset_notification/g' $myfile
+	sed -i 's/\bsubtable\b/select/g' $myfile
 	sed -i 's/\bset\.debug\.flags\b/set_debug_flags/g' $myfile
 	sed -i 's/\bto\.factor\b/to_factor/g' $myfile
 	sed -i 's/\bvimp\.fun\b/importance_fun/g' $myfile

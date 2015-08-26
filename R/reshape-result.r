@@ -1,3 +1,18 @@
+#' @importFrom tidyr extract_ gather_ spread_
+NULL
+
+#' Pipe operator
+#'
+#' See \code{\link[magrittr]{\%>\%}} for details.
+#'
+#' @name %>%
+#' @rdname pipe
+#' @keywords internal
+#' @export
+#' @importFrom magrittr %>%
+#' @usage lhs \%>\% rhs
+NULL
+
 #' Extractor function for modeling result
 #' 
 #' As opposed to the standard extractor function, this will keep the class.
@@ -110,7 +125,6 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #' specific \code{\link[dplyr]{select_}} function that differs somewhat in syntax
 #' from the default \code{\link[dplyr]{select_}}.
 #'
-#' @method select_ list
 #' @param .data Modeling results, as returned by \code{\link{evaluate}}.
 #' @param ... Not used, kept for consistency with \code{dplyr}.
 #' @param .dots Indices to select on each level of \code{.data}, i.e.
@@ -154,6 +168,7 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #' result %>%
 #'     select(fold = TRUE, method = TRUE, error = "error") %>%
 #'     spread(method, error)
+#' require(dplyr)
 #' result %>%
 #'     select(fold = TRUE, method = TRUE, error = "error") %>%
 #'     group_by(method) %>% summarize(mean_error = mean(error))
@@ -164,21 +179,26 @@ subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
 #'     spread(fold, probability)
 #' @seealso subtree
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @name select
+#' @importFrom dplyr select
+#' @export
+NULL
+
 #' @rdname select
-#' @importFrom data.table rbindlist
-#' @import dplyr
-#' @import lazyeval
-#' @import tidyr
+#' @method select_ list
+#' @importFrom dplyr select_
+#' @importFrom lazyeval lazy_eval
 #' @export
 select_.list <- function(.data, ..., .dots){
-    select_list(.data, lazyeval::lazy_eval(.dots))
+    select_list(.data, lazy_eval(.dots))
 }
 #' @method select_ modeling_result
 #' @rdname select
 #' @export
 select_.modeling_result <- function(.data, ..., .dots){
-    select_list(.data, lazyeval::lazy_eval(.dots))
+    select_list(.data, lazy_eval(.dots))
 }
+#' @importFrom data.table rbindlist
 select_list <- function(.data, .dots, id=NULL){
     named <- !is.null(names(.dots)) && names(.dots)[1] != ""
     subsetting <- inherits(.dots[[1]], c("numeric", "integer", "logical", "character"))
@@ -215,15 +235,15 @@ select_list <- function(.data, .dots, id=NULL){
             if(named && length(d) > 0){
                 if(is.null(names(d))){
                     d <- data.frame(..tmp = rep(seq_along(d), sapply(d, nrow)),
-                                    data.table::rbindlist(d))
+                                    rbindlist(d))
                 } else {
                     d <- data.frame(..tmp = factor(rep(seq_along(d), sapply(d, nrow)),
                                               seq_along(d), names(d)),
-                               data.table::rbindlist(d))
+                               rbindlist(d))
                 }
                 names(d)[1] <- names(.dots)[1]
             } else {
-                d <- data.table::rbindlist(d)
+                d <- rbindlist(d)
             }
         } else if(is.function(.dots[[1]]) && length(.dots) > 1){
             stop("Not implemented.")
@@ -271,7 +291,7 @@ get_prediction <- function(result, resample, type="prediction", format=c("long",
         names(prediction)[names(prediction) == "prediction"] <- type
     }
     if(format == "wide"){
-        tidyr::spread_(prediction, "fold", type)
+        spread_(prediction, "fold", type)
     } else {
         prediction
     }
@@ -314,8 +334,7 @@ get_importance.model <- function(object, format=c("wide", "long"), ...){
     format <- match.arg(format)
     imp <- object$procedure$importance_fun(object$model, ...)
     if(format == "long"){
-        nice_require("tidyr")
-        tidyr::gather_(imp, "class", "importance", setdiff(colnames(imp), "feature"))
+        gather_(imp, "class", "importance", setdiff(colnames(imp), "feature"))
     } else {
         imp
     }
@@ -324,7 +343,6 @@ get_importance.model <- function(object, format=c("wide", "long"), ...){
 #' @export
 get_importance.modeling_result <- function(object, format=c("wide", "long"), ...){
     format <- match.arg(format)
-    if(format == "long") nice_require("tidyr")
     reset_notification(id = "importance_missing")
     gatherer <- function(x){
         if(is.null(x$importance)){
@@ -345,7 +363,7 @@ get_importance.modeling_result <- function(object, format=c("wide", "long"), ...
         imp <- select(object, fold=TRUE, gatherer)
     }
     if(format == "long"){
-        tidyr::gather_(imp, "class", "importance")
+        gather_(imp, "class", "importance")
     } else {
         imp
     }
@@ -388,7 +406,6 @@ get_tuning.model <- function(object){
 #' @export
 get_tuning.modeling_procedure <- function(object){
     stopifnot(is_tunable(object) && is_tuned(object))
-    nice_require("tidyr")
     parameter_frame <- tryCatch({
         x <- Map(function(i, p) data.frame(parameter_set = i, as.data.frame(p)),
             seq_along(object$tuning$parameter),

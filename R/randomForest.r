@@ -67,8 +67,8 @@ predict_randomForest <- function(object, x, ...){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 importance_randomForest <- function(object, type=1, ...){
-    if(is_blank(object$prediction))
-        stop("To calculate feature importance of random forsests you must set the fitting parameter `prediction=TRUE`, see `?fit_randomForest`.")
-    object$prediction
+    if(is_blank(object$importance))
+        stop("To calculate feature importance of random forsests you must set the fitting parameter `importance=TRUE`.")
+    object$importance
 }
 

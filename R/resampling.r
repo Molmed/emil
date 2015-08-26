@@ -306,6 +306,7 @@ image.crossvalidation <- function(x, col, ...){
 #' cv[,1]
 #' cv[1:4, 1, drop=FALSE]
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @noRd
 #' @export
 `[.resample` <- function(x, ...){
     original_class <- class(x)
@@ -316,7 +317,7 @@ image.crossvalidation <- function(x, col, ...){
     }
     x
 }
-#' @rdname `[.resample`
+#' @noRd
 #' @export
 `[.fold` <- function(x, ...){
     attribute <- attributes(x)
