@@ -191,17 +191,15 @@ pre_pca <- function(data, ncomponent, scale. = TRUE, ...){
 #' Convert factors to logical columns
 #' 
 #' Factors will be converted to one logical column per level (or one fewer if a
-#' base level is specified). Unordered factors are represented with
-#' \code{TRUE} in the column corresponding to the level of each observation and
-#' \code{FALSE} in the remaining columns.
-#' Ordered factors are represented with \code{TRUE} in the columns corresponding
-#' to the level of each observation or lower, and \code{FALSE} in columns
-#' corresponding higher levels.
+#' base level is specified).
 #' 
 #' @param data Pre-processed data set, as produced by \code{\link{pre_split}}.
-#' @param base_level Named character of the levels to consider as base level.
-#'   This level will not generate a column in the resulting data sets, but rather
-#'   be seen as the default if no other level was found. 
+#' @param feature Character vector with names of features to convert.
+#'   Defaults to all factors in the data set.
+#' @param base Sent to \code{\link{factor_to_logical}}. To specify different bases for
+#'   different columns supply a vector or list with named elements.
+#' @param drop Sent to \code{\link{factor_to_logical}}. To specify different bases for
+#'   different columns supply a vector or list with named elements.
 #' @examples
 #' x <- mtcars[-1]
 #' x <- transform(x,
@@ -212,59 +210,53 @@ pre_pca <- function(data, ncomponent, scale. = TRUE, ...){
 #' y <- mtcars$mpg
 #' cv <- resample("crossvalidation", y)
 #' data <- pre_split(x, y, cv[[1]]) %>%
-#'     pre_factor_to_logical(base_level = c(cyl=4, vs=0))
+#'     pre_factor_to_logical(base = c(cyl=4, vs=0), 
+#'                           drop=c(cyl=FALSE, gear=FALSE))
 #' data$fit$x
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
-pre_factor_to_logical <- function(data, base_level=character()){
+pre_factor_to_logical <- function(data, feature, base=1L, drop=TRUE){
     stopifnot(is.data.frame(data$fit$x))
-    binary_fun <- function(x, base, name, warn=TRUE){
-        if(is.factor(x)){
-            if(is.ordered(x)){
-                newx <- lapply(as.integer(x), function(i){
-                    if(is.na(i)) rep(as.logical(NA), nlevels(x))
-                    else rep(c(TRUE, FALSE), c(i, nlevels(x)-i))
-                })
-            } else {
-                newx <- lapply(as.integer(x), function(i){
-                    if(is.na(i)) rep(as.logical(NA), nlevels(x))
-                    else rep(c(FALSE, TRUE, FALSE), c(i-1, 1, nlevels(x)-i))
-                })
+    convert <- function(x, base, base_missing, drop, drop_missing, name, warn=TRUE){
+        withCallingHandlers({
+            if(name %in% feature){
+                factor_to_logical(x,
+                    base = if(base_missing) 1L else base,
+                    drop = if(drop_missing) TRUE else drop)
+            } else x
+        }, warning = function(w){
+            if(warn){
+                warning(sprintf("Column `%s` threw a warning when converted to logical: %s",
+                                name, w$message))
             }
-            newx <- as.data.frame(do.call(rbind, newx))
-            colnames(newx) <- levels(x)
-            if(base %in% levels(x)){
-                if(warn && is.ordered(x) && base != levels(x)[1]){
-                    warning(sprintf("Ignoring base level `%s` for column `%s` since ordered factors can only use the lowest level as base (`%s`).",
-                                    base, name, levels(x)[1]))
-                } else {
-                    newx <- newx[!levels(x) %in% base]
-                    if(ncol(newx) == 1)
-                        colnames(newx) <- paste(name, colnames(newx), sep=".")
-                }
-            } else if(warn && !is.na(base) && !base %in% levels(x)){
-                warning(sprintf("Invalid base level `%s` for column `%s`.",
-                                base, name, levels(x)[1]))
-            }
-            newx
-        } else {
-            if(warn && !is.na(base))
-                warning(sprintf("Ignoring base level `%s` for column `%s` since it is not a factor (%s).",
-                                base, name, class(x)[1]))
-            x
-        }
+            invokeRestart("muffleWarning")
+        }, error = function(e){
+            stop(sprintf("Column `%s` could not be converted to logical: %s",
+                         name, e$message))
+        })
     }
-    columns <- Map(binary_fun, data$fit$x, base_level[colnames(data$fit$x)],
+    factor_feature <- colnames(data$fit$x)[sapply(data$fit$x, is.factor)]
+    if(missing(feature))
+        feature <- factor_feature
+    if(any(!feature %in% factor_feature))
+        stop(sprintf("%s are not factors in the data set.",
+             paste("`", feature[!feature %in% factor_feature], "`", sep="", collapse=", ")))
+    columns <- Map(convert, data$fit$x,
+                   base[colnames(data$fit$x)], !colnames(data$fit$x) %in% names(base),
+                   drop[colnames(data$fit$x)], !colnames(data$fit$x) %in% names(drop),
                    colnames(data$fit$x), MoreArgs=list(warn=TRUE))
     data$feature_selection <- rep(data$feature_selection,
-        vapply(columns, function(x) if(is.data.frame(x)) ncol(x) else 1L, integer(1)))
+        vapply(columns, function(x) if(!is.null(ncol(x))) ncol(x) else 1L, integer(1)))
     data$fit$x <- do.call(cbind, columns)
     names(data$feature_selection) <- colnames(data$fit$x)
     rm(columns)
     if(nrow(data$test$x) > 0){
         data$test$x <- do.call(cbind, 
-            Map(binary_fun, data$test$x, base_level[colnames(data$test$x)],
-                colnames(data$test$x), MoreArgs=list(warn=FALSE)))
+            Map(convert, data$test$x,
+                base[colnames(data$test$x)], !colnames(data$test$x) %in% names(base),
+                drop[colnames(data$test$x)], !colnames(data$test$x) %in% names(drop),
+                colnames(data$test$x), MoreArgs=list(warn=FALSE))
+        )
     } else {
         data$test$x <- data$fit$x[FALSE,]
     }

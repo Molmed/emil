@@ -7,7 +7,8 @@
   This was to allow multiple features to be generated from a single original
   feature by the pre-processing functions (analogously to the representation of
   oversampled observations in resampling schemes).
-* Added a pre-processing function for generating binary features from factors
+* Added a function for generating binary features from factors 
+  (`factor_to_logical`) and a pre-processing wrapper for it
   (`pre_factor_to_logical`).
   
 ### Bug fixes and minor improvements

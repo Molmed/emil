@@ -225,3 +225,98 @@ logical_subset.default <- function(y, subset){
 logical_subset.fold <- function(y, subset){
     subset > 0
 }
+
+#' Convert factors to logicals
+#' 
+#' Factors are converted to logical vectors or matrices depending on the number
+#' of levels. Ordered factors are converted to matrices where each column
+#' represent a level, coded \code{TRUE} for observations that match the level
+#' and \code{FALSE} otherwise.
+#' Unordered factors are converted in a similar way but coded \code{TRUE} for
+#' observations that match the level \emph{or a higher level}.
+#' Interpred in words, the star rating example below returns a matrix containing 
+#' a column named \dQuote{3 stars} that contains \code{TRUE} for observations
+#' with at least three stars and \code{FALSE} for observations with fewer than
+#' three stars.
+#'
+#' @param x Factor.
+#' @param base Level to consider as the basis for comparison. Can be either
+#'   integer or character.
+#'   Note that \code{base = 4} is interpreted as a level named "4",
+#'   but \code{base = 4L} is interpreted as the fourth level.
+#' @param drop Whether to keep the base level. The base level column never holds
+#'   any information that cannot be deduced from the remaining columns.
+#' @examples
+#' # Binary factor
+#' email <- factor(sample(2, 20, TRUE), labels=c("unverified", "verified"))
+#' factor_to_logical(email)
+#' 
+#' # Unordered multi-level factors
+#' wine_preferences <- factor(sample(3, 20, TRUE), 
+#'                            labels=c("red", "white", "none"))
+#' factor_to_logical(wine_preferences, base="none")
+#' 
+#' fruit <- factor(sample(4, 20, TRUE),
+#'                 labels = c("apple", "banana", "cantaloup", "durian"))
+#' fruit[sample(length(fruit), 3)] <- NA
+#' factor_to_logical(fruit, drop=FALSE)
+#' 
+#' # Ordered factor
+#' rating <- factor(1:5, labels = paste(1:5, "stars"), ordered=TRUE)
+#' factor_to_logical(rating)
+#' 
+#' # Ordered factor with custom base
+#' tie_break <- factor(1:5, 
+#'                     labels=c("SetAlice", "AdvAlice", "Deuce", "AdvBob", "SetBob"),
+#'                     ordered = TRUE)
+#' tie_status <- as.data.frame(
+#'     factor_to_logical(tie_break, base="Deuce", drop=FALSE)
+#' )
+#' print(tie_status)
+#' tie_break[tie_status$AdvAlice]
+#' tie_break[tie_status$SetBob]
+#' tie_break[tie_status$Deuce]
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+factor_to_logical <- function(x, base=1L, drop=TRUE){
+    stopifnot(length(base) <= 1)
+    stopifnot(is.factor(x))
+    my_drop <- drop
+    if(length(base) == 0){
+        if(is.ordered(x)) 
+            stop("Ordered factors cannot be converted without a base level.")
+        baseL <- 1L
+        my_drop <- FALSE
+    } else if(is.integer(base)){
+        if(base < 1L)
+            stop("Invalid base level (non-positive).")
+        if(base > nlevels(x))
+            stop("Invalid base level (larger than number of levels).")
+        baseL <- base
+    } else {
+        if(is.numeric(base))
+            warning("`base` is numeric but not an integer, interpreting it as a character.")
+        if(!base %in% levels(x))
+            stop("Invalid base level.")
+        baseL <- match(base, levels(x))
+    }
+    levelsL <- 1:nlevels(x) - baseL
+    if(is.ordered(x)){
+        topleft <- diag(baseL-1)
+        topleft[upper.tri(topleft)] <- 1
+        bottomleft <- matrix(0, nrow = nlevels(x)-baseL+1, ncol = baseL-1)
+
+        bottomright <- diag(nlevels(x)-baseL)
+        bottomright[lower.tri(bottomright)] <- 1L
+        topright <- matrix(0, nrow = baseL, ncol = nlevels(x)-baseL)
+
+        newx <- cbind(rbind(topleft, bottomleft), 1L, rbind(topright, bottomright))
+    } else {
+        newx <- diag(nlevels(x))
+    }
+    mode(newx) <- "logical"
+    colnames(newx) <- levels(x)
+    if(my_drop) newx <- newx[, -baseL, drop=FALSE]
+    newx[as.integer(x), , drop=my_drop]
+}
+
