@@ -226,7 +226,7 @@ impute_median <- function(x){
 #' x[sample(150, 5), 5] <- NA
 #' y <- gl(2, 75)
 #' fold <- resample("holdout", y, nfold=1)[[1]]
-#' data <- pre_split(x, y, fold)
+#' data <- pre_split(x, y, fold) %>%
 #'     pre_impute_df
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
