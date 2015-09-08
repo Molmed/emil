@@ -19,7 +19,7 @@
 #' @examples
 #' options(emil_max_indent=3)
 #' lc <- learning_curve(c(Linear="lda", Quadratic="qda"),
-#'                      iris[-5], iris$Species, test_fraction=7:2/10)
+#'                      iris[-5], iris$Species, test_fraction=7:3/10)
 #' plot(lc)
 #' @references Richard O Duda, Peter E Hart, and David G Stork. Pattern
 #'   Classification. Wiley, 2nd edition, 2000. ISBN 978-0-471-05669-0.
