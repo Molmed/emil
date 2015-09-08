@@ -7,42 +7,53 @@
 
 if [ $# -eq 0 ]
   then
-    echo "No files given"
+    echo "No myfiles given"
 fi
 
-sed -i 's/\.checkpoint\.dir\b/.checkpoint_dir/g' $1
-sed -i 's/\.parallel\.cores\b/.cores/g' $1
-sed -i 's/\.return\.errors\b/.return_error/g' $1
-sed -i 's/\.save=list/.save=c/g' $1
-sed -i 's/\bbatch\.model\b/evaluate/g' $1
-sed -i 's/"crossval"/"crossvalidation"/g' $1
-sed -i 's/\bemil\.fit\./fit_/g' $1
-sed -i 's/\bemil\.predict\./predict_/g' $1
-sed -i 's/\bemil\.vimp\./importance_/g' $1
-sed -i 's/\berror\.fun\b/error_fun/g' $1
-sed -i 's/\bevaluate\.modeling\b/evaluate/g' $1
-sed -i 's/\bfalse\.triggers\b/false_triggers/g' $1
-sed -i 's/\bfit\.fun\b/fit_fun/g' $1
-sed -i 's/fit=TRUE/model=TRUE/g' $1
-sed -i 's/\bfrac\b/fraction/g' $1
-sed -i 's/\bget\.debug\.flags\b/get_debug_flags/g' $1
-sed -i 's/\bindex\.fit\b/index_fit/g' $1
-sed -i 's/\bindex\.test\b/index_test/g' $1
-sed -i 's/\bis\.blank\b/is_blank/g' $1
-sed -i 's/\bmodeling\.FUN\b/modeling_fun/g' $1
-sed -i 's/\bmodeling\.procedure\b/modeling_procedure/g' $1
-sed -i 's/\bmodeling\.result\b/modeling_result/g' $1
-sed -i 's/\bna\.fill\b/na_fill/g' $1
-sed -i 's/\bnice\.require\b/nice_require/g' $1
-sed -i 's/\bnrep\b/nrepeat/g' $1
-sed -i 's/\bparam\b/parameter/g' $1
-sed -i 's/\bprob\b/probability/g' $1
-sed -i 's/\bpre\.impute\.knn\b/pre_impute_knn/g' $1
-sed -i 's/\bpre\.impute\.median\b/pre_impute_median/g' $1
-sed -i 's/\bpred\b/prediction/g' $1
-sed -i 's/\bpredict\.fun\b/predict_fun/g' $1
-sed -i 's/\breset\.warn\.once\b/reset_notification/g' $1
-sed -i 's/\bset\.debug\.flags\b/set_debug_flags/g' $1
-sed -i 's/\bto\.factor\b/to_factor/g' $1
-sed -i 's/\bvimp\.fun\b/importance_fun/g' $1
-sed -i 's/\bvimp\b/importance/g' $1
+for myfile in "$@"
+do
+	sed -i 's/\.checkpoint\.dir\b/.checkpoint_dir/g' $myfile
+	sed -i 's/\.parallel\.cores\b/.cores/g' $myfile
+	sed -i 's/\.return\.errors\b/.return_error/g' $myfile
+	sed -i 's/\.save\(\s*=\s*\)list/.save\1c/g' $myfile
+	sed -i 's/\bbatch\.model\b/evaluate/g' $myfile
+	sed -i 's/"crossval"/"crossvalidation"/g' $myfile
+	sed -i 's/\bdistmat\b/distance_matrix/g' $myfile
+	sed -i 's/\bemil\.fit\./fit_/g' $myfile
+	sed -i 's/\bemil\.predict\./predict_/g' $myfile
+	sed -i 's/\bemil\.vimp\./importance_/g' $myfile
+	sed -i 's/\berror\.fun\b/error_fun/g' $myfile
+	sed -i 's/\bevaluate\.modeling\b/evaluate/g' $myfile
+	sed -i 's/\bfalse\.triggers\b/false_triggers/g' $myfile
+	sed -i 's/\bfit\.fun\b/fit_fun/g' $myfile
+	sed -i 's/fit\(\s*=\s*\)TRUE/model\1TRUE/g' $myfile
+	sed -i 's/\bfrac\b/fraction/g' $myfile
+	sed -i 's/\bget\.debug\.flags\b/get_debug_flags/g' $myfile
+	sed -i 's/\bindex\.fit\b/index_fit/g' $myfile
+	sed -i 's/\bindex\.test\b/index_test/g' $myfile
+	sed -i 's/\bis\.blank\b/is_blank/g' $myfile
+	sed -i 's/\bmodeling\.FUN\b/modeling_fun/g' $myfile
+	sed -i 's/\bmodeling\.procedure\b/modeling_procedure/g' $myfile
+	sed -i 's/\bmodeling\.result\b/modeling_result/g' $myfile
+	sed -i 's/\bna\.fill\b/na_fill/g' $myfile
+	sed -i 's/\bnice\.axis\b/nice_axis/g' $myfile
+	sed -i 's/\bnice\.box\b/nice_box/g' $myfile
+	sed -i 's/\bnice\.require\b/nice_require/g' $myfile
+	sed -i 's/\bnrep\b/nrepeat/g' $myfile
+	sed -i 's/\([^@]\)\bparam\b/\1parameter/g' $myfile
+	# The @ group is added to avoid interfering with the roxygen keyword "@param".
+	sed -i 's/\bprob\b/probability/g' $myfile
+	sed -i 's/\bpre\.impute\.knn\b/pre_impute_knn/g' $myfile
+	sed -i 's/\bpre\.impute\.median\b/pre_impute_median/g' $myfile
+	sed -i 's/\bpre\.process\b/pre_process/g' $myfile
+	sed -i 's/\bpred\b/prediction/g' $myfile
+	sed -i 's/\bpredict\.fun\b/predict_fun/g' $myfile
+	sed -i 's/\breset\.warn\.once\b/reset_notification/g' $myfile
+	sed -i 's/\bsubtable\b/select/g' $myfile
+	sed -i 's/\bset\.debug\.flags\b/set_debug_flags/g' $myfile
+	sed -i 's/\bto\.factor\b/to_factor/g' $myfile
+	sed -i 's/\bvimp\.fun\b/importance_fun/g' $myfile
+	sed -i 's/\bvimp\b/importance/g' $myfile
+done
+# function calls to `integer.events` must manually be replaced with
+# appropriate calls to `dichotomize()`.

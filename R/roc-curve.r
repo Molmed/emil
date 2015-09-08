@@ -9,6 +9,7 @@
 #' @return A data frame of class \dQuote{roc}.
 #' @example examples/roc-curve.r
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom dplyr do_
 #' @importFrom magrittr "%<>%"
 #' @export
 roc_curve <- function(result, y, resample, class=levels(y), statistic="probability"){
@@ -32,7 +33,7 @@ roc_curve <- function(result, y, resample, class=levels(y), statistic="probabili
                              statistic, statistic = class)
     }
     if(length(class) > 1){
-        stat_table %<>% tidyr::gather_("class", "statistic", class)
+        stat_table %<>% gather_("class", "statistic", class)
     } else {
         stat_table %<>% mutate_(class = "factor(class)")
     }
@@ -52,7 +53,7 @@ roc_curve <- function(result, y, resample, class=levels(y), statistic="probabili
 as.data.table.roc_curve <- function(x, ...){
     if(inherits(x, "data.table")) return(x)
     class(x) <- class(x)[-1]
-    structure(data.table::as.data.table(x, ...), class=c("roc_curve", "data.table"))
+    structure(as.data.table(x, ...), class=c("roc_curve", "data.table"))
 }
 
 #' @method as.data.frame roc_curve
@@ -64,12 +65,11 @@ as.data.frame.roc_curve <- function(x, ...){
     structure(as.data.frame(x, ...), class=c("roc_curve", "data.frame"))
 }
 
-#' @import ggplot2
+#' @importFrom ggplot2 ggplot aes_string geom_segment geom_path facet_wrap
 #' @method plot roc_curve
 #' @rdname roc_curve
 #' @export
 plot.roc_curve <- function(x, ...){
-    nice_require("ggplot2")
     p <- ggplot(x, aes_string(x="1-specificity", y="sensitivity",
                               group="paste(class, fold, method)")) + 
         geom_segment(x=0, y=0, xend=1, yend=1, linetype="dashed", size=.3) +

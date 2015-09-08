@@ -58,10 +58,10 @@ learning_curve <- function(procedure, x, y, test_fraction, nfold=100, ..., .verb
 #'   performance estimates to a single quantity.
 #' @return A \code{\link[ggplot2]{ggplot}} object.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom dplyr summarize_
+#' @importFrom ggplot2 ggplot aes_string geom_point geom_line xlab facet_wrap
 #' @export
 plot.learning_curve <- function(x, ..., summaries=list(mean = mean, `95-percentile`=function(x) quantile(x, .95))){
-    nice_require("ggplot2")
-
     if(is_multi_procedure(x$result[[1]])){
         plot.data <- x$result %>%
             select(test_fraction = TRUE, fold = TRUE, method = TRUE, performance = "error")
@@ -74,7 +74,7 @@ plot.learning_curve <- function(x, ..., summaries=list(mean = mean, `95-percenti
 
     data.summary <- do.call(rbind, Map(function(method, fun){
         data.frame(summaries=method,
-            summarise_(group_by_(plot.data, "test_fraction", "method"),
+            summarize_(group_by_(plot.data, "test_fraction", "method"),
                       performance = ~fun(performance)))
     }, names(summaries), summaries))
     p <- ggplot(plot.data, aes_string(x="1-test_fraction", y="performance")) + 
