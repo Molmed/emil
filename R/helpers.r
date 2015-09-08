@@ -320,3 +320,71 @@ factor_to_logical <- function(x, base=1L, drop=TRUE){
     newx[as.integer(x), , drop=my_drop]
 }
 
+#' Get the most common value
+#' 
+#' @param x Vector.
+#' @param na.rm Whether to ignore missing values when calculating the mode.
+#'   Note that modes may be identified even if \code{x} contains missing values
+#'   as long as they are too few to affect the result.
+#' @param allow_multiple Controls what is returned if \code{x} contains more
+#'   than one mode. If \code{TRUE} all modes are returned, if \code{FALSE}
+#'   \code{NA} is returned.
+#' @return The most common values or values in \code{x} or \code{NA} if could
+#'   not be determined.
+#' @examples
+#' mode(mtcars$cyl)
+#' mode(chickwts$feed)
+#' mode(unlist(strsplit("Hello Dolly!", "")))
+#' 
+#' # Multiple modes
+#' mode(iris$Species)
+#' 
+#' # Missing values
+#' x <- rep(1:4, 4)
+#' x[2:4] <- NA
+#' mode(x)
+#' mode(x, na.rm=TRUE)
+#' 
+#' x <- c(rep(1:3, c(4,2,1)), NA)
+#' mode(x, na.rm=FALSE)
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @export
+mode <- function(x, na.rm=FALSE, allow_multiple=TRUE){
+    if(na.rm){
+        count <- table(x, useNA="no")
+        count_max <- count == max(count)
+    } else {
+        count <- table(x, useNA="always")
+        na_count <- tail(count, 1)
+        count <- count[-length(count)]
+        count_max <- count == max(count)
+        if(any(count[!count_max] + na_count >= count[count_max]))
+            return(NA)
+    }
+    if(is.factor(x)){
+        x_mode <- factor(unname(which(count_max)), seq_len(nlevels(x)), levels(x))
+    } else {
+        x_mode <- names(count)[count_max]
+        if(!is.character(x)) x_mode <- as(x_mode, class(x))
+    }
+    if(!allow_multiple && length(x_mode) > 1) NA
+    else x_mode
+}
+
+#' Summarize a potentially long character vector to a compact form
+#' 
+#' @param type The type of entities listed in \code{names}.
+#' @param name Names of entities that should be summarized.
+#' @return Character scalar.
+#' @examples
+#' example_string("letter", LETTERS)
+#' @author Christofer \enc{Bäcklin}{Backlin}
+#' @noRd
+example_string <- function(type, names){
+    stopifnot(length(names) > 0)
+    sprintf("%s `%s`%s", type, names[1],
+        if(length(names) > 1)
+            sprintf(" and %i other %s%s", length(names)-1, type,
+                if(length(names) > 2) "s" else ""))
+}
+

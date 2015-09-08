@@ -3,6 +3,8 @@ todo
 old
 *.Rapp.history
 .Rhistory
+*.o
+*.so
 *~
 *.swp
 *.bak
@@ -12,3 +14,4 @@ pack.r
 ideas.txt
 pack.r
 pack.R
+..Rcheck

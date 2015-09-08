@@ -11,6 +11,27 @@ test_that("Test for blanks", {
     expect_false(is_blank(function() 1))
 })
 
+test_that("Mode calculation", {
+    expect_identical(mode(c(1,1,1,2,2,3)), 1)
+    x <- gl(2, 10, 15, labels=c("A", "B"))
+    expect_equal(mode(),
+                 factor("A", c("A", "B")))
+    names(x) <- letters[seq_along(x)]
+    expect_identical(names(mode(x)), NULL)
+
+    # Multiple modes
+    expect_identical(mode(1:4), 1:4)
+    expect_identical(mode(letters), letters)
+
+    # Missing values
+    x <- rep(1L:4L, 4)
+    x[2:4] <- NA
+    expect_identical(mode(x), NA)
+    expect_identical(mode(x, na.rm=TRUE), 1L)
+    x <- c(rep(1:3, c(4,2,1)), NA)
+    expect_identical(mode(x, na.rm=TRUE), mode(x, na.rm=FALSE))
+})
+
 test_that("Missing value imputation", {
     x <- c(1:3, NA)
     expect_that(fill(x, 3, 0), is_identical_to(c(1,2,0,NA)))

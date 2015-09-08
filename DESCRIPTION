@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.2.0.9002
-Date: 2015-08-27
+Version: 2.2.1
+Date: 2015-09-08
 Authors@R: c(
     person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
@@ -26,6 +26,7 @@ Imports:
     lazyeval,
     magrittr,
     methods,
+    Rcpp (>= 0.11.6),
     stats,
     tidyr,
     utils
@@ -43,6 +44,7 @@ Suggests:
     rpart,
     survival,
     testthat (>= 0.9.1)
+LinkingTo: Rcpp
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes
