@@ -192,7 +192,7 @@ pre_remove_constant <- function(data, na.rm=TRUE){
     if(is.data.frame(data$fit$x)){
         constant_feature <- vapply(data$fit$x, is_constant, logical(1), na.rm=na.rm)
     } else constant_feature <- apply(data$fit$x, 2, is_constant, na.rm=na.rm)
-    if(has_na(constant_feature)){
+    if(anyNA(constant_feature)){
         if(na.rm) constant_feature[is.na(constant_feature)] <- TRUE
         else stop("Could not determine which features are constant.")
     } 

@@ -60,17 +60,20 @@ resample <- function(method, y, ..., subset=TRUE){
 
     method_fun <- match.fun(sprintf("resample_%s", method))
     res <- method_fun(y=y, ..., subset=subset)
+    stopifnot(inherits(res$fold_set, "data.frame"))
     res$fold_set[T] <- Map(function(f, n){
         structure(f, class=c(method, "fold", class(f)),
                   parameter=res$parameter, fold.name=n)
     }, res$fold_set, names(res$fold_set))
 
     class(res$fold_set) <- c(method, "resample", class(res$fold_set))
-    if(is.null(names(res$fold_set))){
-        names(res$fold_set) <- sprintf("fold%i", 1:ncol(res$fold_set))
+    if(is.null(colnames(res$fold_set))){
+        colnames(res$fold_set) <- sprintf("fold%i", 1:ncol(res$fold_set))
     }
-
     if(!is.null(names(y))) rownames(res$fold_set) <- names(y)
+
+    # Confirm that the resampling method did not include any observations that
+    # should be left out
     y_remove <- is.na(y) | !logical_subset(y, subset)
     if(any(y_remove)) res$fold_set[y_remove,] <- NA
     res$fold_set

@@ -5,50 +5,6 @@
 
 using namespace Rcpp;
 
-// has_na_character
-LogicalVector has_na_character(CharacterVector x);
-RcppExport SEXP emil_has_na_character(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject __result;
-    Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< CharacterVector >::type x(xSEXP);
-    __result = Rcpp::wrap(has_na_character(x));
-    return __result;
-END_RCPP
-}
-// has_na_complex
-LogicalVector has_na_complex(ComplexVector x);
-RcppExport SEXP emil_has_na_complex(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject __result;
-    Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< ComplexVector >::type x(xSEXP);
-    __result = Rcpp::wrap(has_na_complex(x));
-    return __result;
-END_RCPP
-}
-// has_na_expression
-LogicalVector has_na_expression(ExpressionVector x);
-RcppExport SEXP emil_has_na_expression(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject __result;
-    Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< ExpressionVector >::type x(xSEXP);
-    __result = Rcpp::wrap(has_na_expression(x));
-    return __result;
-END_RCPP
-}
-// has_na_numeric
-LogicalVector has_na_numeric(NumericVector x);
-RcppExport SEXP emil_has_na_numeric(SEXP xSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject __result;
-    Rcpp::RNGScope __rngScope;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    __result = Rcpp::wrap(has_na_numeric(x));
-    return __result;
-END_RCPP
-}
 // is_constant_character
 LogicalVector is_constant_character(CharacterVector x, bool na_rm);
 RcppExport SEXP emil_is_constant_character(SEXP xSEXP, SEXP na_rmSEXP) {
