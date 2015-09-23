@@ -51,27 +51,50 @@ modeling_procedure <- function(method, parameter=list(), error_fun=NULL, fit_fun
             Map("[[", parameter, i)
         })
     }
-    procedure <- structure(class = "modeling_procedure", .Data = list(
+    if(missing(fit_fun)){
+        fit_fun <- tryCatch({
+            get(sprintf("fit_%s", method), globalenv())
+        }, error = function(...){
+            tryCatch({
+                get(sprintf("fit_%s", method))
+            }, error = function(err){
+                err
+            })
+        })
+    }
+    if(!is.function(fit_fun))
+        stop("No fitting function found.")
+    if(missing(predict_fun)){
+        predict_fun <- tryCatch({
+            get(sprintf("predict_%s", method), globalenv())
+        }, error = function(...){
+            tryCatch({
+                get(sprintf("predict_%s", method))
+            }, error = function(err){
+                err
+            })
+        })
+    }
+    if(missing(importance_fun)){
+        importance_fun <- tryCatch({
+            get(sprintf("importance_%s", method), globalenv())
+        }, error = function(...){
+            tryCatch({
+                get(sprintf("importance_%s", method))
+            }, error = function(err){
+                err
+            })
+        })
+    }
+    structure(class = "modeling_procedure", .Data = list(
         method = if(missing(method)) "custom" else method,
         parameter = if(length(parameter) == 0) list() else if(length(parameter) == 1) parameter[[1]] else NULL,
         tuning = if(length(parameter) < 2) NULL else list(parameter = parameter, error = NULL),
-        fit_fun =
-            if(missing(fit_fun)){
-                tryCatch(get(sprintf("fit_%s", method)), error=function(err) err)
-            } else fit_fun,
-        predict_fun =
-            if(missing(predict_fun)){
-                tryCatch(get(sprintf("predict_%s", method)), error=function(err) err)
-            } else predict_fun,
-        importance_fun =
-            if(missing(importance_fun)){
-                tryCatch(get(sprintf("importance_%s", method)), error=function(err) err)
-            } else importance_fun,
+        fit_fun = fit_fun,
+        predict_fun = predict_fun,
+        importance_fun = importance_fun,
         error_fun = error_fun
     ))
-    if(!is.function(procedure$fit_fun))
-        stop("No fitting function found.")
-    procedure
 }
 
 #' Print method for modeling procedure

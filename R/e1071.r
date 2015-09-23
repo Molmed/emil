@@ -28,11 +28,17 @@ fit_svm <- function(x, y, probability=TRUE, ranges, ...){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @export
 predict_svm <- function(object, x, probability=object$compprob, statistic=TRUE, ...){
-    prediction <- predict(object, x, probability=probability,
-                          decision.values = statistic, ...)
-    list(prediction = prediction,
-         probability = data.frame(attr(prediction, "probabilities"))[object$levels],
-         statistic = attr(prediction, "decision.value"))
+    prediction <- list(prediction, predict(object, x, probability=probability,
+                                           decision.values = statistic, ...))
+    if(probability){
+        prediction$probability <- attr(prediction$prediction, "probabilities")
+        attr(prediction$prediction, "probability") <- NULL
+    }
+    if(statistic){
+        prediction$statistic <- attr(prediction$prediction, "decision.value")
+        attr(prediction$prediction, "decision.value") <- NULL
+    }
+    prediction
 }
 
 #' Fit a naive Bayes classifier

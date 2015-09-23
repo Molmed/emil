@@ -2,7 +2,7 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.2.2.9001
+Version: 2.2.2.9002
 Date: 2015-09-23
 Authors@R: c(
     person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
