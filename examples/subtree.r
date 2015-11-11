@@ -57,6 +57,6 @@ imp <- result %>% select(fold = TRUE, "importance", function(x){
 })
 require(ggplot2)
 ggplot(imp, aes(x=Species, y=Importance)) +
-    geom_abline(yintercept=0, slope=0, color="hotpink") +
+    geom_abline(intercept=0, slope=0, color="hotpink") +
     geom_boxplot() + facet_wrap(~feature)
 
