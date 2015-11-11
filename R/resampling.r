@@ -244,8 +244,6 @@ resample_bootstrap <- function(y, nfold=10, fit_fraction = if(replace) 1 else .6
 #' @param ... Sent to \code{\link{plot}}.
 #' @return Nothing, produces a plot.
 #' @examples
-#' image(resample("holdout", 60, test_fraction=1/3, nfold=20))
-#'
 #' y <- gl(2, 30)
 #' image(resample("crossvalidation", y, nfold=3, nrepeat=8), col=y)
 #' @author Christofer \enc{Bäcklin}{Backlin}

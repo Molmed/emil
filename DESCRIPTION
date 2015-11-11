@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.2.2.9002
-Date: 2015-09-23
+Version: 2.2.3
+Date: 2015-11-11
 Authors@R: c(
     person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
@@ -20,7 +20,7 @@ Description: A toolbox for designing and evaluating predictive models with
 Imports:
     data.table,
     dplyr,
-    ggplot2,
+    ggplot2 (>= 1.0.1.9003),
     graphics,
     grDevices,
     lazyeval,
