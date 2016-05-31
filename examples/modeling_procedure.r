@@ -24,7 +24,8 @@ modeling_procedure("glmnet", list(alpha = seq(0, 1, length.out=6),
                                   lambda = list(seq(0, 5, length.out=30))))
 
 # 6: Train elastic nets using the caret package's model fitting framework
-library(caret)
-modeling_procedure("caret", list(method = "glmnet",
-    trControl = list(trainControl(verboseIter = TRUE, classProbs = TRUE))))
+if(requireNamespace("caret", quitely = TRUE)){
+    modeling_procedure("caret", list(method = "glmnet",
+        trControl = list(trainControl(verboseIter = TRUE, classProbs = TRUE))))
+}
 
