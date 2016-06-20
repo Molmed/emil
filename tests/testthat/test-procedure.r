@@ -18,7 +18,7 @@ test_that("Procedure coercing", {
     my_test(multify(list(modeling_procedure("lda"),
                          "qda")))
 
-    expect_false(attr("lda", "multiple"))
-    expect_true(attr(c("lda", "qda"), "multiple"))
-    expect_true(attr(list("lda"), "multiple"))
+    expect_false(attr(multify("lda"), "multiple"))
+    expect_true(attr(multify(c("lda", "qda")), "multiple"))
+    expect_true(attr(multify(list("lda")), "multiple"))
 })

@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.2.4
-Date: 2016-05-31
+Version: 2.2.5.9002
+Date: 2016-06-20
 Authors@R: c(
     person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
@@ -49,6 +49,6 @@ LinkingTo: Rcpp
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes
-URL: http://molmed.github.io/emil
+URL: https://github.com/Molmed/emil
 BugReports: https://github.com/Molmed/emil/issues
 RoxygenNote: 5.0.1

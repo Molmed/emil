@@ -4,7 +4,7 @@ x <- sweep(matrix(0, 6, 6), 1, 1:6, "+")
 na.ind <- arrayInd(sample(length(x)/2, 10), c(6,6))[,2:1]
 x[na.ind] <- NA
 y <- NULL
-fold <- rep(0:1, each=3)
+fold <- structure(rep(0:1, each=3), class = "fold")
 
 test_that("Median imputation", {
     sets <- pre_impute_median(pre_split(x, y, fold))
@@ -37,11 +37,14 @@ test_that("Factor to logical conversion", {
     cv <- resample("crossvalidation", y)
     sets <- pre_split(df, y, cv[[1]])
     expect_is(pre_factor_to_logical(sets), "preprocessed_data")
-    expect_is(pre_factor_to_logical(sets,
-        base = c(wine = 3L, tie_break = 3L)))
-    expect_is(pre_factor_to_logical(sets, 
-        base = list(wine = 3L, fruit = NULL, tie_break = "Deuce")),
-        "preprocessed_data")
+    expect_is(
+      pre_factor_to_logical(sets, base = c(wine = 3L, tie_break = 3L)),
+      "preprocessed_data"
+    )
+    expect_is(
+      pre_factor_to_logical(sets, base = list(wine = 3L, fruit = NULL, tie_break = "Deuce")),
+      "preprocessed_data"
+    )
 
     expect_error(pre_factor_to_logical(sets, feature="Dave Brubeck"))
     expect_error(pre_factor_to_logical(sets, base=c(wine=6L)))

@@ -14,7 +14,7 @@ test_that("Test for blanks", {
 test_that("Mode calculation", {
     expect_identical(mode(c(1,1,1,2,2,3)), 1)
     x <- gl(2, 10, 15, labels=c("A", "B"))
-    expect_equal(mode(),
+    expect_equal(mode(x),
                  factor("A", c("A", "B")))
     names(x) <- letters[seq_along(x)]
     expect_identical(names(mode(x)), NULL)
@@ -39,6 +39,7 @@ test_that("Missing value imputation", {
 })
 
 test_that("dplyr integration", {
+    requireNamespace("tidyr")
     x <- iris[-5]
     y <- iris$Species
     names(y) <- sprintf("orchid%03i", seq_along(y))
@@ -62,10 +63,10 @@ test_that("dplyr integration", {
     r <- result %>% select(fold = cv, "lda", "prediction", class="prediction")
     expect_is(r, "data.frame")
     expect_is(r$id, "character")
-    expect_equal(dim(r %>% spread(fold, class)), c(nrow(iris), 1+length(cv)))
+    expect_equal(dim(r %>% tidyr::spread(fold, class)), c(nrow(iris), 1+length(cv)))
 
     r <- result %>% select(fold = cv[1:3], "lda", "prediction", class="prediction")
-    expect_equal(levels(r$Fold), names(cv)[1:3])
+    expect_equal(levels(r$fold), names(cv)[1:3])
 
     # Functions
     r1 <- result %>% select(fold = TRUE, method = TRUE, error = "error")
