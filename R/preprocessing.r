@@ -11,7 +11,7 @@
 #' When supplied to \code{\link{evaluate}}, pre-processing functions can be
 #' chained (i.e. executed sequentially) after an initating call to
 #' \code{\link{pre_split}}.
-#' This can either be done using the \code{\link[=chain]{pipe operator}} defined
+#' This can either be done using the \link[magrittr:pipe]{pipe operator} defined
 #' in the \pkg{magrittr} package or by putting all pre-processing functions in a
 #' regular list (see the examples).
 #' 

@@ -321,10 +321,9 @@ image.crossvalidation <- function(x, col, ...){
 #' @noRd
 #' @export
 `[.fold` <- function(x, ...){
-    attribute <- attributes(x)
-    class(x) <- setdiff(class(x), "fold")
-    x <- x[...]
-    attributes(x) <- attribute
-    x
+  initial_class <- class(x)
+  params <- attr(x, "parameter")
+  class(x) <- setdiff(class(x), "fold")
+  structure(x[...], class = initial_class, parameter = params)
 }
 

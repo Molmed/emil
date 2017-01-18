@@ -7,7 +7,7 @@ test_that("Detection of constants", {
         is.constant <- c(NA, TRUE, FALSE)[sapply(apply(x, 1, table), length) + 1]
         is.constant.without.NA <- ifelse(is.constant,
             ifelse(apply(is.na(x), 1, any), NA, TRUE), FALSE)
-        for(my_type in c("character", "complex", "expression", "factor", "integer", "logical", "numeric")){
+        for(my_type in c("character", "complex", "factor", "integer", "logical", "numeric")){
             expect_identical(apply(x, 1, f, my_type, TRUE), is.constant)
             expect_identical(apply(x, 1, f, my_type, FALSE), is.constant.without.NA)
         }
