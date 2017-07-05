@@ -193,9 +193,15 @@ select_.list <- function(.data, ..., .dots){
     select_list(.data, lazy_eval(.dots))
 }
 #' @method select_ modeling_result
-#' @rdname select
+#' @noRd
 #' @export
 select_.modeling_result <- function(.data, ..., .dots){
+    select_list(.data, lazy_eval(.dots))
+}
+#' @method select_ learning_curve
+#' @noRd
+#' @export
+select_.learning_curve <- function(.data, ..., .dots){
     select_list(.data, lazy_eval(.dots))
 }
 #' @importFrom data.table rbindlist

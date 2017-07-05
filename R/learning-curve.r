@@ -63,12 +63,11 @@ learning_curve <- function(procedure, x, y, test_fraction, nfold=100, ..., .verb
 #' @export
 plot.learning_curve <- function(x, ..., summaries=list(mean = mean, `95-percentile`=function(x) quantile(x, .95))){
     if(is_multi_procedure(x$result[[1]])){
-        plot.data <- x$result %>%
-            select(test_fraction = TRUE, fold = TRUE, method = TRUE, performance = "error")
+        plot.data <- x %>%
+            select("result", test_fraction = TRUE, fold = TRUE, method = TRUE, performance = "error")
     } else {
-        plot.data <- x$result %>%
-            #select_list(.dots=list(test_fraction = TRUE, fold = TRUE, performance = "error")) %>%
-            select(test_fraction = TRUE, fold = TRUE, performance = "error") %>%
+        plot.data <- x %>%
+            select("result", test_fraction = TRUE, fold = TRUE, performance = "error") %>%
             mutate_(method = NA)
     }
     plot.data$test_fraction <- x$test_fraction[plot.data$test_fraction]
