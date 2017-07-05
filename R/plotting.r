@@ -8,6 +8,7 @@
 #' hlines(0:4*2.5, col="#dddddd")
 #' points(0:10, 0:10)
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom graphics par segments
 #' @export
 vlines <- function(x, lend=1, ...)
     segments(x, par("usr")[3], x, par("usr")[4], lend=lend, ...)
@@ -29,6 +30,7 @@ hlines <- function(y, lend=1, ...)
 #' @param lwd.ticks Width of the tick lines. These are kept by default.
 #' @param lend Line endings, see \code{\link{par}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom graphics axis
 #' @export
 nice_axis <- function(..., las=1, lwd=0, lwd.ticks=par("lwd"), lend=2){
     axis(..., las=las, lwd=0, lwd.ticks=lwd.ticks, lend=1)
@@ -47,6 +49,7 @@ nice_axis <- function(..., las=1, lwd=0, lwd.ticks=par("lwd"), lend=2){
 #'   i.e. 90 degree corners in this case.
 #' @param ... Sent to \code{\link{box}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom graphics box
 #' @export
 nice_box <- function(lend=2, ljoin=1, ...) box(lend=lend, ljoin=ljoin, ...)
 
@@ -70,6 +73,7 @@ get_color <- function(x, ...){
 #'   increases, and \code{-1 <= s < 0} decreases.
 #' @param alpha Transparency.
 #' @rdname get_color
+#' @importFrom grDevices col2rgb hsv rgb2hsv
 #' @export
 get_color.default <- function(x, s, v, alpha, ...){
     col <- as.data.frame(t(rgb2hsv(col2rgb(x))))

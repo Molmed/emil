@@ -71,6 +71,7 @@ pre_pamr <- function(data){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_pamr}},
 #'   \code{\link{importance_pamr}}, \code{\link{modeling_procedure}}
+#' @importFrom utils capture.output
 #' @export
 fit_pamr <- function(x, y, error_fun, cv, nfold, threshold=NULL, ...,
                      thres_fun = function(thr, err) median(thr[err == min(err)]),

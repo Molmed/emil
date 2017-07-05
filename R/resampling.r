@@ -248,6 +248,8 @@ resample_bootstrap <- function(y, nfold=10, fit_fraction = if(replace) 1 else .6
 #' image(resample("crossvalidation", y, nfold=3, nrepeat=8), col=y)
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{resample}}
+#' @importFrom graphics plot rasterImage
+#' @importFrom grDevices rgb
 #' @export
 image.resample <- function(x, col, ...){
     x <- as.matrix(x)

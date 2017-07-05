@@ -1,6 +1,3 @@
-#' @import graphics
-#' @import grDevices
-#' @import methods
 #' @importFrom stats ave cor dist lm median model.frame model.response na.fail pchisq pnorm prcomp predict predict.lm quantile sd terms 
 #' @importFrom utils tail
 NULL
