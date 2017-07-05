@@ -10,3 +10,6 @@
 ^examples
 ^render_manual\.R$
 ^todo
+^.*\.Rproj$
+^\.Rproj\.user$
+^\w+.[rR]$

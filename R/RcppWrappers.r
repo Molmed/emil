@@ -1,5 +1,4 @@
-#' @useDynLib emil
-#' @importFrom Rcpp evalCpp
+#' @useDynLib emil, .registration=TRUE
 NULL
 
 #' Check if an object contains more than one unique value

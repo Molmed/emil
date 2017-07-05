@@ -17,3 +17,5 @@ pack.R
 *.Rcheck
 symbols.rds
 *.tar.gz
+.Rproj.user
+*.Rproj

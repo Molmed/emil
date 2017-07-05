@@ -10,6 +10,7 @@
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_lm}},
 #'   \code{\link{modeling_procedure}}
+#' @importFrom utils head
 #' @export
 fit_lm <- function(x, y, formula=y~., ...){
     df <- data.frame(y, x)

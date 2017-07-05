@@ -67,6 +67,7 @@ plot.learning_curve <- function(x, ..., summaries=list(mean = mean, `95-percenti
             select(test_fraction = TRUE, fold = TRUE, method = TRUE, performance = "error")
     } else {
         plot.data <- x$result %>%
+            #select_list(.dots=list(test_fraction = TRUE, fold = TRUE, performance = "error")) %>%
             select(test_fraction = TRUE, fold = TRUE, performance = "error") %>%
             mutate_(method = NA)
     }

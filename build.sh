@@ -1,5 +1,5 @@
 #!/bin/sh
 
-R -f render_manual.R
+R -f compile_package.R
 R CMD build .
 
