@@ -19,7 +19,7 @@
 #' @examples
 #' options(emil_max_indent=3)
 #' lc <- learning_curve(c(Linear="lda", Quadratic="qda"),
-#'                      iris[-5], iris$Species, test_fraction=7:3/10)
+#'                      iris[-5], iris$Species, test_fraction=c(.7, .5, .3))
 #' plot(lc)
 #' @references Richard O Duda, Peter E Hart, and David G Stork. Pattern
 #'   Classification. Wiley, 2nd edition, 2000. ISBN 978-0-471-05669-0.
@@ -63,11 +63,11 @@ learning_curve <- function(procedure, x, y, test_fraction, nfold=100, ..., .verb
 #' @export
 plot.learning_curve <- function(x, ..., summaries=list(mean = mean, `95-percentile`=function(x) quantile(x, .95))){
     if(is_multi_procedure(x$result[[1]])){
-        plot.data <- x$result %>%
-            select(test_fraction = TRUE, fold = TRUE, method = TRUE, performance = "error")
+        plot.data <- x %>%
+            select("result", test_fraction = TRUE, fold = TRUE, method = TRUE, performance = "error")
     } else {
-        plot.data <- x$result %>%
-            select(test_fraction = TRUE, fold = TRUE, performance = "error") %>%
+        plot.data <- x %>%
+            select("result", test_fraction = TRUE, fold = TRUE, performance = "error") %>%
             mutate_(method = NA)
     }
     plot.data$test_fraction <- x$test_fraction[plot.data$test_fraction]

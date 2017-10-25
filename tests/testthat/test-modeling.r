@@ -42,9 +42,29 @@ test_that("Standard usage", {
     expect_true(all(sapply(result, function(r) identical(names(r), names(double_procedure)))))
 })
 
+test_that("Checkpointing", {
+  if(file.access(".", 2) == 0){
+    tmp.dir <- tempdir()
+    result <- modeling_fun()
+    check.perf <- modeling_fun(.checkpoint_dir=tmp.dir)
+
+    expect_that(check.perf, is_identical_to(result))
+    expect_true(file.exists(tmp.dir))
+
+    file.remove(dir(tmp.dir, pattern = "rep.fold.\\.Rdata", full.names = TRUE))
+  }
+})
+
+test_that("Error handling", {
+  x[1] <- NA
+  expect_error(modeling_fun(xx=x, .return_error=FALSE))
+  result <- modeling_fun(xx=x, .return_error=TRUE, .verbose=-1) # Test verbosity too
+  expect_true(all(sapply(result, inherits, "error")))
+})
+
 test_that("Parallelization", {
-    require(parallel)
-    if(detectCores() > 1 && .Platform$OS.type != "windows"){
+    requireNamespace("parallel")
+    if(parallel::detectCores() > 1 && .Platform$OS.type != "windows"){
         procedure <- modeling_procedure("lda", error_fun = function(...){
             Sys.sleep(0.5)
             list(pid=Sys.getpid(), time=Sys.time())
@@ -68,33 +88,13 @@ test_that("Parallelization", {
             par.time <- system.time( par.perf <- modeling_fun(.cores=2) )
         }
 
-        expect_more_than(seq.time["elapsed"], par.time["elapsed"])
-        expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1)
-        expect_equal(length(unique(subtree(par.perf, TRUE, "error", "pid"))), 2)
-        expect_more_than(
+        expect_gt(seq.time["elapsed"], par.time["elapsed"])
+        expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1L)
+        expect_equal(length(unique(subtree(par.perf, TRUE, "error", "pid"))), 2L)
+        expect_gt(
             diff(range(subtree(seq.perf, T, "error", "time"))),
             diff(range(subtree(par.perf, T, "error", "time")))
         )
     }
-})
-
-test_that("Checkpointing", {
-    if(file.access(".", 2) == 0){
-        tmp.dir <- tempdir()
-        result <- modeling_fun()
-        check.perf <- modeling_fun(.checkpoint_dir=tmp.dir)
-
-        expect_that(check.perf, is_identical_to(result))
-        expect_true(file.exists(tmp.dir))
-
-        unlink(tmp.dir, recursive=TRUE)
-    }
-})
-
-test_that("Error handling", {
-    x[1] <- NA
-    expect_error(modeling_fun(xx=x, .return_error=FALSE))
-    result <- modeling_fun(xx=x, .return_error=TRUE, .verbose=-1) # Test verbosity too
-    expect_true(all(sapply(result, inherits, "error")))
 })
 

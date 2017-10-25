@@ -170,6 +170,7 @@ Surv_event_types <- function(x){
 #'   NULL to suppress legend.
 #' @param ... Sent to \code{\link{plot}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom graphics legend points
 #' @export
 plot.Surv <- function(x, y, segments=TRUE, flip=FALSE, legendpos="topright", ...){
     if(missing(y)) y <- 1:length(x)

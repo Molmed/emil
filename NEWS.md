@@ -1,5 +1,12 @@
 # News and Changelog
 
+## emil 2.2.7
+Compatibility fix for *dplyr* 0.6.0.
+
+## emil 2.2.6
+* Fixed broken cross-references in the documentation.
+* Corrected bugs in the tests.
+
 ## emil 2.2.3
 ### New features
 * Functions for generating dummy variables for unordered and ordered factors.

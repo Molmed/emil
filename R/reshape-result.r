@@ -56,6 +56,7 @@ NULL
 #' @seealso \code{\link{select}}, \code{\link{get_prediction}},
 #'   \code{\link{get_importance}}, \code{\link{get_tuning}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom methods as
 #' @export
 subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
     if(missing(error_value)) error_value <- NULL
@@ -193,9 +194,15 @@ select_.list <- function(.data, ..., .dots){
     select_list(.data, lazy_eval(.dots))
 }
 #' @method select_ modeling_result
-#' @rdname select
+#' @noRd
 #' @export
 select_.modeling_result <- function(.data, ..., .dots){
+    select_list(.data, lazy_eval(.dots))
+}
+#' @method select_ learning_curve
+#' @noRd
+#' @export
+select_.learning_curve <- function(.data, ..., .dots){
     select_list(.data, lazy_eval(.dots))
 }
 #' @importFrom data.table rbindlist

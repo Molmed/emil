@@ -71,6 +71,7 @@ pre_pamr <- function(data){
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_pamr}},
 #'   \code{\link{importance_pamr}}, \code{\link{modeling_procedure}}
+#' @importFrom utils capture.output
 #' @export
 fit_pamr <- function(x, y, error_fun, cv, nfold, threshold=NULL, ...,
                      thres_fun = function(thr, err) median(thr[err == min(err)]),
@@ -124,8 +125,11 @@ fit_pamr <- function(x, y, error_fun, cv, nfold, threshold=NULL, ...,
                     if(slim){
                         model.cv$cv.objects <- NULL
                     }
-                    model.cv$error <- sapply(seq_along(model.cv$threshold), function(i)
-                        error_fun(model.cv$y, list(prediction=model.cv$yhat[[i]], probability=model.cv$probability[,,i])))
+                    model.cv$error <- sapply(seq_along(model.cv$threshold), function(i){
+                      prediction <- structure(list(prediction=model.cv$yhat[[i]], probability=model.cv$prob[,,i]),
+                                              class = "prediction")
+                      error_fun(model.cv$y, prediction)
+                    })
                 }
             } else {
                 if(!missing(cv) && !is_blank(cv))

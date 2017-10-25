@@ -1,8 +1,5 @@
-#' @import graphics
-#' @import grDevices
-#' @import methods
 #' @importFrom stats ave cor dist lm median model.frame model.response na.fail pchisq pnorm prcomp predict predict.lm quantile sd terms 
-#' @import utils
+#' @importFrom utils tail
 NULL
 
 #' Wrapper for several methods to test if a variable is empty
@@ -110,6 +107,7 @@ na_fill <- function(x, replacement){
 #' @examples
 #' nice_require("base", "is required to do anything at all")
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom utils install.packages
 #' @export
 nice_require <- function(pkg, reason){
     pkg.loaded <- sapply(pkg, requireNamespace)

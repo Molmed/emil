@@ -48,6 +48,7 @@
 #' @example examples/evaluate.r
 #' @seealso \code{\link{emil}}, \code{\link{modeling_procedure}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom utils object.size
 #' @export
 evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
     .save=c(model=TRUE, prediction=TRUE, error=TRUE, importance=FALSE),
