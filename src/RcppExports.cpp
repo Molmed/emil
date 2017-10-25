@@ -7,7 +7,7 @@ using namespace Rcpp;
 
 // is_constant_character
 LogicalVector is_constant_character(CharacterVector x, bool na_rm);
-RcppExport SEXP emil_is_constant_character(SEXP xSEXP, SEXP na_rmSEXP) {
+RcppExport SEXP _emil_is_constant_character(SEXP xSEXP, SEXP na_rmSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -19,7 +19,7 @@ END_RCPP
 }
 // is_constant_complex
 LogicalVector is_constant_complex(ComplexVector x, bool na_rm);
-RcppExport SEXP emil_is_constant_complex(SEXP xSEXP, SEXP na_rmSEXP) {
+RcppExport SEXP _emil_is_constant_complex(SEXP xSEXP, SEXP na_rmSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -31,7 +31,7 @@ END_RCPP
 }
 // is_constant_numeric
 LogicalVector is_constant_numeric(NumericVector x, bool na_rm);
-RcppExport SEXP emil_is_constant_numeric(SEXP xSEXP, SEXP na_rmSEXP) {
+RcppExport SEXP _emil_is_constant_numeric(SEXP xSEXP, SEXP na_rmSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;

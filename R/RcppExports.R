@@ -2,14 +2,14 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 is_constant_character <- function(x, na_rm) {
-    .Call(emil_is_constant_character, x, na_rm)
+    .Call(`_emil_is_constant_character`, x, na_rm)
 }
 
 is_constant_complex <- function(x, na_rm) {
-    .Call(emil_is_constant_complex, x, na_rm)
+    .Call(`_emil_is_constant_complex`, x, na_rm)
 }
 
 is_constant_numeric <- function(x, na_rm) {
-    .Call(emil_is_constant_numeric, x, na_rm)
+    .Call(`_emil_is_constant_numeric`, x, na_rm)
 }
 

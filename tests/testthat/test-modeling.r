@@ -89,8 +89,8 @@ test_that("Parallelization", {
         }
 
         expect_gt(seq.time["elapsed"], par.time["elapsed"])
-        expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1)
-        expect_equal(length(unique(subtree(par.perf, TRUE, "error", "pid"))), 2)
+        expect_equal(length(unique(subtree(seq.perf, TRUE, "error", "pid"))), 1L)
+        expect_equal(length(unique(subtree(par.perf, TRUE, "error", "pid"))), 2L)
         expect_gt(
             diff(range(subtree(seq.perf, T, "error", "time"))),
             diff(range(subtree(par.perf, T, "error", "time")))

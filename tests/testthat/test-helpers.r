@@ -71,7 +71,7 @@ test_that("dplyr integration", {
     # Functions
     r1 <- result %>% select(fold = TRUE, method = TRUE, error = "error")
     r2 <- result %>% select(fold = TRUE, method = TRUE, accuracy = function(x) 1-x$error)
-    expect_equal(r1$error, 1-r2$accuracy)
+    expect_equal(r1$error, 1-r2$accuracy, tolerance=1e-3)
 
     r <- result %>% select(fold = TRUE, method = TRUE,
         function(x) data.frame(error=x$error, accuarcy = 1-x$error))

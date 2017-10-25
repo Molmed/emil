@@ -56,6 +56,7 @@ NULL
 #' @seealso \code{\link{select}}, \code{\link{get_prediction}},
 #'   \code{\link{get_importance}}, \code{\link{get_tuning}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @importFrom methods as
 #' @export
 subtree <- function(x, i, ..., error_value, warn, simplify=TRUE){
     if(missing(error_value)) error_value <- NULL
