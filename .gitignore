@@ -3,6 +3,7 @@ todo
 old
 *.Rapp.history
 .Rhistory
+.RData
 *.o
 *.so
 *~
