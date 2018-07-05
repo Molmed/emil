@@ -1,7 +1,12 @@
 # News and Changelog
 
+## emil 2.2.10
+Compatibility update for *survival* v2.42-5.
+
+Improved build tools (only for developer convenice, not included in the package).
+
 ## emil 2.2.7
-Compatibility fix for *dplyr* 0.6.0.
+Compatibility update for *dplyr* v0.6.0.
 
 ## emil 2.2.6
 * Fixed broken cross-references in the documentation.

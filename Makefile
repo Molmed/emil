@@ -1,29 +1,24 @@
-version := $(shell grep "^Version: " < DESCRIPTION | cut -c 10-)
+# Developed on macOS High Sierra
+source := $(shell git ls-files .)
+version := $(shell grep -r "Version" DESCRIPTION | cut -c 22-)
 pkg := emil_$(version).tar.gz
 
-.PHONY: NAMESPACE
-
-clean:
-	rm -r emil.Rcheck
-	rm *.Rout
-
 build: $(pkg)
+	@echo "Built $<"
 
-$(pkg): src/RcppExports.cpp NAMESPACE
+$(pkg): $(source) compile_package.R
+	R -f compile_package.R
 	R CMD build .
 
-src/RcppExports.cpp: make_Rcpp.R src/init.c src/is_constant.cpp
-	Rscript $<
-
-NAMESPACE: make_NAMESPACE.R
-	Rscript $<
-
-test: $(pkg)
+check: $(pkg)
 	R CMD check $<
 
-cran-test: $(pkg)
+cran-check: $(pkg)
 	R CMD check $< --as-cran
-	grep "The Date field is over a month old." < emil.Rcheck/00check.log
 
-install: test
-	R CMD install $(pkg)
+install: $(pkg)
+	R CMD install $<
+
+clean:
+	rm -rf emil.Rcheck
+	rm *.tar.gz

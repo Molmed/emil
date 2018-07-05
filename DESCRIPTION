@@ -2,8 +2,8 @@ Encoding: UTF-8
 Package: emil
 Type: Package
 Title: Evaluation of Modeling without Information Leakage
-Version: 2.2.9
-Date: 2017-10-25
+Version: 2.2.10
+Date: 2018-07-05
 Authors@R: c(
     person("Christofer", "Backlin", role = c("aut", "cre"), email = "emil@christofer.backlin.se"),
     person("Mats", "Gustafsson", role = "aut")
@@ -17,6 +17,8 @@ Description: A toolbox for designing and evaluating predictive models with
     problem, be it classification, regression or survival analysis, that is
     easy to extend and adapt to your specific setting. Some commonly used
     methods for classification, regression and survival analysis are included.
+Depends:
+    R (>= 3.0.2)
 Imports:
     data.table,
     dplyr,
@@ -26,7 +28,6 @@ Imports:
     lazyeval,
     magrittr,
     methods,
-    Rcpp (>= 0.12.1),
     stats,
     tidyr,
     utils
@@ -43,9 +44,9 @@ Suggests:
     randomForest,
     RColorBrewer,
     rpart,
-    survival,
+    survival (>= 2.42-5),
     testthat (>= 0.9.1)
-LinkingTo: Rcpp
+LinkingTo: Rcpp (>= 0.12.1)
 License: GPL (>=2)
 LazyLoad: yes
 LazyData: yes

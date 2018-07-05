@@ -10,5 +10,5 @@ specific setting.
 Some commonly used methods for classification, regression and survival analysis
 are included.
 
-[The project website](http://molmed.github.io/emil) is under development and a vignette will be added when the original publication about it is accepted for publication.
-
+A benchmark agains the similar package caret can be found here at
+[github.com/Molmed/Backlin-2017](http://www.github.com/Molmed/Backlin-2017).
