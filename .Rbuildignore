@@ -9,3 +9,5 @@
 ^\.git
 .*\.Rproj$
 ^\.Rproj\.user$
+^\w+.[rR]$
+^Makefile$

@@ -1,18 +1,17 @@
-citHeader("To cite package ‘emil’ in publications use:")
+bibentry(bibtype = "Article",
+  title        = "Developer-Friendly and Computationally Efficient Predictive Modeling without Information Leakage: The {emil} Package for {R}",
+  author       = c(person(given = c("Christofer", "L."),
+                          family = "B{\\\"a}cklin",
+                          email = "emil@christofer.backlin.se"),
+                   person(given = c("Mats", "G."),
+                          family = "Gustafsson")),
+  journal      = "Journal of Statistical Software",
+  year         = "2018",
+  volume       = "85",
+  number       = "13",
+  pages        = "1--30",
+  doi          = "10.18637/jss.v085.i13",
 
-year <- sub(".*(2[[:digit:]]{3})-.*", "\\1", meta$Date, perl = TRUE)
-vers <- paste("R package version", meta$Version)
-
-citEntry(entry = "Manual",
-         title = "Evaluation of Modeling without Information Leakage",
-         author = personList(as.person("Christofer L Bäcklin"),
-                             as.person("Mats G Gustafsson")),
-         year = year,
-         note = vers,
-
-         textVersion =
-         paste0("Christofer L Bäcklin, Mats G Gustafsson (",
-                year,
-                "). Evaluation of Modeling without Information Leakage. ",
-                vers, "."))
+  header       = "To cite emil in publications use:"
+)
 

@@ -20,4 +20,4 @@ clusterEvalQ(cl, library(emil))
 clusterExport(cl, c("x", "y"))
 result <- parLapply(cl, cv, function(fold)
     evaluate("lda", x, y, resample=fold))
-
+stopCluster(cl)
