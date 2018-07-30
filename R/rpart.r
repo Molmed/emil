@@ -5,6 +5,8 @@
 #' @param ... Sent to \code{\link{rpart}}.
 #' @return A fitted decision tree.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @references Breiman L., Friedman J. H., Olshen R. A., and Stone, C. J. (1984)
+#'   \emph{Classification and Regression Trees}. Wadsworth.
 #' @export
 fit_rpart <- function(x, y, ...){
     nice_require("rpart", "is needed to fit decision trees")

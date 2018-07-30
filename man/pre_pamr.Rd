@@ -25,6 +25,12 @@ then reformats the result to satisfy PAMR.
 \code{pre_pamr} must be run last if chained with other pre-processing
 functions, since it substantially reshapes the data.
 }
+\references{
+Robert Tibshirani, Trevor Hastie, Balasubramanian Narasimhan and
+  Gilbert Chu (2002) Diagnosis of multiple cancer types by shrunken centroids
+  of gene expression.
+  URL www.pnas.org/cgi/doi/10.1073/pnas.082099299
+}
 \seealso{
 \code{\link{emil}}, \code{\link{pre_process}}
 }

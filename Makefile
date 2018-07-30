@@ -1,6 +1,6 @@
 # Developed on macOS High Sierra
 source := $(shell git ls-files .)
-version := $(shell grep -r "Version" DESCRIPTION | cut -c 22-)
+version := $(shell grep -r "Version" DESCRIPTION | cut -c 10-)
 pkg := emil_$(version).tar.gz
 
 build: $(pkg)
@@ -17,7 +17,7 @@ cran-check: $(pkg)
 	R CMD check $< --as-cran
 
 install: $(pkg)
-	R CMD install $<
+	R CMD INSTALL $<
 
 clean:
 	rm -rf emil.Rcheck

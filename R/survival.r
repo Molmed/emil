@@ -27,6 +27,12 @@ pvalue <- function(x, log_p=FALSE, ...) UseMethod("pvalue")
 #' @return p-value.
 #' @seealso \code{\link{pvalue}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @references Andersen, P. and Gill, R. (1982). Cox's regression model for
+#'   counting processes, a large sample study. \emph{Annals of Statistics}
+#'   10, 1100-1120.
+#'
+#'   Therneau, T., Grambsch, P., Modeling Survival Data: Extending the
+#'   Cox Model.  Springer-Verlag, 2000.
 #' @export
 pvalue.coxph <- function(x, log_p=FALSE, test=c("logrank", "wald", "likelihood"), ...){
     test <- match.arg(test)

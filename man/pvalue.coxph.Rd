@@ -23,6 +23,14 @@ p-value.
 \description{
 Based on \code{\link{summary.coxph}}.
 }
+\references{
+Andersen, P. and Gill, R. (1982). Cox's regression model for
+  counting processes, a large sample study. \emph{Annals of Statistics}
+  10, 1100-1120.
+
+  Therneau, T., Grambsch, P., Modeling Survival Data: Extending the
+  Cox Model.  Springer-Verlag, 2000.
+}
 \seealso{
 \code{\link{pvalue}}
 }

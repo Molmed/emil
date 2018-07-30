@@ -49,6 +49,15 @@
 #' @seealso \code{\link{emil}}, \code{\link{modeling_procedure}}
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @importFrom utils object.size
+#' @references Hastie T, Tibshirani R, Friedman J (2001). The Elements of
+#'   Statistical Learning. 1st edition. Springer-Verlag.
+#'   doi:10.1007/978-0-387-21606-5.
+#'
+#'   Varma S, Simon R (2006). Bias in Error Estimation When Using Cross-Validation
+#'   for Model Selection. BMC Bioinformatics, 7(91). doi:10.1186/1471-2105-7-91.
+#'   
+#'   Lawless JF, Yuan Y (2010). Estimation of Prediction Error for Survival Models.
+#'   Statistics in Medicine, 29(2), 262–272. doi:10.1002/sim.3758.
 #' @export
 evaluate <- function(procedure, x, y, resample, pre_process=pre_split,
     .save=c(model=TRUE, prediction=TRUE, error=TRUE, importance=FALSE),

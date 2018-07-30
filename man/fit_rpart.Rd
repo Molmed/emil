@@ -19,6 +19,10 @@ A fitted decision tree.
 \description{
 Fit a decision tree
 }
+\references{
+Breiman L., Friedman J. H., Olshen R. A., and Stone, C. J. (1984)
+  \emph{Classification and Regression Trees}. Wadsworth.
+}
 \author{
 Christofer \enc{Bäcklin}{Backlin}
 }

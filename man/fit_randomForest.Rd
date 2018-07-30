@@ -20,6 +20,10 @@ Fitted random forest.
 Directly calling the \pkg{randomForest} package implementation. See
 \code{\link[randomForest]{randomForest}} for parameter specification.
 }
+\references{
+Breiman L (2001). Random Forests. Machine Learning, 45(1), 5–32.
+  doi:10.1023/a:1010933404324.
+}
 \seealso{
 \code{\link{emil}}, \code{\link{predict_randomForest}},
   \code{\link{importance_randomForest}}, \code{\link{modeling_procedure}}

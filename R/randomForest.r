@@ -10,6 +10,8 @@
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_randomForest}},
 #'   \code{\link{importance_randomForest}}, \code{\link{modeling_procedure}}
+#' @references Breiman L (2001). Random Forests. Machine Learning, 45(1), 5–32.
+#'   doi:10.1023/a:1010933404324.
 #' @export
 fit_randomForest <- function(x, y, ...){
     nice_require("randomForest")

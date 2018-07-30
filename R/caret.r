@@ -4,6 +4,10 @@
 #' @param y Response.
 #' @param ... Sent to \code{\link[caret]{train}}.
 #' @author Christofer \enc{Bäcklin}{Backlin}
+#' @references Kuhn M (2008). “Building Predictive Models in R Using the caret Package.
+#'   Journal of Statistical Software, 28(5), 1–26. doi:10.18637/jss.v028.i05.
+#'   caret: Classification and Regression Training. R package version 6.0-79,
+#'   URL https://CRAN.R-project.org/package=caret.
 #' @export
 fit_caret <- function(x, y, ...){
     nice_require("caret")

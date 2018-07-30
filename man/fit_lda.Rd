@@ -19,6 +19,13 @@ Fitted linear discriminant.
 \description{
 Wrapper for the \pkg{MASS} package implementation.
 }
+\references{
+Venables, W. N. and Ripley, B. D. (2002) Modern Applied
+  Statistics with S. Fourth edition.  Springer.
+
+  Ripley, B. D. (1996) Pattern Recognition and Neural Networks.
+  Cambridge University Press.
+}
 \seealso{
 \code{\link{emil}}, \code{\link{predict_lda}},
   \code{\link{modeling_procedure}}

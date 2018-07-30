@@ -23,6 +23,9 @@
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_glmnet}},
 #'   \code{\link{importance_glmnet}}, \code{\link{modeling_procedure}}
+#' @references Friedman J, Hastie T, Tibshirani R (2010).
+#'   Regularization Paths for Generalized Linear Models via Coordinate Descent.
+#'   Journal of Statistical Software, 33(1), 1–22. doi:10.18637/jss.v033.i01.
 #' @export
 fit_glmnet <- function(x, y, family, nfolds, foldid, alpha=1, lambda=NULL, ...){
     nice_require("glmnet", "is required to fit elastic net models")

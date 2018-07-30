@@ -20,6 +20,19 @@
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_cforest}},
 #'   \code{\link{modeling_procedure}}
+#' @references Torsten Hothorn, Peter Buehlmann, Sandrine Dudoit, Annette Molinaro
+#'   and Mark Van Der Laan (2006). Survival Ensembles. Biostatistics,
+#'   7(3), 355--373.
+#' 
+#'   Carolin Strobl, Anne-Laure Boulesteix, Achim Zeileis and Torsten
+#'   Hothorn (2007). Bias in Random Forest Variable Importance Measures:
+#'   Illustrations, Sources and a Solution. BMC Bioinformatics, 8(25). URL
+#'   http://www.biomedcentral.com/1471-2105/8/25.
+#' 
+#'   Carolin Strobl, Anne-Laure Boulesteix, Thomas Kneib, Thomas Augustin
+#'   and Achim Zeileis (2008). Conditional Variable Importance for Random
+#'   Forests. BMC Bioinformatics, 9(307). URL
+#'   http://www.biomedcentral.com/1471-2105/9/307.
 #' @export
 fit_cforest <- function(x, y, formula=y~., ctrl_fun=party::cforest_unbiased, ...){
     nice_require("party")

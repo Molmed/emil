@@ -16,6 +16,12 @@ fit_caret(x, y, ...)
 \description{
 Fit a model using the \pkg{caret} package
 }
+\references{
+Kuhn M (2008). “Building Predictive Models in R Using the caret Package.
+  Journal of Statistical Software, 28(5), 1–26. doi:10.18637/jss.v028.i05.
+  caret: Classification and Regression Training. R package version 6.0-79,
+  URL https://CRAN.R-project.org/package=caret.
+}
 \author{
 Christofer \enc{Bäcklin}{Backlin}
 }

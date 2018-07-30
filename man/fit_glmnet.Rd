@@ -45,6 +45,11 @@ on. The shrinkage, controlled by the \code{lambda} parameter, can be left
 unspecified for internal tuning (works the same way as
 \code{\link{fit_glmnet}}).
 }
+\references{
+Friedman J, Hastie T, Tibshirani R (2010).
+  Regularization Paths for Generalized Linear Models via Coordinate Descent.
+  Journal of Statistical Software, 33(1), 1–22. doi:10.18637/jss.v033.i01.
+}
 \seealso{
 \code{\link{emil}}, \code{\link{predict_glmnet}},
   \code{\link{importance_glmnet}}, \code{\link{modeling_procedure}}

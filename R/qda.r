@@ -9,6 +9,11 @@
 #' @author Christofer \enc{Bäcklin}{Backlin}
 #' @seealso \code{\link{emil}}, \code{\link{predict_qda}},
 #'   \code{\link{modeling_procedure}}
+#' @references Venables, W. N. and Ripley, B. D. (2002) Modern Applied
+#'   Statistics with S. Fourth edition.  Springer.
+#'
+#'   Ripley, B. D. (1996) Pattern Recognition and Neural Networks.
+#'   Cambridge University Press.
 #' @export
 fit_qda <- function(x, y, ...){
     nice_require("MASS")
